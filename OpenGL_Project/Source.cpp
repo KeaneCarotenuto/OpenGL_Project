@@ -17,6 +17,7 @@ bool Startup();
 void InitialSetup();
 
 void Update();
+void CheckInput();
 void Render();
 
 void Triangle(vector3 v1, vector3 c1, vector3 v2, vector3 c2, vector3 v3, vector3 c3);
@@ -28,7 +29,6 @@ const int width = 800;
 const int height = 800;
 
 GLuint Program_FixedTri;
-GLuint Program_FixedTri2;
 GLuint Program_ColorFade;
 
 GLuint VBO_Tri;
@@ -113,9 +113,9 @@ void InitialSetup()
 	// Maps the range of the window size to NDC (-1 -> 1)
 	glViewport(0, 0, width, height);
 
-	Program_FixedTri = ShaderLoader::CreateProgram("Resources/Shaders/TriangleVS.txt", "Resources/Shaders/FixedColor.txt");
-	//Program_FixedTri2 = ShaderLoader::CreateProgram("Resources/Shaders/TriangleVS.txt", "Resources/Shaders/FixedColor.txt");
-	Program_ColorFade = ShaderLoader::CreateProgram("Resources/Shaders/TriangleVS.txt", "Resources/Shaders/VertexColorFade.txt");
+	Program_FixedTri = ShaderLoader::CreateProgram("Resources/Shaders/Triangle.vs", "Resources/Shaders/Color.fs");
+	GLuint test_ProgramTri = ShaderLoader::CreateProgram("Resources/Shaders/Triangle.vs", "Resources/Shaders/Color.fs");
+	Program_ColorFade = ShaderLoader::CreateProgram("Resources/Shaders/Triangle.vs", "Resources/Shaders/VertexColorFade.fs");
 
 	glfwSetKeyCallback(window, key_callback);
 
@@ -140,49 +140,71 @@ void Update()
 {
 	CurrentTime = (float)glfwGetTime();
 
+	CheckInput();
+}
+
+void CheckInput()
+{
+	bool updated = false;
+
+	//Move Triangle
 	if (glfwGetKey(window, GLFW_KEY_D))
 	{
 		pos.x += 0.01f;
+		updated = true;
 	}
 	if (glfwGetKey(window, GLFW_KEY_A))
 	{
 		pos.x -= 0.01f;
+		updated = true;
 	}
 	if (glfwGetKey(window, GLFW_KEY_W))
 	{
 		pos.y += 0.01f;
+		updated = true;
 	}
 	if (glfwGetKey(window, GLFW_KEY_S))
 	{
 		pos.y -= 0.01f;
+		updated = true;
 	}
+
+	//Scale Triangle
 	if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL))
 	{
 		size -= 0.01f;
+		updated = true;
 	}
 	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT))
 	{
 		size += 0.01f;
+		updated = true;
 	}
 
+	//Rotate Triangle
 	if (glfwGetKey(window, GLFW_KEY_Q))
 	{
 		ang -= 0.5f;
+		updated = true;
 	}
-
 	if (glfwGetKey(window, GLFW_KEY_E))
 	{
 		ang += 0.5f;
+		updated = true;
+	}
+
+	if (updated) {
+		EquiTriangle(pos, size, ang);
 	}
 }
 
 //Render window
 void Render()
 {
+	//Clear Screen
 	glClear(GL_COLOR_BUFFER_BIT);
 
-	EquiTriangle(pos, size, ang);
-
+	//
 	glUseProgram(Program_ColorFade);
 	glBindVertexArray(VAO_Tri);
 

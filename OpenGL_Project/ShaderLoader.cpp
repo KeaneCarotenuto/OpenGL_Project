@@ -8,7 +8,8 @@ std::vector<CProgram*> Globals::programs;
 
 GLuint ShaderLoader::CreateProgram(const char* vertexShaderFilename, const char* fragmentShaderFilename)
 {
-	std::cout << "Begin Program Creation:" << std::endl;
+	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 15);
+	std::cout << "Start Program Creation:" << std::endl;
 
 	GLuint vert_shader = NULL;
 	GLuint frag_shader = NULL;
@@ -25,13 +26,15 @@ GLuint ShaderLoader::CreateProgram(const char* vertexShaderFilename, const char*
 			{
 				if (_shader) {
 					if (_shader->m_fileName == vertexShaderFilename) {
-						std::cout << "--Vertex shader already exists, using prev." << std::endl;
+						SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 14);
+						std::cout << "--Vertex shader already exists, using existing." << std::endl;
 						vert_shader = TEMP_vert_shader = _shader->m_id;
 						vShader = _shader;
 					}
 
 					if (_shader->m_fileName == fragmentShaderFilename) {
-						std::cout << "--Fragment shader already exists, using prev." << std::endl;
+						SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 14);
+						std::cout << "--Fragment shader already exists, using existing." << std::endl;
 						frag_shader = TEMP_frag_shader = _shader->m_id;
 						fShader = _shader;
 					}
@@ -39,22 +42,24 @@ GLuint ShaderLoader::CreateProgram(const char* vertexShaderFilename, const char*
 			}
 
 			if (TEMP_vert_shader != NULL && TEMP_frag_shader != NULL) {
-				std::cout << "-Program shader already exists, using prev." << std::endl;
+				SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 14);
+				std::cout << "-Program already exists, using existing." << std::endl;
+				SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 15);
+				std::cout << "End Program Creation." << std::endl << std::endl;
 				return _prog->m_id;
 			}
 		}
 	}
 
+	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 15);
 	std::cout << "-Creating new Program" << std::endl;
 
 	if (vert_shader == NULL) {
 		vert_shader = CreateShader(GL_VERTEX_SHADER, vertexShaderFilename, &vShader);
-		std::cout << "--Creating new Vertex Shader" << std::endl;
 	}
 
 	if (frag_shader == NULL) {
 		frag_shader = CreateShader(GL_FRAGMENT_SHADER, fragmentShaderFilename, &fShader);
-		std::cout << "--Creating new Vertex Shader" << std::endl;
 	}
 	
 	// Create the program handle, attach the shaders and link it
@@ -71,16 +76,42 @@ GLuint ShaderLoader::CreateProgram(const char* vertexShaderFilename, const char*
 	{
 		std::string programName = vertexShaderFilename + *fragmentShaderFilename;
 		PrintErrorDetails(false, program, programName.c_str());
+		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 12);
+		std::cout << "End Program Creation." << std::endl << std::endl;
+		
+		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 15);
 		return 0;
 	}
 
 	Globals::programs.push_back(new CProgram(program, std::vector<CShader*>{vShader, fShader}));
 
+	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 10);
+	std::cout << "--Program Created" << std::endl;
+	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 15);
+	std::cout << "End Program Creation." << std::endl << std::endl;
 	return program;
 }
 
 GLuint ShaderLoader::CreateShader(GLenum shaderType, const char* shaderName, CShader ** _shaderReturn = nullptr)
 {
+	std::string shaderTypeName = (std::string)(shaderType == GL_VERTEX_SHADER ? "Vertex" : (shaderType == GL_FRAGMENT_SHADER ? "Fragment" : "?"));
+
+	//This is redundant, but better to be safe than sorry I suppose
+	for (CShader* _shader : Globals::shaders)
+	{
+		if (_shader) {
+			if (_shader->m_fileName == shaderName) {
+				SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 14);
+				std::cout << "--" + shaderTypeName + " shader already exists, using existing. (Missed in CreateProgram()!)" << std::endl;
+				*_shaderReturn = _shader;
+				return _shader->m_id;
+			}
+		}
+	}
+
+	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 15);
+	std::cout << "--Creating new " + shaderTypeName + " Shader" << std::endl;
+
 	// Read the shader files and save the source code as strings
 	std::string shaderSourceCode = ReadShaderFile(shaderName);
 
@@ -100,8 +131,14 @@ GLuint ShaderLoader::CreateShader(GLenum shaderType, const char* shaderName, CSh
 	{
 		PrintErrorDetails(true, shaderID, shaderName);
 		return 0;
+		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 12);
+		std::cout << "---Shader Failed" << std::endl;
 	}
 	*_shaderReturn = new CShader(shaderID, shaderName, shaderSourceCode);
+	Globals::shaders.push_back(*_shaderReturn);
+
+	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 10);
+	std::cout << "---Shader Created" << std::endl;
 
 	return shaderID;
 }
@@ -114,6 +151,7 @@ std::string ShaderLoader::ReadShaderFile(const char *filename)
 
 	// Ensure the file is open and readable
 	if (!file.good()) {
+		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 12);
 		std::cout << "Cannot read file:  " << filename << std::endl;
 		return "";
 	}
@@ -138,7 +176,8 @@ void ShaderLoader::PrintErrorDetails(bool isShader, GLuint id, const char* name)
 	std::vector<char> log(infoLogLength);
 
 	// Retrieve the log info and populate log variable
-	(isShader == true) ? glGetShaderInfoLog(id, infoLogLength, NULL, &log[0]) : glGetProgramInfoLog(id, infoLogLength, NULL, &log[0]);		
+	(isShader == true) ? glGetShaderInfoLog(id, infoLogLength, NULL, &log[0]) : glGetProgramInfoLog(id, infoLogLength, NULL, &log[0]);	
+	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 12);
 	std::cout << "Error compiling " << ((isShader == true) ? "shader" : "program") << ": " << name << std::endl;
 	std::cout << &log[0] << std::endl;
 }

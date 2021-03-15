@@ -3,6 +3,7 @@
 // Library Includes
 #include <glew.h>
 #include <glfw3.h>
+#include <Windows.h>
 #include <iostream>
 #include <fstream>
 #include <vector>

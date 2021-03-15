@@ -34,13 +34,13 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="Resources\Shaders\FixedColor.txt">
+    <Text Include="Resources\Shaders\Color.fs">
       <Filter>Resource Files\Shaders</Filter>
     </Text>
-    <Text Include="Resources\Shaders\TriangleVS.txt">
+    <Text Include="Resources\Shaders\VertexColorFade.fs">
       <Filter>Resource Files\Shaders</Filter>
     </Text>
-    <Text Include="Resources\Shaders\VertexColorFade.txt">
+    <Text Include="Resources\Shaders\Triangle.vs">
       <Filter>Resource Files\Shaders</Filter>
     </Text>
   </ItemGroup>
