@@ -19,7 +19,7 @@ void InitialSetup();
 void Update();
 void Render();
 
-void Triangle(vector3 v1, vector3 v2, vector3 v3);
+void Triangle(vector3 v1, vector3 c1, vector3 v2, vector3 c2, vector3 v3, vector3 c3);
 void EquiTriangle(vector3 position, float height, float angle);
 
 GLFWwindow* window = nullptr;
@@ -29,7 +29,8 @@ const int height = 800;
 
 GLuint Program_FixedTri;
 
-unsigned int VBO;
+GLuint VBO_Tri;
+GLuint VAO_Tri;
 
 vector3 pos;
 float ang = 0;
@@ -103,7 +104,7 @@ bool Startup()
 void InitialSetup()
 {
 	//Set the clear colour as blue (used by glClear)
-	glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
 	// Maps the range of the window size to NDC (-1 -> 1)
 	glViewport(0, 0, width, height);
@@ -164,26 +165,39 @@ void Render()
 }
 
 void EquiTriangle(vector3 position, float height, float angle) {
-	Triangle(	vector3{ position.x + (float)sin(angle * M_PI / 180) * (height/2), position.y + (float)cos(angle * M_PI / 180) * (height/2) , 0.0f },
-				vector3{ position.x + (float)sin((angle + 120) * M_PI / 180) * (height/2), position.y + (float)cos((angle + 120) * M_PI / 180) * (height/2) , 0.0f },
-				vector3{ position.x + (float)sin((angle + 240) * M_PI / 180) * (height/2), position.y + (float)cos((angle + 240) * M_PI / 180) * (height/2) , 0.0f });
+	Triangle(	vector3{ position.x + (float)sin(angle * M_PI / 180) * (height / 2), position.y + (float)cos(angle * M_PI / 180) * (height / 2) , 0.0f },
+				vector3{ 1.0f,0.0f,0.0f },
+
+				vector3{ position.x + (float)sin((angle + 120) * M_PI / 180) * (height/2), position.y + (float)cos((angle + 120) * M_PI / 180) * (height/2) , 0.0f },	
+				vector3{ 0.0f,1.0f,0.0f },
+
+				vector3{ position.x + (float)sin((angle + 240) * M_PI / 180) * (height/2), position.y + (float)cos((angle + 240) * M_PI / 180) * (height/2) , 0.0f },	
+				vector3{ 0.0f,0.0f,1.0f }) ;
 }
 
-void Triangle(vector3 v1, vector3 v2, vector3 v3)
+void Triangle(vector3 v1, vector3 c1, vector3 v2 , vector3 c2, vector3 v3 , vector3 c3)
 {
 	float vertices[] = {
-		v1.x, v1.y, v1.z,
-		v2.x, v2.y, v2.z,
-		v3.x, v3.y, v3.z,
+		v1.x, v1.y, v1.z,  c1.x, c1.y, c1.z,
+		v2.x, v2.y, v2.z,  c2.x, c2.y, c2.z,
+		v3.x, v3.y, v3.z,  c3.x, c3.y, c3.z,
 	};
 
-	glGenBuffers(1, &VBO);
-	// 0. copy our vertices array in a buffer for OpenGL to use
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	//Gen VAO for triangle
+	glGenVertexArrays(1, &VAO_Tri);
+	glBindVertexArray(VAO_Tri);
+
+	//Gen VBO for triangle
+	glGenBuffers(1, &VBO_Tri);
+	//copy our vertices array in a buffer for OpenGL to use
+	glBindBuffer(GL_ARRAY_BUFFER, VBO_Tri);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-	// 1. then set the vertex attributes pointers
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+
+	//Set the vertex attributes pointers (How to interperet Vertex Data)
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)0);
 	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
+	glEnableVertexAttribArray(1);
 
 	glUseProgram(Program_FixedTri);
 	glDrawArrays(GL_TRIANGLES, 0, 3);

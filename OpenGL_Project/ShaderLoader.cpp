@@ -3,8 +3,6 @@
 #include<fstream>
 #include<vector>
 
-int lol = 3;
-
 ShaderLoader::ShaderLoader(void){}
 ShaderLoader::~ShaderLoader(void){}
 
