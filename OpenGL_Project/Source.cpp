@@ -34,6 +34,14 @@ GLuint Program_ColorFade;
 GLuint VBO_Tri;
 GLuint VAO_Tri;
 
+// Vert //Indices
+GLfloat Vertices_Tri[] = {
+	// Position				// Color 
+	0.0f, 0.0f, 0.0f,		1.0f, 0.0f, 0.0f,	// Top Right
+	-0.5f, 0.8f, 0.0f,		0.0f, 1.0f, 0.0f,	// Top Left
+	0.5f, 0.8f, 0.0f,		0.0f, 0.0f, 1.0f,	// Bottom Center
+};
+
 vector3 pos;
 float ang = 0;
 float size = 1.0f;
@@ -114,10 +122,26 @@ void InitialSetup()
 	glViewport(0, 0, width, height);
 
 	Program_FixedTri = ShaderLoader::CreateProgram("Resources/Shaders/TriangleVS.txt", "Resources/Shaders/FixedColor.txt");
-	Program_FixedTri2 = ShaderLoader::CreateProgram("Resources/Shaders/TriangleVS.txt", "Resources/Shaders/FixedColor.txt");
+	//Program_FixedTri2 = ShaderLoader::CreateProgram("Resources/Shaders/TriangleVS.txt", "Resources/Shaders/FixedColor.txt");
 	//Program_ColorFade = ShaderLoader::CreateProgram("Resources/Shaders/VertexColorFade.txt", "Resources/Shaders/FixedColor.txt");
 
 	glfwSetKeyCallback(window, key_callback);
+
+	//Gen VAO for triangle
+	glGenVertexArrays(1, &VAO_Tri);
+	glBindVertexArray(VAO_Tri);
+
+	//Gen VBO for triangle
+	glGenBuffers(1, &VBO_Tri);
+	//copy our vertices array in a buffer for OpenGL to use
+	glBindBuffer(GL_ARRAY_BUFFER, VBO_Tri);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(Vertices_Tri), Vertices_Tri, GL_STATIC_DRAW);
+
+	//Set the vertex attributes pointers (How to interperet Vertex Data)
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)0);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
+	glEnableVertexAttribArray(1);
 }
 
 //Called each frame
@@ -166,7 +190,13 @@ void Render()
 {
 	glClear(GL_COLOR_BUFFER_BIT);
 
-	EquiTriangle(pos, size, ang);
+	glUseProgram(Program_FixedTri);
+	glBindVertexArray(VAO_Tri);
+	glDrawArrays(GL_TRIANGLES, 0, 3);
+	glBindVertexArray(0);
+	glUseProgram(0);
+
+	//EquiTriangle(pos, size, ang);
 	//EquiTriangle(vector3{pos.x + 1, pos.y + 1, pos.z}, size, ang);
 
 	glfwSwapBuffers(window);
