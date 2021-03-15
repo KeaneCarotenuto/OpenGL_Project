@@ -28,8 +28,8 @@ GLFWwindow* window = nullptr;
 const int width = 800;
 const int height = 800;
 
-GLuint Program_FixedTri;
-GLuint Program_ColorFade;
+//GLuint Program_Tri;
+GLuint Program_ColorFadeTri;
 
 GLuint VBO_Tri;
 GLuint VAO_Tri;
@@ -113,9 +113,9 @@ void InitialSetup()
 	// Maps the range of the window size to NDC (-1 -> 1)
 	glViewport(0, 0, width, height);
 
-	Program_FixedTri = ShaderLoader::CreateProgram("Resources/Shaders/Triangle.vs", "Resources/Shaders/Color.fs");
-	GLuint test_ProgramTri = ShaderLoader::CreateProgram("Resources/Shaders/Triangle.vs", "Resources/Shaders/Color.fs");
-	Program_ColorFade = ShaderLoader::CreateProgram("Resources/Shaders/Triangle.vs", "Resources/Shaders/VertexColorFade.fs");
+	//Program_Tri = ShaderLoader::CreateProgram("Resources/Shaders/Triangle.vs", "Resources/Shaders/Color.fs");
+	//GLuint test_ProgramTri = ShaderLoader::CreateProgram("Resources/Shaders/Triangle.vs", "Resources/Shaders/Color.fs");
+	Program_ColorFadeTri = ShaderLoader::CreateProgram("Resources/Shaders/Triangle.vs", "Resources/Shaders/VertexColorFade.fs");
 
 	glfwSetKeyCallback(window, key_callback);
 
@@ -205,10 +205,10 @@ void Render()
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	//
-	glUseProgram(Program_ColorFade);
+	glUseProgram(Program_ColorFadeTri);
 	glBindVertexArray(VAO_Tri);
 
-	GLint CurrentTimeLoc = glGetUniformLocation(Program_ColorFade, "CurrentTime");
+	GLint CurrentTimeLoc = glGetUniformLocation(Program_ColorFadeTri, "CurrentTime");
 	glUniform1f(CurrentTimeLoc, CurrentTime);
 
 	glDrawArrays(GL_TRIANGLES, 0, 3);
