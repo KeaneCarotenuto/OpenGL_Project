@@ -3,9 +3,9 @@
 in vec3 FragColor;
 uniform float CurrentTime;
 
-out vec3 FragColor;
+out vec4 FinalColor;
 
 void main() 
 {
-	FragColor = vec4(FragColor, 1.0f) * abs(sin(CurrentTime));
+	FinalColor = vec4(FragColor, 1.0f) * (sin(CurrentTime) + 1);
 }

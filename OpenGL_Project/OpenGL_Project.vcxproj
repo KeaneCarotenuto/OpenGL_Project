@@ -142,7 +142,7 @@
   <ItemGroup>
     <Text Include="Resources\Shaders\FixedColor.txt" />
     <Text Include="Resources\Shaders\TriangleVS.txt" />
-    <Text Include="VertexColorFade.txt" />
+    <Text Include="Resources\Shaders\VertexColorFade.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
