@@ -40,5 +40,8 @@
     <Text Include="Resources\Shaders\TriangleVS.txt">
       <Filter>Resource Files\Shaders</Filter>
     </Text>
+    <Text Include="VertexColorFade.txt">
+      <Filter>Resource Files\Shaders</Filter>
+    </Text>
   </ItemGroup>
 </Project>

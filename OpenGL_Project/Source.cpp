@@ -28,6 +28,8 @@ const int width = 800;
 const int height = 800;
 
 GLuint Program_FixedTri;
+GLuint Program_FixedTri2;
+GLuint Program_ColorFade;
 
 GLuint VBO_Tri;
 GLuint VAO_Tri;
@@ -35,6 +37,8 @@ GLuint VAO_Tri;
 vector3 pos;
 float ang = 0;
 float size = 1.0f;
+
+float CurrentTime;
 
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
@@ -110,6 +114,8 @@ void InitialSetup()
 	glViewport(0, 0, width, height);
 
 	Program_FixedTri = ShaderLoader::CreateProgram("Resources/Shaders/TriangleVS.txt", "Resources/Shaders/FixedColor.txt");
+	Program_FixedTri2 = ShaderLoader::CreateProgram("Resources/Shaders/TriangleVS.txt", "Resources/Shaders/FixedColor.txt");
+	//Program_ColorFade = ShaderLoader::CreateProgram("Resources/Shaders/VertexColorFade.txt", "Resources/Shaders/FixedColor.txt");
 
 	glfwSetKeyCallback(window, key_callback);
 }
@@ -117,6 +123,8 @@ void InitialSetup()
 //Called each frame
 void Update()
 {
+	CurrentTime = (float)glfwGetTime();
+
 	if (glfwGetKey(window, GLFW_KEY_D))
 	{
 		pos.x += 0.01f;
