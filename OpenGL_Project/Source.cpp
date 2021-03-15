@@ -177,10 +177,10 @@ void EquiTriangle(vector3 position, float height, float angle) {
 
 void Triangle(vector3 v1, vector3 c1, vector3 v2 , vector3 c2, vector3 v3 , vector3 c3)
 {
-	float vertices[] = {
-		v1.x, v1.y, v1.z,  c1.x, c1.y, c1.z,
-		v2.x, v2.y, v2.z,  c2.x, c2.y, c2.z,
-		v3.x, v3.y, v3.z,  c3.x, c3.y, c3.z,
+	vector3 vertices[] = {
+		v1,  c1,
+		v2,  c2,
+		v3,  c3,
 	};
 
 	//Gen VAO for triangle
