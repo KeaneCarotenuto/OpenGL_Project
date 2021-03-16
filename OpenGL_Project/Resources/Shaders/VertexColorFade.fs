@@ -7,5 +7,5 @@ out vec4 FinalColor;
 
 void main() 
 {
-	FinalColor = vec4(FragColor, 1.0f) * (sin(CurrentTime) + 1);
+	FinalColor = vec4(FragColor, 1.0f) * ((sin(CurrentTime) + 1)/2);
 }

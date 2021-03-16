@@ -114,6 +114,7 @@ GLuint ShaderLoader::CreateShader(GLenum shaderType, const char* shaderName, CSh
 
 	// Read the shader files and save the source code as strings
 	std::string shaderSourceCode = ReadShaderFile(shaderName);
+	
 	//For hiding shader files vv
 	//std::string shaderSourceCode = (shaderType == GL_VERTEX_SHADER ? "#version 460 core\n\nlayout(location = 0) in vec3 Pos; \nlayout(location = 1) in vec3 Col; \n\nout vec3 FragColor; \n\nvoid main() \n{ \n\tgl_Position = vec4(Pos, 1.0); \n\tFragColor = Col; \n }" : "#version 460 core\n\nin vec3 FragColor;\nuniform float CurrentTime;\n\nout vec4 FinalColor;\n\nvoid main() \n{\n\tFinalColor = vec4(FragColor, 1.0f) * (sin(CurrentTime) + 1);\n}");
 
