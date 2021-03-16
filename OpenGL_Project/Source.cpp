@@ -43,9 +43,6 @@ GLfloat Vert_Quad[] = {
 	0.5f, 0.5f, 0.0f,		1.0f, 0.0f, 0.0f,
 	-0.5f, 0.5f, 0.0f,		0.0f, 1.0f, 0.0f,
 	-0.5f, -0.5f, 0.0f,		0.0f, 0.0f, 1.0f,
-	
-	0.5f, 0.5f, 0.0f,		1.0f, 0.0f, 0.0f,
-	-0.5f, -0.5f, 0.0f,		0.0f, 0.0f, 1.0f,
 	0.5f, -0.5f, 0.0f,		0.0f, 0.0f, 1.0f,
 };
 
@@ -236,21 +233,21 @@ void Render()
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	//
-	/*glUseProgram(Program_ColorFadeTri);
-	glBindVertexArray(VAO_Tri);
+	glUseProgram(Program_ColorFadeTri);
+	glBindVertexArray(VAO_Quad);
 
 	GLint CurrentTimeLoc = glGetUniformLocation(Program_ColorFadeTri, "CurrentTime");
 	glUniform1f(CurrentTimeLoc, CurrentTime);
 
-	glDrawArrays(GL_TRIANGLES, 0, 3);*/
+	glDrawArrays(GL_QUADS, 0, 4);
 
-	glUseProgram(Program_ColorFadeTri);
+	/*glUseProgram(Program_ColorFadeTri);
 	glBindVertexArray(VAO_Quad);
 
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 
 	glBindVertexArray(0);
-	glUseProgram(0);
+	glUseProgram(0);*/
 
 	
 	//EquiTriangle(vector3{pos.x + 1, pos.y + 1, pos.z}, size, ang);
