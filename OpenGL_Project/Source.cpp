@@ -38,6 +38,20 @@ vector3 pos;
 float ang = 0;
 float size = 1.0f;
 
+GLfloat Vert_Quad[] = {
+	//Pos					//Col
+	0.5f, 0.5f, 0.0f,		1.0f, 0.0f, 0.0f,
+	-0.5f, 0.5f, 0.0f,		0.0f, 1.0f, 0.0f,
+	-0.5f, -0.5f, 0.0f,		0.0f, 0.0f, 1.0f,
+	
+	0.5f, 0.5f, 0.0f,		1.0f, 0.0f, 0.0f,
+	-0.5f, -0.5f, 0.0f,		0.0f, 0.0f, 1.0f,
+	0.5f, -0.5f, 0.0f,		0.0f, 0.0f, 1.0f,
+};
+
+GLuint VBO_Quad;
+GLuint VAO_Quad;
+
 float CurrentTime;
 
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -119,14 +133,31 @@ void InitialSetup()
 
 	glfwSetKeyCallback(window, key_callback);
 
-	//Gen VAO for triangle
-	glGenVertexArrays(1, &VAO_Tri);
-	glBindVertexArray(VAO_Tri);
+	////Gen VAO for triangle
+	//glGenVertexArrays(1, &VAO_Tri);
+	//glBindVertexArray(VAO_Tri);
 
-	//Gen VBO for triangle
-	glGenBuffers(1, &VBO_Tri);
+	////Gen VBO for triangle
+	//glGenBuffers(1, &VBO_Tri);
+	////copy our vertices array in a buffer for OpenGL to use
+	//EquiTriangle(pos, size, ang);
+
+	////Set the vertex attributes pointers (How to interperet Vertex Data)
+	//glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)0);
+	//glEnableVertexAttribArray(0);
+	//glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
+	//glEnableVertexAttribArray(1);
+
+
+	//Gen VAO for quad
+	glGenVertexArrays(1, &VAO_Quad);
+	glBindVertexArray(VAO_Quad);
+
+	//Gen VBO for quad
+	glGenBuffers(1, &VBO_Quad);
 	//copy our vertices array in a buffer for OpenGL to use
-	EquiTriangle(pos, size, ang);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO_Quad);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(Vert_Quad), Vert_Quad, GL_DYNAMIC_DRAW);
 
 	//Set the vertex attributes pointers (How to interperet Vertex Data)
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)0);
@@ -205,13 +236,18 @@ void Render()
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	//
-	glUseProgram(Program_ColorFadeTri);
+	/*glUseProgram(Program_ColorFadeTri);
 	glBindVertexArray(VAO_Tri);
 
 	GLint CurrentTimeLoc = glGetUniformLocation(Program_ColorFadeTri, "CurrentTime");
 	glUniform1f(CurrentTimeLoc, CurrentTime);
 
-	glDrawArrays(GL_TRIANGLES, 0, 3);
+	glDrawArrays(GL_TRIANGLES, 0, 3);*/
+
+	glUseProgram(Program_ColorFadeTri);
+	glBindVertexArray(VAO_Quad);
+
+	glDrawArrays(GL_TRIANGLES, 0, 6);
 
 	glBindVertexArray(0);
 	glUseProgram(0);

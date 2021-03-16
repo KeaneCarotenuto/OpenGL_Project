@@ -44,4 +44,9 @@
       <Filter>Resource Files\Shaders</Filter>
     </Text>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Shaders\Quad.vs">
+      <Filter>Resource Files\Shaders</Filter>
+    </None>
+  </ItemGroup>
 </Project>
