@@ -31,7 +31,7 @@ const int width = 800;
 const int height = 800;
 
 //GLuint Program_Tri;
-//GLuint Program_ColorFadeTri;
+GLuint Program_ColorFadeTri;
 GLuint Program_Texture;
 
 GLuint VBO_Tri;
@@ -57,6 +57,27 @@ GLuint Indices_Quad[] = {
 GLuint VBO_Quad;
 GLuint VAO_Quad;
 GLuint EBO_Quad;
+
+GLfloat Vert_Hex[] = {
+	//Pos					//Col					//Texture Coords
+	-0.5f, 1.0f, 0.0f,		1.0f, 0.0f, 0.0f,		0.0f, 1.0f,		//Top - Left
+	-1.0f, 0.0f, 0.0f,		0.0f, 1.0f, 0.0f,		0.0f, 0.5f,		//Mid - Left
+	-0.5f, -1.0f, 0.0f,		0.0f, 0.0f, 1.0f,		0.0f, 0.0f,		//Bot - Left
+	0.5f, -1.0f, 0.0f,		0.0f, 1.0f, 0.0f,		1.0f, 0.0f,		//Bot - Right
+	1.0f, 0.0f, 0.0f,		1.0f, 0.0f, 0.0f,		1.0f, 0.5f,		//Mid - Right
+	0.5f, 1.0f, 0.0f,		0.0f, 1.0f, 0.0f,		1.0f, 1.0f,		//Top - Right
+};
+
+GLuint Indices_Hex[] = {
+	0, 1, 2,
+	0, 2, 5,
+	5, 2, 4,
+	4, 2, 3,
+};
+
+GLuint VBO_Hex;
+GLuint VAO_Hex;
+GLuint EBO_Hex;
 
 GLuint Texture_Rayman;
 
@@ -137,7 +158,7 @@ void InitialSetup()
 
 	//Program_Tri = ShaderLoader::CreateProgram("Resources/Shaders/Triangle.vs", "Resources/Shaders/Color.fs");
 	//GLuint test_ProgramTri = ShaderLoader::CreateProgram("Resources/Shaders/Triangle.vs", "Resources/Shaders/Color.fs");
-	//Program_ColorFadeTri = ShaderLoader::CreateProgram("Resources/Shaders/Triangle.vs", "Resources/Shaders/VertexColorFade.fs");
+	Program_ColorFadeTri = ShaderLoader::CreateProgram("Resources/Shaders/Triangle.vs", "Resources/Shaders/VertexColorFade.fs");
 	Program_Texture = ShaderLoader::CreateProgram("Resources/Shaders/NDC_Texture.vs", "Resources/Shaders/Texture.fs");
 
 	glfwSetKeyCallback(window, key_callback);
@@ -180,20 +201,20 @@ void InitialSetup()
 	glBindTexture(GL_TEXTURE_2D, 0);
 
 
-	//Gen VAO for quad
-	glGenVertexArrays(1, &VAO_Quad);
-	glBindVertexArray(VAO_Quad);
+	//Gen VAO for Hex
+	glGenVertexArrays(1, &VAO_Hex);
+	glBindVertexArray(VAO_Hex);
 
-	//Gen EBO for quad
-	glGenBuffers(1, &EBO_Quad);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO_Quad);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(Indices_Quad), Indices_Quad, GL_STATIC_DRAW);
+	//Gen EBO for Hex
+	glGenBuffers(1, &EBO_Hex);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO_Hex);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(Indices_Hex), Indices_Hex, GL_STATIC_DRAW);
 
-	//Gen VBO for quad
-	glGenBuffers(1, &VBO_Quad);
+	//Gen VBO for Hex
+	glGenBuffers(1, &VBO_Hex);
 	//copy our vertices array in a buffer for OpenGL to use
-	glBindBuffer(GL_ARRAY_BUFFER, VBO_Quad);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(Vert_Quad), Vert_Quad, GL_STATIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO_Hex);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(Vert_Hex), Vert_Hex, GL_STATIC_DRAW);
 
 	//Set the vertex attributes pointers (How to interperet Vertex Data)
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)0);
@@ -275,20 +296,20 @@ void Render()
 
 	//
 	/*glUseProgram(Program_ColorFadeTri);
-	glBindVertexArray(VAO_Quad);
+	glBindVertexArray(VAO_Hex);
 
 	GLint CurrentTimeLoc = glGetUniformLocation(Program_ColorFadeTri, "CurrentTime");
 	glUniform1f(CurrentTimeLoc, CurrentTime);*/
 
 	glUseProgram(Program_Texture);
-	glBindVertexArray(VAO_Quad);
+	glBindVertexArray(VAO_Hex);
 
 	//Activate and bind texture
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, Texture_Rayman);
 	glUniform1i(glGetUniformLocation(Program_Texture, "ImageTexture"), 0);
 
-	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+	glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, 0);
 
 	glBindVertexArray(0);
 	glUseProgram(0);
