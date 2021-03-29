@@ -4,6 +4,8 @@
 #include <Windows.h>
 #define _USE_MATH_DEFINES
 #include <math.h>
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
 #include "Source.h"
 #include "ShaderLoader.h"
 
@@ -29,7 +31,8 @@ const int width = 800;
 const int height = 800;
 
 //GLuint Program_Tri;
-GLuint Program_ColorFadeTri;
+//GLuint Program_ColorFadeTri;
+GLuint Program_Texture;
 
 GLuint VBO_Tri;
 GLuint VAO_Tri;
@@ -39,15 +42,23 @@ float ang = 0;
 float size = 1.0f;
 
 GLfloat Vert_Quad[] = {
-	//Pos					//Col
-	0.5f, 0.5f, 0.0f,		1.0f, 0.0f, 0.0f,
-	-0.5f, 0.5f, 0.0f,		0.0f, 1.0f, 0.0f,
-	-0.5f, -0.5f, 0.0f,		0.0f, 0.0f, 1.0f,
-	0.5f, -0.5f, 0.0f,		0.0f, 0.0f, 1.0f,
+	//Pos					//Col					//Texture Coords
+	-0.5f, 0.5f, 0.0f,		0.0f, 1.0f, 0.0f,		0.0f, 1.0f,		//Top - Left
+	-0.5f, -0.5f, 0.0f,		0.0f, 0.0f, 1.0f,		0.0f, 0.0f,		//Bot - Left
+	0.5f, -0.5f, 0.0f,		0.0f, 0.0f, 1.0f,		1.0f, 0.0f,		//Bot - Right
+	0.5f, 0.5f, 0.0f,		1.0f, 0.0f, 0.0f,		1.0f, 1.0f,		//Top - Right
+};
+
+GLuint Indices_Quad[] = {
+	0, 1, 2,
+	0, 2, 3
 };
 
 GLuint VBO_Quad;
 GLuint VAO_Quad;
+GLuint EBO_Quad;
+
+GLuint Texture_Rayman;
 
 float CurrentTime;
 
@@ -126,41 +137,71 @@ void InitialSetup()
 
 	//Program_Tri = ShaderLoader::CreateProgram("Resources/Shaders/Triangle.vs", "Resources/Shaders/Color.fs");
 	//GLuint test_ProgramTri = ShaderLoader::CreateProgram("Resources/Shaders/Triangle.vs", "Resources/Shaders/Color.fs");
-	Program_ColorFadeTri = ShaderLoader::CreateProgram("Resources/Shaders/Triangle.vs", "Resources/Shaders/VertexColorFade.fs");
+	//Program_ColorFadeTri = ShaderLoader::CreateProgram("Resources/Shaders/Triangle.vs", "Resources/Shaders/VertexColorFade.fs");
+	Program_Texture = ShaderLoader::CreateProgram("Resources/Shaders/NDC_Texture.vs", "Resources/Shaders/Texture.fs");
 
 	glfwSetKeyCallback(window, key_callback);
 
-	////Gen VAO for triangle
-	//glGenVertexArrays(1, &VAO_Tri);
-	//glBindVertexArray(VAO_Tri);
+	//Cull polygons not facing
+	glCullFace(GL_BACK);
 
-	////Gen VBO for triangle
-	//glGenBuffers(1, &VBO_Tri);
-	////copy our vertices array in a buffer for OpenGL to use
-	//EquiTriangle(pos, size, ang);
+	//Set winding order of verticies (for front and back facing)
+	glFrontFace(GL_CCW);
 
-	////Set the vertex attributes pointers (How to interperet Vertex Data)
-	//glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)0);
-	//glEnableVertexAttribArray(0);
-	//glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
-	//glEnableVertexAttribArray(1);
+	//Enable Culling
+	glEnable(GL_CULL_FACE);
+	//glDisable(GL_CULL_FACE);
+
+	//Flip Images
+	stbi_set_flip_vertically_on_load(true);
+
+	//Load the image data
+	int ImageWidth;
+	int ImageHeight;
+	int ImageComponents;
+	unsigned char* ImageData = stbi_load("Resources/Textures/Rayman.jpg", &ImageWidth, &ImageHeight, &ImageComponents, 0);
+
+	//Gen and bind texture
+	glGenTextures(1, &Texture_Rayman);
+	glBindTexture(GL_TEXTURE_2D, Texture_Rayman);
+
+	//Check how many components in image (RGBA or RGB)
+	GLint LoadedComponents = ((ImageComponents == 4) ? GL_RGBA : GL_RGB);
+
+	//Populate the texture with the image data
+	glTexImage2D(GL_TEXTURE_2D, 0, LoadedComponents, ImageWidth, ImageHeight, 0, LoadedComponents, GL_UNSIGNED_BYTE, ImageData);
+
+	//Generating the mipmaps, free the memory and unbind the texture
+	glGenerateMipmap(GL_TEXTURE_2D);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+
+	stbi_image_free(ImageData);
+	glBindTexture(GL_TEXTURE_2D, 0);
 
 
 	//Gen VAO for quad
 	glGenVertexArrays(1, &VAO_Quad);
 	glBindVertexArray(VAO_Quad);
 
+	//Gen EBO for quad
+	glGenBuffers(1, &EBO_Quad);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO_Quad);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(Indices_Quad), Indices_Quad, GL_STATIC_DRAW);
+
 	//Gen VBO for quad
 	glGenBuffers(1, &VBO_Quad);
 	//copy our vertices array in a buffer for OpenGL to use
 	glBindBuffer(GL_ARRAY_BUFFER, VBO_Quad);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(Vert_Quad), Vert_Quad, GL_DYNAMIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(Vert_Quad), Vert_Quad, GL_STATIC_DRAW);
 
 	//Set the vertex attributes pointers (How to interperet Vertex Data)
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)0);
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
 	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(6 * sizeof(GLfloat)));
+	glEnableVertexAttribArray(2);
 }
 
 //Called each frame
@@ -233,25 +274,33 @@ void Render()
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	//
-	glUseProgram(Program_ColorFadeTri);
+	/*glUseProgram(Program_ColorFadeTri);
 	glBindVertexArray(VAO_Quad);
 
 	GLint CurrentTimeLoc = glGetUniformLocation(Program_ColorFadeTri, "CurrentTime");
-	glUniform1f(CurrentTimeLoc, CurrentTime);
+	glUniform1f(CurrentTimeLoc, CurrentTime);*/
 
-	glDrawArrays(GL_QUADS, 0, 4);
+	glUseProgram(Program_Texture);
+	glBindVertexArray(VAO_Quad);
+
+	//Activate and bind texture
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, Texture_Rayman);
+	glUniform1i(glGetUniformLocation(Program_Texture, "ImageTexture"), 0);
+
+	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+	glBindVertexArray(0);
+	glUseProgram(0);
 
 	/*glUseProgram(Program_ColorFadeTri);
 	glBindVertexArray(VAO_Quad);
 
 	glDrawArrays(GL_TRIANGLES, 0, 6);
+	*/
 
-	glBindVertexArray(0);
-	glUseProgram(0);*/
-
-	
 	//EquiTriangle(vector3{pos.x + 1, pos.y + 1, pos.z}, size, ang);
-
+	
 	glfwSwapBuffers(window);
 }
 
