@@ -51,7 +51,10 @@
     <None Include="NDC_Texture.vs">
       <Filter>Resource Files\Shaders</Filter>
     </None>
-    <None Include="Texture.fs">
+    <None Include="Resources\Shaders\Texture.fs">
+      <Filter>Resource Files\Shaders</Filter>
+    </None>
+    <None Include="Resources\Shaders\TextureMix.fs">
       <Filter>Resource Files\Shaders</Filter>
     </None>
   </ItemGroup>

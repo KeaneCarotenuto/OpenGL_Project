@@ -1,11 +1,16 @@
 #include <glew.h>
 #include <glfw3.h>
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
+#include <glm.hpp>
+#include <gtc/matrix_transform.hpp>
+#include <gtc/type_ptr.hpp>
+
 #include <iostream>
 #include <Windows.h>
 #define _USE_MATH_DEFINES
 #include <math.h>
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
+
 #include "Source.h"
 #include "ShaderLoader.h"
 
@@ -17,6 +22,8 @@ struct vector3 {
 
 bool Startup();
 void InitialSetup();
+
+void GenTexture(GLuint& texture, const char* texPath);
 
 void Update();
 void CheckInput();
@@ -33,6 +40,7 @@ const int height = 800;
 //GLuint Program_Tri;
 GLuint Program_ColorFadeTri;
 GLuint Program_Texture;
+GLuint Program_TextureMix;
 
 GLuint VBO_Tri;
 GLuint VAO_Tri;
@@ -60,12 +68,12 @@ GLuint EBO_Quad;
 
 GLfloat Vert_Hex[] = {
 	//Pos					//Col					//Texture Coords
-	-0.5f, 1.0f, 0.0f,		1.0f, 0.0f, 0.0f,		0.0f, 1.0f,		//Top - Left
+	-0.5f, 1.0f, 0.0f,		1.0f, 0.0f, 0.0f,		0.25f, 1.0f,		//Top - Left
 	-1.0f, 0.0f, 0.0f,		0.0f, 1.0f, 0.0f,		0.0f, 0.5f,		//Mid - Left
-	-0.5f, -1.0f, 0.0f,		0.0f, 0.0f, 1.0f,		0.0f, 0.0f,		//Bot - Left
-	0.5f, -1.0f, 0.0f,		0.0f, 1.0f, 0.0f,		1.0f, 0.0f,		//Bot - Right
+	-0.5f, -1.0f, 0.0f,		0.0f, 0.0f, 1.0f,		0.25f, 0.0f,		//Bot - Left
+	0.5f, -1.0f, 0.0f,		0.0f, 1.0f, 0.0f,		0.75f, 0.0f,		//Bot - Right
 	1.0f, 0.0f, 0.0f,		1.0f, 0.0f, 0.0f,		1.0f, 0.5f,		//Mid - Right
-	0.5f, 1.0f, 0.0f,		0.0f, 1.0f, 0.0f,		1.0f, 1.0f,		//Top - Right
+	0.5f, 1.0f, 0.0f,		0.0f, 1.0f, 0.0f,		0.75f, 1.0f,		//Top - Right
 };
 
 GLuint Indices_Hex[] = {
@@ -80,6 +88,7 @@ GLuint VAO_Hex;
 GLuint EBO_Hex;
 
 GLuint Texture_Rayman;
+GLuint Texture_Awesome;
 
 float CurrentTime;
 
@@ -151,7 +160,7 @@ bool Startup()
 void InitialSetup()
 {
 	//Set the clear colour as blue (used by glClear)
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
 
 	// Maps the range of the window size to NDC (-1 -> 1)
 	glViewport(0, 0, width, height);
@@ -160,6 +169,7 @@ void InitialSetup()
 	//GLuint test_ProgramTri = ShaderLoader::CreateProgram("Resources/Shaders/Triangle.vs", "Resources/Shaders/Color.fs");
 	Program_ColorFadeTri = ShaderLoader::CreateProgram("Resources/Shaders/Triangle.vs", "Resources/Shaders/VertexColorFade.fs");
 	Program_Texture = ShaderLoader::CreateProgram("Resources/Shaders/NDC_Texture.vs", "Resources/Shaders/Texture.fs");
+	Program_TextureMix = ShaderLoader::CreateProgram("Resources/Shaders/NDC_Texture.vs", "Resources/Shaders/TextureMix.fs");
 
 	glfwSetKeyCallback(window, key_callback);
 
@@ -176,29 +186,28 @@ void InitialSetup()
 	//Flip Images
 	stbi_set_flip_vertically_on_load(true);
 
-	//Load the image data
-	int ImageWidth;
-	int ImageHeight;
-	int ImageComponents;
-	unsigned char* ImageData = stbi_load("Resources/Textures/Rayman.jpg", &ImageWidth, &ImageHeight, &ImageComponents, 0);
+	GenTexture(Texture_Rayman, "Resources/Textures/Rayman.jpg");
+	GenTexture(Texture_Awesome, "Resources/Textures/AwesomeFace.png");
 
-	//Gen and bind texture
-	glGenTextures(1, &Texture_Rayman);
-	glBindTexture(GL_TEXTURE_2D, Texture_Rayman);
+	//ImageData = stbi_load("Resources/Textures/AwesomeFace.png", &ImageWidth, &ImageHeight, &ImageComponents, 0);
 
-	//Check how many components in image (RGBA or RGB)
-	GLint LoadedComponents = ((ImageComponents == 4) ? GL_RGBA : GL_RGB);
+	////Gen and bind texture
+	//glGenTextures(1, &Texture_Awesome);
+	//glBindTexture(GL_TEXTURE_2D, Texture_Awesome);
 
-	//Populate the texture with the image data
-	glTexImage2D(GL_TEXTURE_2D, 0, LoadedComponents, ImageWidth, ImageHeight, 0, LoadedComponents, GL_UNSIGNED_BYTE, ImageData);
+	////Check how many components in image (RGBA or RGB)
+	//LoadedComponents = ((ImageComponents == 4) ? GL_RGBA : GL_RGB);
 
-	//Generating the mipmaps, free the memory and unbind the texture
-	glGenerateMipmap(GL_TEXTURE_2D);
+	////Populate the texture with the image data
+	//glTexImage2D(GL_TEXTURE_2D, 0, LoadedComponents, ImageWidth, ImageHeight, 0, LoadedComponents, GL_UNSIGNED_BYTE, ImageData);
 
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	////Generating the mipmaps, free the memory and unbind the texture
+	//glGenerateMipmap(GL_TEXTURE_2D);
 
-	stbi_image_free(ImageData);
-	glBindTexture(GL_TEXTURE_2D, 0);
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+
+	//stbi_image_free(ImageData);
+	//glBindTexture(GL_TEXTURE_2D, 0);
 
 
 	//Gen VAO for Hex
@@ -223,6 +232,32 @@ void InitialSetup()
 	glEnableVertexAttribArray(1);
 	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(6 * sizeof(GLfloat)));
 	glEnableVertexAttribArray(2);
+}
+
+void GenTexture(GLuint& texture, const char* texPath)
+{
+	//Load the image data
+	int ImageWidth;
+	int ImageHeight;
+	int ImageComponents;
+	unsigned char* ImageData = stbi_load(texPath, &ImageWidth, &ImageHeight, &ImageComponents, 0);
+	//Gen and bind texture
+	glGenTextures(1, &texture);
+	glBindTexture(GL_TEXTURE_2D, texture);
+
+	//Check how many components in image (RGBA or RGB)
+	GLint LoadedComponents = ((ImageComponents == 4) ? GL_RGBA : GL_RGB);
+
+	//Populate the texture with the image data
+	glTexImage2D(GL_TEXTURE_2D, 0, LoadedComponents, ImageWidth, ImageHeight, 0, LoadedComponents, GL_UNSIGNED_BYTE, ImageData);
+
+	//Generating the mipmaps, free the memory and unbind the texture
+	glGenerateMipmap(GL_TEXTURE_2D);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+
+	stbi_image_free(ImageData);
+	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 //Called each frame
@@ -294,31 +329,25 @@ void Render()
 	//Clear Screen
 	glClear(GL_COLOR_BUFFER_BIT);
 
-	//
-	/*glUseProgram(Program_ColorFadeTri);
-	glBindVertexArray(VAO_Hex);
-
-	GLint CurrentTimeLoc = glGetUniformLocation(Program_ColorFadeTri, "CurrentTime");
-	glUniform1f(CurrentTimeLoc, CurrentTime);*/
-
-	glUseProgram(Program_Texture);
+	//Use Texture Program - Bind VAO
+	glUseProgram(Program_TextureMix);
 	glBindVertexArray(VAO_Hex);
 
 	//Activate and bind texture
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, Texture_Rayman);
-	glUniform1i(glGetUniformLocation(Program_Texture, "ImageTexture"), 0);
+	glUniform1i(glGetUniformLocation(Program_TextureMix, "ImageTexture"), 0);
 
+	//Activate and bind texture
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, Texture_Awesome);
+	glUniform1i(glGetUniformLocation(Program_TextureMix, "ImageTexture1"), 1);
+
+	//Draw Elements	//Type	//Vertices
 	glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, 0);
 
 	glBindVertexArray(0);
 	glUseProgram(0);
-
-	/*glUseProgram(Program_ColorFadeTri);
-	glBindVertexArray(VAO_Quad);
-
-	glDrawArrays(GL_TRIANGLES, 0, 6);
-	*/
 
 	//EquiTriangle(vector3{pos.x + 1, pos.y + 1, pos.z}, size, ang);
 	
