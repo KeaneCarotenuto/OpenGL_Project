@@ -343,6 +343,9 @@ void Render()
 	glBindTexture(GL_TEXTURE_2D, Texture_Awesome);
 	glUniform1i(glGetUniformLocation(Program_TextureMix, "ImageTexture1"), 1);
 
+	GLint CurrentTimeLoc = glGetUniformLocation(Program_TextureMix, "CurrentTime");
+	glUniform1f(CurrentTimeLoc, CurrentTime);
+
 	//Draw Elements	//Type	//Vertices
 	glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, 0);
 
