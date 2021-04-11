@@ -7,7 +7,8 @@ uniform sampler2D ImageTexture;
 
 out vec4 FinalColor;
 
+
 void main() 
 {
-	FinalColor = texture(ImageTexture, FragTexCoords);
+    FinalColor = texture(ImageTexture, FragTexCoords);
 }

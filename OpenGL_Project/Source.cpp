@@ -1,5 +1,6 @@
 #include <glew.h>
 #include <glfw3.h>
+
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
@@ -29,6 +30,7 @@ void InitialSetup();
 void GenTexture(GLuint& texture, const char* texPath);
 
 void Update();
+void UpdatePVM(CShape& _shape);
 void CheckInput();
 void Render();
 
@@ -46,6 +48,7 @@ GLuint Program_Texture;
 GLuint Program_TextureMix;
 GLuint Program_WorldSpace;
 GLuint Program_ClipSpace;
+GLuint Program_ClipSpaceColour;
 
 // Camera Variables 
 glm::vec3 CameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
@@ -79,42 +82,11 @@ GLuint VBO_Quad;
 GLuint VAO_Quad;
 GLuint EBO_Quad;
 
-////Local space
-//GLfloat Vert_Hex[] = {
-//	//Pos					//Col					//Texture Coords
-//	-0.5f, 1.0f, 0.0f,		1.0f, 0.0f, 0.0f,		0.25f, 1.0f,		//Top - Left
-//	-1.0f, 0.0f, 0.0f,		0.0f, 1.0f, 0.0f,		0.0f, 0.5f,		//Mid - Left
-//	-0.5f, -1.0f, 0.0f,		0.0f, 0.0f, 1.0f,		0.25f, 0.0f,		//Bot - Left
-//	0.5f, -1.0f, 0.0f,		0.0f, 1.0f, 0.0f,		0.75f, 0.0f,		//Bot - Right
-//	1.0f, 0.0f, 0.0f,		1.0f, 0.0f, 0.0f,		1.0f, 0.5f,		//Mid - Right
-//	0.5f, 1.0f, 0.0f,		0.0f, 1.0f, 0.0f,		0.75f, 1.0f,		//Top - Right
-//};
-//
-//glm::vec3 Position_Hex = glm::vec3(0.25f, 0.25f, 0.0f);
-//GLfloat Rotation_Hex = 90.0f;
-//glm::vec3 Scale_Hex = glm::vec3(0.5f, 0.5f, 1.0f);
-//bool useScreenScale = false;
-//glm::mat4 ModelMat;
-//glm::mat4 TranslationMat;
-//glm::mat4 RotationMat;
-//glm::mat4 ScaleMat;
-//glm::mat4 PVMMat;
-//
-//GLuint Indices_Hex[] = {
-//	0, 1, 2,
-//	0, 2, 5,
-//	5, 2, 4,
-//	4, 2, 3,
-//};
-//
-//GLuint VBO_Hex;
-//GLuint VAO_Hex;
-//GLuint EBO_Hex;
-
 GLuint Texture_Rayman;
 GLuint Texture_Awesome;
 
-CShape testHex;
+CShape g_Hexagon;
+CShape g_Rectangle;
 
 float CurrentTime;
 
@@ -126,28 +98,6 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 }
 
 int main() {
-
-	testHex.m_VertexArray.vertices = {
-			//Pos					//Col					//Texture Coords
-			-0.5f, 1.0f, 0.0f,		1.0f, 0.0f, 0.0f,		0.25f, 1.0f,		//Top - Left
-			-1.0f, 0.0f, 0.0f,		0.0f, 1.0f, 0.0f,		0.0f, 0.5f,		//Mid - Left
-			-0.5f, -1.0f, 0.0f,		0.0f, 0.0f, 1.0f,		0.25f, 0.0f,		//Bot - Left
-			0.5f, -1.0f, 0.0f,		0.0f, 1.0f, 0.0f,		0.75f, 0.0f,		//Bot - Right
-			1.0f, 0.0f, 0.0f,		1.0f, 0.0f, 0.0f,		1.0f, 0.5f,		//Mid - Right
-			0.5f, 1.0f, 0.0f,		0.0f, 1.0f, 0.0f,		0.75f, 1.0f,		//Top - Right
-	};
-
-	testHex.m_VertexArray.indices = {
-			0, 1, 2,
-			0, 2, 5,
-			5, 2, 4,
-			4, 2, 3,
-	};
-
-	testHex.m_position = glm::vec3(0.25f, 0.25f, 0.0f);
-	testHex.m_rotation = 90.0f;
-	testHex.m_scale = glm::vec3(0.5f, 0.5f, 1.0f);
-	testHex.m_useScreenScale = false;
 
 	//Setup for use of OpenGL
 	if (!Startup()) return -1;
@@ -214,13 +164,14 @@ void InitialSetup()
 	// Maps the range of the window size to NDC (-1 -> 1)
 	glViewport(0, 0, width, height);
 
-	//Program_Tri = ShaderLoader::CreateProgram("Resources/Shaders/Triangle.vs", "Resources/Shaders/Color.fs");
+	//Program_FixedColour = ShaderLoader::CreateProgram("Resources/Shaders/Triangle.vs", "Resources/Shaders/Color.fs");
 	//GLuint test_ProgramTri = ShaderLoader::CreateProgram("Resources/Shaders/Triangle.vs", "Resources/Shaders/Color.fs");
 	Program_ColorFadeTri = ShaderLoader::CreateProgram("Resources/Shaders/Triangle.vs", "Resources/Shaders/VertexColorFade.fs");
 	Program_Texture = ShaderLoader::CreateProgram("Resources/Shaders/NDC_Texture.vs", "Resources/Shaders/Texture.fs");
 	Program_TextureMix = ShaderLoader::CreateProgram("Resources/Shaders/NDC_Texture.vs", "Resources/Shaders/TextureMix.fs");
 	Program_WorldSpace = ShaderLoader::CreateProgram("Resources/Shaders/WorldSpace.vs", "Resources/Shaders/TextureMix.fs");
 	Program_ClipSpace = ShaderLoader::CreateProgram("Resources/Shaders/ClipSpace.vs", "Resources/Shaders/TextureMix.fs");
+	Program_ClipSpaceColour = ShaderLoader::CreateProgram("Resources/Shaders/ClipSpace.vs", "Resources/Shaders/VertexColorFade.fs");
 
 	glfwSetKeyCallback(window, key_callback);
 
@@ -240,51 +191,55 @@ void InitialSetup()
 	GenTexture(Texture_Rayman, "Resources/Textures/Rayman.jpg");
 	GenTexture(Texture_Awesome, "Resources/Textures/AwesomeFace.png");
 
-	//ImageData = stbi_load("Resources/Textures/AwesomeFace.png", &ImageWidth, &ImageHeight, &ImageComponents, 0);
+	g_Hexagon.m_VertexArray.vertices = {
+		//Pos					//Col					//Texture Coords
+		-0.5f, 1.0f, 0.0f,		1.0f, 0.0f, 0.0f,		0.25f, 1.0f,		//Top - Left
+		-1.0f, 0.0f, 0.0f,		0.0f, 1.0f, 0.0f,		0.0f, 0.5f,		//Mid - Left
+		-0.5f, -1.0f, 0.0f,		0.0f, 0.0f, 1.0f,		0.25f, 0.0f,		//Bot - Left
+		0.5f, -1.0f, 0.0f,		0.0f, 1.0f, 0.0f,		0.75f, 0.0f,		//Bot - Right
+		1.0f, 0.0f, 0.0f,		1.0f, 0.0f, 0.0f,		1.0f, 0.5f,		//Mid - Right
+		0.5f, 1.0f, 0.0f,		0.0f, 1.0f, 0.0f,		0.75f, 1.0f,		//Top - Right
+	};
 
-	////Gen and bind texture
-	//glGenTextures(1, &Texture_Awesome);
-	//glBindTexture(GL_TEXTURE_2D, Texture_Awesome);
+	g_Hexagon.m_VertexArray.indices = {
+		0, 1, 2,
+		0, 2, 5,
+		5, 2, 4,
+		4, 2, 3,
+	};
 
-	////Check how many components in image (RGBA or RGB)
-	//LoadedComponents = ((ImageComponents == 4) ? GL_RGBA : GL_RGB);
+	g_Hexagon.m_position = glm::vec3(0.25f, 0.25f, 0.0f);
+	g_Hexagon.m_rotation = 90.0f;
+	g_Hexagon.m_scale = glm::vec3(0.5f, 0.5f, 1.0f);
+	g_Hexagon.m_useScreenScale = false;
 
-	////Populate the texture with the image data
-	//glTexImage2D(GL_TEXTURE_2D, 0, LoadedComponents, ImageWidth, ImageHeight, 0, LoadedComponents, GL_UNSIGNED_BYTE, ImageData);
+	g_Hexagon.m_program = Program_ClipSpace;
 
-	////Generating the mipmaps, free the memory and unbind the texture
-	//glGenerateMipmap(GL_TEXTURE_2D);
-
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-
-	//stbi_image_free(ImageData);
-	//glBindTexture(GL_TEXTURE_2D, 0);
+	g_Hexagon.GenBindVerts();
 
 
-	//Gen VAO for Hex
-	glGenVertexArrays(1, &testHex.m_VAO);
-	glBindVertexArray(testHex.m_VAO);
 
-	//Gen EBO for Hex
-	glGenBuffers(1, &testHex.m_EBO);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, testHex.m_EBO);
-	int* ind = &testHex.m_VertexArray.indices[0];
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, testHex.m_VertexArray.indices.size() * sizeof(int), ind, GL_STATIC_DRAW);
+	g_Rectangle.m_VertexArray.vertices = {
+		//Pos					//Col					//Texture Coords
+		-0.5f, 0.5f, 0.0f,		0.0f, 1.0f, 0.0f,		0.0f, 1.0f,		//Top - Left
+		-0.5f, -0.5f, 0.0f,		0.0f, 0.0f, 1.0f,		0.0f, 0.0f,		//Bot - Left
+		0.5f, -0.5f, 0.0f,		0.0f, 0.0f, 1.0f,		1.0f, 0.0f,		//Bot - Right
+		0.5f, 0.5f, 0.0f,		1.0f, 0.0f, 0.0f,		1.0f, 1.0f,		//Top - Right
+	};
 
-	//Gen VBO for Hex
-	glGenBuffers(1, &testHex.m_VBO);
-	//copy our vertices array in a buffer for OpenGL to use
-	glBindBuffer(GL_ARRAY_BUFFER, testHex.m_VBO);
-	float* verts = &testHex.m_VertexArray.vertices[0];
-	glBufferData(GL_ARRAY_BUFFER, testHex.m_VertexArray.vertices.size() * sizeof(float), verts, GL_STATIC_DRAW);
+	g_Rectangle.m_VertexArray.indices = {
+		0, 1, 2,
+		0, 2, 3
+	};
 
-	//Set the vertex attributes pointers (How to interperet Vertex Data)
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)0);
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(6 * sizeof(GLfloat)));
-	glEnableVertexAttribArray(2);
+	g_Rectangle.m_position = glm::vec3(-0.25f, -0.25f, 0.0f);
+	g_Rectangle.m_rotation = 90.0f;
+	g_Rectangle.m_scale = glm::vec3(0.5f, 0.5f, 1.0f);
+	g_Rectangle.m_useScreenScale = false;
+
+	g_Rectangle.m_program = Program_ClipSpaceColour;
+
+	g_Rectangle.GenBindVerts();
 }
 
 void GenTexture(GLuint& texture, const char* texPath)
@@ -320,13 +275,22 @@ void Update()
 
 	//std::cout << CurrentTime << std::endl;
 
-	testHex.m_translationMat = glm::translate(glm::mat4(), testHex.m_position);
-	testHex.m_rotationMat = glm::rotate(glm::mat4(), glm::radians(testHex.m_rotation), glm::vec3(0.0f, 0.0f, 1.0f));
-	testHex.m_scaleMat = glm::scale(glm::mat4(), testHex.m_scale);
+	UpdatePVM(g_Hexagon);
 
-	glm::mat4 pixelScale = (testHex.m_useScreenScale ? glm::scale(glm::mat4(), glm::vec3(width / 2, height / 2, 1)) : glm::scale(glm::mat4(), glm::vec3(1, 1, 1)));
+	UpdatePVM(g_Rectangle);
 
-	testHex.m_modelMat = pixelScale * testHex.m_translationMat * testHex.m_rotationMat * testHex.m_scaleMat;
+	CheckInput();
+}
+
+void UpdatePVM(CShape &_shape)
+{
+	_shape.m_translationMat = glm::translate(glm::mat4(), _shape.m_position);
+	_shape.m_rotationMat = glm::rotate(glm::mat4(), glm::radians(_shape.m_rotation), glm::vec3(0.0f, 0.0f, 1.0f));
+	_shape.m_scaleMat = glm::scale(glm::mat4(), _shape.m_scale);
+
+	glm::mat4 pixelScale = (_shape.m_useScreenScale ? glm::scale(glm::mat4(), glm::vec3(width / 2, height / 2, 1)) : glm::scale(glm::mat4(), glm::vec3(1, 1, 1)));
+
+	_shape.m_modelMat = pixelScale * _shape.m_translationMat * _shape.m_rotationMat * _shape.m_scaleMat;
 
 	//Ortho project
 	/*float halfWindowWidth = (float)width / 2.0f;
@@ -338,11 +302,7 @@ void Update()
 
 	ViewMat = glm::lookAt(CameraPos, CameraPos + CameraLookDir, CameraUpDir);
 
-	testHex.m_PVMMat = ProjectionMat * ViewMat * testHex.m_modelMat;
-
-	
-
-	CheckInput();
+	_shape.m_PVMMat = ProjectionMat * ViewMat * _shape.m_modelMat;
 }
 
 void CheckInput()
@@ -408,26 +368,59 @@ void Render()
 
 	//Use Texture Program - Bind VAO
 	glUseProgram(Program_ClipSpace);
-	glBindVertexArray(testHex.m_VAO);
+	glBindVertexArray(g_Hexagon.m_VAO);
 
-	//Activate and bind texture
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, Texture_Rayman);
-	glUniform1i(glGetUniformLocation(Program_ClipSpace, "ImageTexture"), 0);
+	g_Hexagon.SendUniform(UniformType::Image, Texture_Rayman, "ImageTexture", 0);
 
-	//Activate and bind texture
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, Texture_Awesome);
-	glUniform1i(glGetUniformLocation(Program_ClipSpace, "ImageTexture1"), 1);
+	g_Hexagon.SendUniform(UniformType::Image, Texture_Awesome, "ImageTexture1", 1);
 
-	GLint CurrentTimeLoc = glGetUniformLocation(Program_ClipSpace, "CurrentTime");
-	glUniform1f(CurrentTimeLoc, CurrentTime);
-	
-	GLuint PVMMatLoc = glGetUniformLocation(Program_ClipSpace, "PVMMat");
-	glUniformMatrix4fv(PVMMatLoc, 1, GL_FALSE, glm::value_ptr(testHex.m_PVMMat));
+	g_Hexagon.SendUniform(UniformType::Float, CurrentTime, "CurrentTime");
+
+	g_Hexagon.SendUniform(UniformType::Mat4, g_Hexagon.m_PVMMat, "PVMMat");
 
 	//Draw Elements	//Type	//Vertices
 	glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, 0);
+
+	glBindVertexArray(0);
+	glUseProgram(0);
+
+
+
+	glm::vec3 tempPos = g_Hexagon.m_position;
+	g_Hexagon.m_position = glm::vec3(-1,1,0);
+	UpdatePVM(g_Hexagon);
+
+	glUseProgram(Program_ColorFadeTri);
+	glBindVertexArray(g_Hexagon.m_VAO);
+
+	g_Hexagon.SendUniform(UniformType::Image, Texture_Rayman, "ImageTexture", 0);
+
+	g_Hexagon.SendUniform(UniformType::Image, Texture_Awesome, "ImageTexture1", 1);
+
+	g_Hexagon.SendUniform(UniformType::Float, CurrentTime, "CurrentTime");
+
+	g_Hexagon.SendUniform(UniformType::Mat4, g_Hexagon.m_PVMMat, "PVMMat");
+
+	//Draw Elements	//Type	//Vertices
+	glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, 0);
+
+	glBindVertexArray(0);
+	glUseProgram(0);
+
+	g_Hexagon.m_position = tempPos;
+
+
+
+	//Use Texture Program - Bind VAO
+	glUseProgram(Program_ClipSpaceColour);
+	glBindVertexArray(g_Rectangle.m_VAO);
+
+	g_Rectangle.SendUniform(UniformType::Float, CurrentTime, "CurrentTime");
+
+	g_Rectangle.SendUniform(UniformType::Mat4, g_Rectangle.m_PVMMat, "PVMMat");
+
+	//Draw Elements	//Type	//Vertices
+	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
 	glBindVertexArray(0);
 	glUseProgram(0);

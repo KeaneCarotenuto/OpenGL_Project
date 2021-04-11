@@ -146,6 +146,7 @@
     <ClInclude Include="CVertexArray.h" />
     <ClInclude Include="ShaderLoader.h" />
     <ClInclude Include="Source.h" />
+    <ClInclude Include="Utility.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="Resources\Shaders\Color.fs" />
