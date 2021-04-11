@@ -19,6 +19,7 @@ enum class UniformType {
 class CShape
 {
 public:
+	CShape();
 
 	CVertexArray m_VertexArray;
 

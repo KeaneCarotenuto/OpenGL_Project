@@ -31,3 +31,7 @@ inline void CShape::SendUniform(UniformType _type, TValue _value, char* _name, i
 		break;
 	}
 }
+
+CShape::CShape()
+{
+}

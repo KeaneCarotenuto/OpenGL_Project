@@ -79,42 +79,42 @@ GLuint VBO_Quad;
 GLuint VAO_Quad;
 GLuint EBO_Quad;
 
-//Local space
-GLfloat Vert_Hex[] = {
-	//Pos					//Col					//Texture Coords
-	-0.5f, 1.0f, 0.0f,		1.0f, 0.0f, 0.0f,		0.25f, 1.0f,		//Top - Left
-	-1.0f, 0.0f, 0.0f,		0.0f, 1.0f, 0.0f,		0.0f, 0.5f,		//Mid - Left
-	-0.5f, -1.0f, 0.0f,		0.0f, 0.0f, 1.0f,		0.25f, 0.0f,		//Bot - Left
-	0.5f, -1.0f, 0.0f,		0.0f, 1.0f, 0.0f,		0.75f, 0.0f,		//Bot - Right
-	1.0f, 0.0f, 0.0f,		1.0f, 0.0f, 0.0f,		1.0f, 0.5f,		//Mid - Right
-	0.5f, 1.0f, 0.0f,		0.0f, 1.0f, 0.0f,		0.75f, 1.0f,		//Top - Right
-};
-
-glm::vec3 Position_Hex = glm::vec3(0.25f, 0.25f, 0.0f);
-GLfloat Rotation_Hex = 90.0f;
-glm::vec3 Scale_Hex = glm::vec3(0.5f, 0.5f, 1.0f);
-bool useScreenScale = false;
-glm::mat4 ModelMat;
-glm::mat4 TranslationMat;
-glm::mat4 RotationMat;
-glm::mat4 ScaleMat;
-glm::mat4 PVMMat;
-
-GLuint Indices_Hex[] = {
-	0, 1, 2,
-	0, 2, 5,
-	5, 2, 4,
-	4, 2, 3,
-};
-
-GLuint VBO_Hex;
-GLuint VAO_Hex;
-GLuint EBO_Hex;
+////Local space
+//GLfloat Vert_Hex[] = {
+//	//Pos					//Col					//Texture Coords
+//	-0.5f, 1.0f, 0.0f,		1.0f, 0.0f, 0.0f,		0.25f, 1.0f,		//Top - Left
+//	-1.0f, 0.0f, 0.0f,		0.0f, 1.0f, 0.0f,		0.0f, 0.5f,		//Mid - Left
+//	-0.5f, -1.0f, 0.0f,		0.0f, 0.0f, 1.0f,		0.25f, 0.0f,		//Bot - Left
+//	0.5f, -1.0f, 0.0f,		0.0f, 1.0f, 0.0f,		0.75f, 0.0f,		//Bot - Right
+//	1.0f, 0.0f, 0.0f,		1.0f, 0.0f, 0.0f,		1.0f, 0.5f,		//Mid - Right
+//	0.5f, 1.0f, 0.0f,		0.0f, 1.0f, 0.0f,		0.75f, 1.0f,		//Top - Right
+//};
+//
+//glm::vec3 Position_Hex = glm::vec3(0.25f, 0.25f, 0.0f);
+//GLfloat Rotation_Hex = 90.0f;
+//glm::vec3 Scale_Hex = glm::vec3(0.5f, 0.5f, 1.0f);
+//bool useScreenScale = false;
+//glm::mat4 ModelMat;
+//glm::mat4 TranslationMat;
+//glm::mat4 RotationMat;
+//glm::mat4 ScaleMat;
+//glm::mat4 PVMMat;
+//
+//GLuint Indices_Hex[] = {
+//	0, 1, 2,
+//	0, 2, 5,
+//	5, 2, 4,
+//	4, 2, 3,
+//};
+//
+//GLuint VBO_Hex;
+//GLuint VAO_Hex;
+//GLuint EBO_Hex;
 
 GLuint Texture_Rayman;
 GLuint Texture_Awesome;
 
-//CShape <float> testHex;
+CShape testHex;
 
 float CurrentTime;
 
@@ -126,6 +126,28 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 }
 
 int main() {
+
+	testHex.m_VertexArray.vertices = {
+			//Pos					//Col					//Texture Coords
+			-0.5f, 1.0f, 0.0f,		1.0f, 0.0f, 0.0f,		0.25f, 1.0f,		//Top - Left
+			-1.0f, 0.0f, 0.0f,		0.0f, 1.0f, 0.0f,		0.0f, 0.5f,		//Mid - Left
+			-0.5f, -1.0f, 0.0f,		0.0f, 0.0f, 1.0f,		0.25f, 0.0f,		//Bot - Left
+			0.5f, -1.0f, 0.0f,		0.0f, 1.0f, 0.0f,		0.75f, 0.0f,		//Bot - Right
+			1.0f, 0.0f, 0.0f,		1.0f, 0.0f, 0.0f,		1.0f, 0.5f,		//Mid - Right
+			0.5f, 1.0f, 0.0f,		0.0f, 1.0f, 0.0f,		0.75f, 1.0f,		//Top - Right
+	};
+
+	testHex.m_VertexArray.indices = {
+			0, 1, 2,
+			0, 2, 5,
+			5, 2, 4,
+			4, 2, 3,
+	};
+
+	testHex.m_position = glm::vec3(0.25f, 0.25f, 0.0f);
+	testHex.m_rotation = 90.0f;
+	testHex.m_scale = glm::vec3(0.5f, 0.5f, 1.0f);
+	testHex.m_useScreenScale = false;
 
 	//Setup for use of OpenGL
 	if (!Startup()) return -1;
@@ -240,19 +262,21 @@ void InitialSetup()
 
 
 	//Gen VAO for Hex
-	glGenVertexArrays(1, &VAO_Hex);
-	glBindVertexArray(VAO_Hex);
+	glGenVertexArrays(1, &testHex.m_VAO);
+	glBindVertexArray(testHex.m_VAO);
 
 	//Gen EBO for Hex
-	glGenBuffers(1, &EBO_Hex);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO_Hex);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(Indices_Hex), Indices_Hex, GL_STATIC_DRAW);
+	glGenBuffers(1, &testHex.m_EBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, testHex.m_EBO);
+	int* ind = &testHex.m_VertexArray.indices[0];
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, testHex.m_VertexArray.indices.size() * sizeof(int), ind, GL_STATIC_DRAW);
 
 	//Gen VBO for Hex
-	glGenBuffers(1, &VBO_Hex);
+	glGenBuffers(1, &testHex.m_VBO);
 	//copy our vertices array in a buffer for OpenGL to use
-	glBindBuffer(GL_ARRAY_BUFFER, VBO_Hex);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(Vert_Hex), Vert_Hex, GL_STATIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, testHex.m_VBO);
+	float* verts = &testHex.m_VertexArray.vertices[0];
+	glBufferData(GL_ARRAY_BUFFER, testHex.m_VertexArray.vertices.size() * sizeof(float), verts, GL_STATIC_DRAW);
 
 	//Set the vertex attributes pointers (How to interperet Vertex Data)
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)0);
@@ -296,13 +320,13 @@ void Update()
 
 	//std::cout << CurrentTime << std::endl;
 
-	TranslationMat = glm::translate(glm::mat4(), Position_Hex);
-	RotationMat = glm::rotate(glm::mat4(), glm::radians(Rotation_Hex), glm::vec3(0.0f, 0.0f, 1.0f));
-	ScaleMat = glm::scale(glm::mat4(), Scale_Hex);
+	testHex.m_translationMat = glm::translate(glm::mat4(), testHex.m_position);
+	testHex.m_rotationMat = glm::rotate(glm::mat4(), glm::radians(testHex.m_rotation), glm::vec3(0.0f, 0.0f, 1.0f));
+	testHex.m_scaleMat = glm::scale(glm::mat4(), testHex.m_scale);
 
-	glm::mat4 pixelScale = (useScreenScale ? glm::scale(glm::mat4(), glm::vec3(width / 2, height / 2, 1)) : glm::scale(glm::mat4(), glm::vec3(1, 1, 1)));
+	glm::mat4 pixelScale = (testHex.m_useScreenScale ? glm::scale(glm::mat4(), glm::vec3(width / 2, height / 2, 1)) : glm::scale(glm::mat4(), glm::vec3(1, 1, 1)));
 
-	ModelMat = pixelScale * TranslationMat * RotationMat * ScaleMat;
+	testHex.m_modelMat = pixelScale * testHex.m_translationMat * testHex.m_rotationMat * testHex.m_scaleMat;
 
 	//Ortho project
 	/*float halfWindowWidth = (float)width / 2.0f;
@@ -314,7 +338,7 @@ void Update()
 
 	ViewMat = glm::lookAt(CameraPos, CameraPos + CameraLookDir, CameraUpDir);
 
-	PVMMat = ProjectionMat * ViewMat * ModelMat;
+	testHex.m_PVMMat = ProjectionMat * ViewMat * testHex.m_modelMat;
 
 	
 
@@ -384,7 +408,7 @@ void Render()
 
 	//Use Texture Program - Bind VAO
 	glUseProgram(Program_ClipSpace);
-	glBindVertexArray(VAO_Hex);
+	glBindVertexArray(testHex.m_VAO);
 
 	//Activate and bind texture
 	glActiveTexture(GL_TEXTURE0);
@@ -400,7 +424,7 @@ void Render()
 	glUniform1f(CurrentTimeLoc, CurrentTime);
 	
 	GLuint PVMMatLoc = glGetUniformLocation(Program_ClipSpace, "PVMMat");
-	glUniformMatrix4fv(PVMMatLoc, 1, GL_FALSE, glm::value_ptr(PVMMat));
+	glUniformMatrix4fv(PVMMatLoc, 1, GL_FALSE, glm::value_ptr(testHex.m_PVMMat));
 
 	//Draw Elements	//Type	//Vertices
 	glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, 0);

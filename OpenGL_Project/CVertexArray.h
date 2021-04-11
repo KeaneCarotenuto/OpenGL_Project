@@ -6,8 +6,10 @@
 class CVertexArray
 {
 public:
-	std::vector<CVertex> vertices;
-	std::vector<int[3]> indices;
-	const int num;
+	CVertexArray();
+
+	std::vector<float> vertices;
+	std::vector<int> indices;
+	//const int num;
 };
 
