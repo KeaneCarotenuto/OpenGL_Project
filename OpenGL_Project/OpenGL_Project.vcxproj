@@ -132,10 +132,18 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="CShape.cpp" />
+    <ClCompile Include="CUniform.cpp" />
+    <ClCompile Include="CVertex.cpp" />
+    <ClCompile Include="CVertexArray.cpp" />
     <ClCompile Include="ShaderLoader.cpp" />
     <ClCompile Include="Source.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CShape.h" />
+    <ClInclude Include="CUniform.h" />
+    <ClInclude Include="CVertex.h" />
+    <ClInclude Include="CVertexArray.h" />
     <ClInclude Include="ShaderLoader.h" />
     <ClInclude Include="Source.h" />
   </ItemGroup>
@@ -145,10 +153,12 @@
     <Text Include="Resources\Shaders\VertexColorFade.fs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="NDC_Texture.vs" />
+    <None Include="Resources\Shaders\ClipSpace.vs" />
+    <None Include="Resources\Shaders\NDC_Texture.vs" />
     <None Include="Resources\Shaders\Quad.vs" />
     <None Include="Resources\Shaders\Texture.fs" />
     <None Include="Resources\Shaders\TextureMix.fs" />
+    <None Include="Resources\Shaders\WorldSpace.vs" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

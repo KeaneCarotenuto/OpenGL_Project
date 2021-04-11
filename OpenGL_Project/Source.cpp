@@ -2,6 +2,7 @@
 #include <glfw3.h>
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
+
 #include <glm.hpp>
 #include <gtc/matrix_transform.hpp>
 #include <gtc/type_ptr.hpp>
@@ -13,6 +14,8 @@
 
 #include "Source.h"
 #include "ShaderLoader.h"
+
+#include "CShape.h"
 
 struct vector3 {
 	float x;
@@ -41,6 +44,16 @@ const int height = 800;
 GLuint Program_ColorFadeTri;
 GLuint Program_Texture;
 GLuint Program_TextureMix;
+GLuint Program_WorldSpace;
+GLuint Program_ClipSpace;
+
+// Camera Variables 
+glm::vec3 CameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
+glm::vec3 CameraLookDir = glm::vec3(0.0f, 0.0f, -1.0f); 
+glm::vec3 CameraTargetPos = glm::vec3(0.0f, 0.0f, 0.0f); 
+glm::vec3 CameraUpDir = glm::vec3(0.0f, 1.0f, 0.0f); 
+glm::mat4 ViewMat; 
+glm::mat4 ProjectionMat;
 
 GLuint VBO_Tri;
 GLuint VAO_Tri;
@@ -66,6 +79,7 @@ GLuint VBO_Quad;
 GLuint VAO_Quad;
 GLuint EBO_Quad;
 
+//Local space
 GLfloat Vert_Hex[] = {
 	//Pos					//Col					//Texture Coords
 	-0.5f, 1.0f, 0.0f,		1.0f, 0.0f, 0.0f,		0.25f, 1.0f,		//Top - Left
@@ -75,6 +89,16 @@ GLfloat Vert_Hex[] = {
 	1.0f, 0.0f, 0.0f,		1.0f, 0.0f, 0.0f,		1.0f, 0.5f,		//Mid - Right
 	0.5f, 1.0f, 0.0f,		0.0f, 1.0f, 0.0f,		0.75f, 1.0f,		//Top - Right
 };
+
+glm::vec3 Position_Hex = glm::vec3(0.25f, 0.25f, 0.0f);
+GLfloat Rotation_Hex = 90.0f;
+glm::vec3 Scale_Hex = glm::vec3(0.5f, 0.5f, 1.0f);
+bool useScreenScale = false;
+glm::mat4 ModelMat;
+glm::mat4 TranslationMat;
+glm::mat4 RotationMat;
+glm::mat4 ScaleMat;
+glm::mat4 PVMMat;
 
 GLuint Indices_Hex[] = {
 	0, 1, 2,
@@ -90,12 +114,15 @@ GLuint EBO_Hex;
 GLuint Texture_Rayman;
 GLuint Texture_Awesome;
 
+//CShape <float> testHex;
+
 float CurrentTime;
 
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
 		glfwSetWindowShouldClose(window, GL_TRUE);
+	}
 }
 
 int main() {
@@ -170,6 +197,8 @@ void InitialSetup()
 	Program_ColorFadeTri = ShaderLoader::CreateProgram("Resources/Shaders/Triangle.vs", "Resources/Shaders/VertexColorFade.fs");
 	Program_Texture = ShaderLoader::CreateProgram("Resources/Shaders/NDC_Texture.vs", "Resources/Shaders/Texture.fs");
 	Program_TextureMix = ShaderLoader::CreateProgram("Resources/Shaders/NDC_Texture.vs", "Resources/Shaders/TextureMix.fs");
+	Program_WorldSpace = ShaderLoader::CreateProgram("Resources/Shaders/WorldSpace.vs", "Resources/Shaders/TextureMix.fs");
+	Program_ClipSpace = ShaderLoader::CreateProgram("Resources/Shaders/ClipSpace.vs", "Resources/Shaders/TextureMix.fs");
 
 	glfwSetKeyCallback(window, key_callback);
 
@@ -265,6 +294,30 @@ void Update()
 {
 	CurrentTime = (float)glfwGetTime();
 
+	//std::cout << CurrentTime << std::endl;
+
+	TranslationMat = glm::translate(glm::mat4(), Position_Hex);
+	RotationMat = glm::rotate(glm::mat4(), glm::radians(Rotation_Hex), glm::vec3(0.0f, 0.0f, 1.0f));
+	ScaleMat = glm::scale(glm::mat4(), Scale_Hex);
+
+	glm::mat4 pixelScale = (useScreenScale ? glm::scale(glm::mat4(), glm::vec3(width / 2, height / 2, 1)) : glm::scale(glm::mat4(), glm::vec3(1, 1, 1)));
+
+	ModelMat = pixelScale * TranslationMat * RotationMat * ScaleMat;
+
+	//Ortho project
+	/*float halfWindowWidth = (float)width / 2.0f;
+	float halfWindowHeight = (float)height / 2.0f;
+	ProjectionMat = glm::ortho(-halfWindowWidth, halfWindowWidth, -halfWindowHeight, halfWindowHeight, 0.1f, 100.0f);*/
+
+	//Perspective project
+	ProjectionMat = glm::perspective(glm::radians(45.0f), (float)width / (float)height, 0.1f, 100.0f);
+
+	ViewMat = glm::lookAt(CameraPos, CameraPos + CameraLookDir, CameraUpDir);
+
+	PVMMat = ProjectionMat * ViewMat * ModelMat;
+
+	
+
 	CheckInput();
 }
 
@@ -330,21 +383,24 @@ void Render()
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	//Use Texture Program - Bind VAO
-	glUseProgram(Program_TextureMix);
+	glUseProgram(Program_ClipSpace);
 	glBindVertexArray(VAO_Hex);
 
 	//Activate and bind texture
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, Texture_Rayman);
-	glUniform1i(glGetUniformLocation(Program_TextureMix, "ImageTexture"), 0);
+	glUniform1i(glGetUniformLocation(Program_ClipSpace, "ImageTexture"), 0);
 
 	//Activate and bind texture
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, Texture_Awesome);
-	glUniform1i(glGetUniformLocation(Program_TextureMix, "ImageTexture1"), 1);
+	glUniform1i(glGetUniformLocation(Program_ClipSpace, "ImageTexture1"), 1);
 
-	GLint CurrentTimeLoc = glGetUniformLocation(Program_TextureMix, "CurrentTime");
+	GLint CurrentTimeLoc = glGetUniformLocation(Program_ClipSpace, "CurrentTime");
 	glUniform1f(CurrentTimeLoc, CurrentTime);
+	
+	GLuint PVMMatLoc = glGetUniformLocation(Program_ClipSpace, "PVMMat");
+	glUniformMatrix4fv(PVMMatLoc, 1, GL_FALSE, glm::value_ptr(PVMMat));
 
 	//Draw Elements	//Type	//Vertices
 	glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, 0);
