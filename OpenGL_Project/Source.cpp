@@ -211,7 +211,7 @@ void InitialSetup()
 	g_Hexagon.m_position = glm::vec3(0.25f, 0.25f, 0.0f);
 	g_Hexagon.m_rotation = 90.0f;
 	g_Hexagon.m_scale = glm::vec3(0.5f, 0.5f, 1.0f);
-	g_Hexagon.m_useScreenScale = false;
+	g_Hexagon.m_useScreenScale = true;
 
 	g_Hexagon.m_program = Program_ClipSpace;
 
@@ -238,7 +238,7 @@ void InitialSetup()
 	g_Rectangle.m_position = glm::vec3(-0.25f, -0.25f, 0.0f);
 	g_Rectangle.m_rotation = 90.0f;
 	g_Rectangle.m_scale = glm::vec3(0.5f, 0.5f, 1.0f);
-	g_Rectangle.m_useScreenScale = false;
+	g_Rectangle.m_useScreenScale = true;
 
 	g_Rectangle.m_program = Program_ClipSpaceColour;
 
@@ -305,12 +305,12 @@ void UpdatePVM(CShape &_shape)
 	_shape.m_modelMat = pixelScale * _shape.m_translationMat * _shape.m_rotationMat * _shape.m_scaleMat;
 
 	//Ortho project
-	/*float halfWindowWidth = (float)width / 2.0f;
+	float halfWindowWidth = (float)width / 2.0f;
 	float halfWindowHeight = (float)height / 2.0f;
-	ProjectionMat = glm::ortho(-halfWindowWidth, halfWindowWidth, -halfWindowHeight, halfWindowHeight, 0.1f, 100.0f);*/
+	ProjectionMat = glm::ortho(-halfWindowWidth, halfWindowWidth, -halfWindowHeight, halfWindowHeight, 0.1f, 100.0f);
 
 	//Perspective project
-	ProjectionMat = glm::perspective(glm::radians(45.0f), (float)width / (float)height, 0.1f, 100.0f);
+	//ProjectionMat = glm::perspective(glm::radians(45.0f), (float)width / (float)height, 0.1f, 100.0f);
 
 	ViewMat = glm::lookAt(CameraPos, CameraPos + CameraLookDir, CameraUpDir);
 
