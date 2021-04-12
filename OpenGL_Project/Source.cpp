@@ -217,7 +217,10 @@ void InitialSetup()
 
 	g_Hexagon.GenBindVerts();
 
-
+	g_Hexagon.AddUniform(new ImageUniform(Texture_Rayman), "ImageTexture");
+	g_Hexagon.AddUniform(new ImageUniform(Texture_Awesome), "ImageTexture1");
+	g_Hexagon.AddUniform(new FloatUniform(CurrentTime), "CurrentTime");
+	g_Hexagon.AddUniform(new Mat4Uniform(g_Hexagon.m_PVMMat), "PVMMat");
 
 	g_Rectangle.m_VertexArray.vertices = {
 		//Pos					//Col					//Texture Coords
@@ -240,6 +243,9 @@ void InitialSetup()
 	g_Rectangle.m_program = Program_ClipSpaceColour;
 
 	g_Rectangle.GenBindVerts();
+
+	g_Rectangle.AddUniform(new FloatUniform(CurrentTime), "CurrentTime");
+	g_Rectangle.AddUniform(new Mat4Uniform(g_Rectangle.m_PVMMat), "PVMMat");
 }
 
 void GenTexture(GLuint& texture, const char* texPath)
@@ -278,6 +284,12 @@ void Update()
 	UpdatePVM(g_Hexagon);
 
 	UpdatePVM(g_Rectangle);
+
+	g_Hexagon.UpdateUniform(new Mat4Uniform(g_Hexagon.m_PVMMat), "PVMMat");
+	g_Hexagon.UpdateUniform(new FloatUniform(CurrentTime), "CurrentTime");
+
+	g_Rectangle.UpdateUniform(new FloatUniform(CurrentTime), "CurrentTime");
+	g_Rectangle.UpdateUniform(new Mat4Uniform(g_Rectangle.m_PVMMat), "PVMMat");
 
 	CheckInput();
 }
@@ -366,66 +378,9 @@ void Render()
 	//Clear Screen
 	glClear(GL_COLOR_BUFFER_BIT);
 
-	//Use Texture Program - Bind VAO
-	glUseProgram(Program_ClipSpace);
-	glBindVertexArray(g_Hexagon.m_VAO);
+	g_Hexagon.Render();
 
-	g_Hexagon.SendUniform(UniformType::Image, Texture_Rayman, "ImageTexture", 0);
-
-	g_Hexagon.SendUniform(UniformType::Image, Texture_Awesome, "ImageTexture1", 1);
-
-	g_Hexagon.SendUniform(UniformType::Float, CurrentTime, "CurrentTime");
-
-	g_Hexagon.SendUniform(UniformType::Mat4, g_Hexagon.m_PVMMat, "PVMMat");
-
-	//Draw Elements	//Type	//Vertices
-	glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, 0);
-
-	glBindVertexArray(0);
-	glUseProgram(0);
-
-
-
-	glm::vec3 tempPos = g_Hexagon.m_position;
-	g_Hexagon.m_position = glm::vec3(-1,1,0);
-	UpdatePVM(g_Hexagon);
-
-	glUseProgram(Program_ColorFadeTri);
-	glBindVertexArray(g_Hexagon.m_VAO);
-
-	g_Hexagon.SendUniform(UniformType::Image, Texture_Rayman, "ImageTexture", 0);
-
-	g_Hexagon.SendUniform(UniformType::Image, Texture_Awesome, "ImageTexture1", 1);
-
-	g_Hexagon.SendUniform(UniformType::Float, CurrentTime, "CurrentTime");
-
-	g_Hexagon.SendUniform(UniformType::Mat4, g_Hexagon.m_PVMMat, "PVMMat");
-
-	//Draw Elements	//Type	//Vertices
-	glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, 0);
-
-	glBindVertexArray(0);
-	glUseProgram(0);
-
-	g_Hexagon.m_position = tempPos;
-
-
-
-	//Use Texture Program - Bind VAO
-	glUseProgram(Program_ClipSpaceColour);
-	glBindVertexArray(g_Rectangle.m_VAO);
-
-	g_Rectangle.SendUniform(UniformType::Float, CurrentTime, "CurrentTime");
-
-	g_Rectangle.SendUniform(UniformType::Mat4, g_Rectangle.m_PVMMat, "PVMMat");
-
-	//Draw Elements	//Type	//Vertices
-	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
-	glBindVertexArray(0);
-	glUseProgram(0);
-
-	//EquiTriangle(vector3{pos.x + 1, pos.y + 1, pos.z}, size, ang);
+	g_Rectangle.Render();
 	
 	glfwSwapBuffers(window);
 }

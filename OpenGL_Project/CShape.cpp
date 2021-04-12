@@ -8,65 +8,102 @@ CShape::CShape()
 }
 
 
-void CShape::SendUniform(UniformType _type, float _value, std::string _name) {
-	if (_type != UniformType::Float) {
-		std::cout << "Got Float, expected type: " << std::to_string((int)_type) << ". See CShape.h for types..." << std::endl;
-	}
+//void CShape::SendUniform(UniformType _type, float _value, std::string _name) {
+//	if (_type != UniformType::Float) {
+//		std::cout << "Got Float, expected type: " << std::to_string((int)_type) << ". See CShape.h for types..." << std::endl;
+//	}
+//
+//	const char* val = _name.c_str();
+//
+//	GLint FloatLoc = glGetUniformLocation(m_program, val);
+//	glUniform1f(FloatLoc, (float)_value);
+//}
+//
+//void CShape::SendUniform(UniformType _type, GLuint _value, std::string _name, int imageNum)
+//{
+//	const char* val = _name.c_str();
+//
+//	switch (_type)
+//	{
+//	case UniformType::Int: {
+//		GLint FloatLoc = glGetUniformLocation(m_program, val);
+//		glUniform1i(FloatLoc, (int)_value);
+//	}
+//						 break;
+//
+//	case UniformType::Image: {
+//		//Activate and bind texture
+//		glActiveTexture(33984 + imageNum);
+//		glBindTexture(GL_TEXTURE_2D, (GLuint)_value);
+//		glUniform1i(glGetUniformLocation(m_program, val), imageNum);
+//	}
+//						   break;
+//
+//	default: {
+//		std::cout << "Got GLuint, expected type: " << std::to_string((int)_type) << ". See CShape.h for types..." << std::endl;
+//	}
+//		   break;
+//	}
+//}
+//
+//
+//void CShape::SendUniform(UniformType _type, glm::mat4 _value, std::string _name) {
+//	if (_type != UniformType::Mat4) {
+//		std::cout << "Got Mat4, expected type: " << std::to_string((int)_type) << ". See CShape.h for types..." << std::endl;
+//	}
+//
+//	const char* val = _name.c_str();
+//
+//	GLuint Mat4Loc = glGetUniformLocation(m_program, val);
+//	glUniformMatrix4fv(Mat4Loc, 1, GL_FALSE, glm::value_ptr((glm::mat4)_value));
+//}
+//
+//void CShape::SendUniform(UniformType _type, glm::vec3 _value, std::string _name) {
+//	if (_type != UniformType::Mat4) {
+//		std::cout << "Got Vec3, expected type: " << std::to_string((int)_type) << ". See CShape.h for types..." << std::endl;
+//	}
+//
+//	const char* val = _name.c_str();
+//
+//	//GLint FloatLoc = glGetUniformLocation(m_program, val);
+//	//glUniform3fv(FloatLoc, (glm::vec3)_value);
+//}
 
-	const char* val = _name.c_str();
-
-	GLint FloatLoc = glGetUniformLocation(m_program, val);
-	glUniform1f(FloatLoc, (float)_value);
-}
-
-void CShape::SendUniform(UniformType _type, GLuint _value, std::string _name, int imageNum)
+void CShape::AddUniform(CUniform* _uniform, std::string _name)
 {
 	const char* val = _name.c_str();
+	_uniform->location = glGetUniformLocation(m_program, val);
 
-	switch (_type)
-	{
-	case UniformType::Int: {
-		GLint FloatLoc = glGetUniformLocation(m_program, val);
-		glUniform1i(FloatLoc, (int)_value);
-	}
-						 break;
+	m_uniforms.push_back(_uniform);
+}
 
-	case UniformType::Image: {
-		//Activate and bind texture
-		glActiveTexture(33984 + imageNum);
-		glBindTexture(GL_TEXTURE_2D, (GLuint)_value);
-		glUniform1i(glGetUniformLocation(m_program, val), imageNum);
-	}
-						   break;
-
-	default: {
-		std::cout << "Got GLuint, expected type: " << std::to_string((int)_type) << ". See CShape.h for types..." << std::endl;
-	}
-		   break;
+void CShape::UpdateUniform(CUniform* _NewUniform, std::string _name)
+{
+	GLuint loc = glGetUniformLocation(m_program, _name.c_str());
+	_NewUniform->location = loc;
+	for (CUniform*& _uniform : m_uniforms) {
+		if (loc == _uniform->location) {
+			delete _uniform;
+			_uniform = _NewUniform;
+			return;
+		}
 	}
 }
 
+void CShape::Render()
+{
+	glUseProgram(m_program);
+	glBindVertexArray(m_VAO);
 
-void CShape::SendUniform(UniformType _type, glm::mat4 _value, std::string _name) {
-	if (_type != UniformType::Mat4) {
-		std::cout << "Got Mat4, expected type: " << std::to_string((int)_type) << ". See CShape.h for types..." << std::endl;
+	for (CUniform* _uniform : m_uniforms) {
+		_uniform->Send();
 	}
 
-	const char* val = _name.c_str();
+	//Draw Elements	//Type	//Vertices
+	glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, 0);
 
-	GLuint Mat4Loc = glGetUniformLocation(m_program, val);
-	glUniformMatrix4fv(Mat4Loc, 1, GL_FALSE, glm::value_ptr((glm::mat4)_value));
-}
-
-void CShape::SendUniform(UniformType _type, glm::vec3 _value, std::string _name) {
-	if (_type != UniformType::Mat4) {
-		std::cout << "Got Vec3, expected type: " << std::to_string((int)_type) << ". See CShape.h for types..." << std::endl;
-	}
-
-	const char* val = _name.c_str();
-
-	//GLint FloatLoc = glGetUniformLocation(m_program, val);
-	//glUniform3fv(FloatLoc, (glm::vec3)_value);
+	glBindVertexArray(0);
+	glUseProgram(0);
 }
 
 void CShape::GenBindVerts()
