@@ -4,13 +4,16 @@
 #include <glm.hpp>
 #include <gtc/type_ptr.hpp>
 
-struct CUniform
-{
+#include "CShape.h"
+
+class CUniform {
+public:
 	GLint location;
-	virtual void Send() = 0;
+	virtual void Send(CShape * _shape) = 0;
 };
 
-struct ImageUniform : CUniform {
+class ImageUniform : public CUniform { 
+public:
 	ImageUniform(GLuint _val):
 		value(_val)
 	{
@@ -18,28 +21,16 @@ struct ImageUniform : CUniform {
 	}
 
 	GLuint value = NULL;
-	void Send() {
+	void Send(CShape * _shape) {
 		//Activate and bind texture
-		glActiveTexture(33984 + value);
+		glActiveTexture(GL_TEXTURE0 + value);
 		glBindTexture(GL_TEXTURE_2D, value);
 		glUniform1i(location, value);
 	}
 };
 
-struct IntUniform : CUniform {
-	IntUniform(int _val) :
-		value(_val)
-	{
-
-	}
-
-	int value;
-	void Send() {
-		glUniform1i(location, value);
-	}
-};
-
-struct FloatUniform : CUniform {
+class FloatUniform : public CUniform {
+public:
 	FloatUniform(float _val) :
 		value(_val)
 	{
@@ -47,12 +38,74 @@ struct FloatUniform : CUniform {
 	}
 
 	float value;
-	void Send() {
+	void Send(CShape* _shape) {
 		glUniform1f(location, value);
 	}
 };
 
-struct Mat4Uniform : CUniform {
+class AnimationUniform : public CUniform { 
+public:
+	AnimationUniform(GLuint _val, int _count, float _speed, CShape* _shape) :
+		value(_val),
+		frameCount(_count),
+		speed(_speed)
+	{
+		for (int i = 6; i < _shape->m_VertexArray.vertices.size(); i += 8) {
+			_shape->m_VertexArray.vertices[i] /= frameCount;
+		}
+	}
+
+	GLuint value = NULL;
+	int frameCount = NULL;
+	float speed = NULL;
+	int currentFrame = 0;
+	void Send(CShape * _shape) {
+		//Activate and bind texture
+		glActiveTexture(33984 + value);
+		glBindTexture(GL_TEXTURE_2D, value);
+		glUniform1i(location, value);
+
+		float newVal = (float)currentFrame * (1.0f / frameCount);
+
+		_shape->UpdateUniform(new FloatUniform(newVal), "offset");
+
+		currentFrame++;
+
+		if (currentFrame >= frameCount) currentFrame = 0;
+
+		/*for (int i = 6; i < _shape->m_VertexArray.vertices.size(); i += 8) {
+			_shape->m_VertexArray.vertices[i] += 1/ frameCount;
+		}
+
+		bool reset = false;
+		for (int i = 6; i < _shape->m_VertexArray.vertices.size(); i += 8) {
+			if (_shape->m_VertexArray.vertices[i] > 1.0f) reset = true;
+		}
+
+		if (reset) {
+			for (int i = 6; i < _shape->m_VertexArray.vertices.size(); i += 8) {
+				_shape->m_VertexArray.vertices[i] -= 1;
+			}
+		}*/
+	}
+};
+
+class IntUniform : public CUniform { 
+public:
+	IntUniform(int _val) :
+		value(_val)
+	{
+
+	}
+
+	int value;
+	void Send(CShape * _shape) {
+		glUniform1i(location, value);
+	}
+};
+
+class Mat4Uniform : public CUniform { 
+public:
 	Mat4Uniform(glm::mat4 _val) :
 		value(_val)
 	{
@@ -60,12 +113,13 @@ struct Mat4Uniform : CUniform {
 	}
 
 	glm::mat4 value;
-	void Send() {
+	void Send(CShape * _shape) {
 		glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(value));
 	}
 };
 
-struct Vec3Uniform : CUniform {
+class Vec3Uniform : public CUniform { 
+public:
 	Vec3Uniform(glm::vec3 _val) :
 		value(_val)
 	{
@@ -73,7 +127,7 @@ struct Vec3Uniform : CUniform {
 	}
 
 	glm::vec3 value;
-	void Send() {
+	void Send(CShape * _shape) {
 		//glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(value));
 	}
 };

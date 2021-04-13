@@ -17,6 +17,7 @@
 #include "ShaderLoader.h"
 
 #include "CShape.h"
+#include "CUniform.h"
 
 struct vector3 {
 	float x;
@@ -84,6 +85,7 @@ GLuint EBO_Quad;
 
 GLuint Texture_Rayman;
 GLuint Texture_Awesome;
+GLuint Texture_NoCap;
 
 CShape g_Hexagon;
 CShape g_Rectangle;
@@ -167,7 +169,7 @@ void InitialSetup()
 	//Program_FixedColour = ShaderLoader::CreateProgram("Resources/Shaders/Triangle.vs", "Resources/Shaders/Color.fs");
 	//GLuint test_ProgramTri = ShaderLoader::CreateProgram("Resources/Shaders/Triangle.vs", "Resources/Shaders/Color.fs");
 	Program_ColorFadeTri = ShaderLoader::CreateProgram("Resources/Shaders/Triangle.vs", "Resources/Shaders/VertexColorFade.fs");
-	Program_Texture = ShaderLoader::CreateProgram("Resources/Shaders/NDC_Texture.vs", "Resources/Shaders/Texture.fs");
+	Program_Texture = ShaderLoader::CreateProgram("Resources/Shaders/ClipSpace.vs", "Resources/Shaders/Texture.fs");
 	Program_TextureMix = ShaderLoader::CreateProgram("Resources/Shaders/NDC_Texture.vs", "Resources/Shaders/TextureMix.fs");
 	Program_WorldSpace = ShaderLoader::CreateProgram("Resources/Shaders/WorldSpace.vs", "Resources/Shaders/TextureMix.fs");
 	Program_ClipSpace = ShaderLoader::CreateProgram("Resources/Shaders/ClipSpace.vs", "Resources/Shaders/TextureMix.fs");
@@ -190,6 +192,7 @@ void InitialSetup()
 
 	GenTexture(Texture_Rayman, "Resources/Textures/Rayman.jpg");
 	GenTexture(Texture_Awesome, "Resources/Textures/AwesomeFace.png");
+	GenTexture(Texture_NoCap, "Resources/Textures/Capguy_Walk.png");
 
 	g_Hexagon.m_VertexArray.vertices = {
 		//Pos					//Col					//Texture Coords
@@ -236,16 +239,18 @@ void InitialSetup()
 	};
 
 	g_Rectangle.m_position = glm::vec3(-0.25f, -0.25f, 0.0f);
-	g_Rectangle.m_rotation = 90.0f;
-	g_Rectangle.m_scale = glm::vec3(0.5f, 0.5f, 1.0f);
+	g_Rectangle.m_rotation = 0.0f;
+	g_Rectangle.m_scale = glm::vec3(0.5f, 1.0f, 1.0f);
 	g_Rectangle.m_useScreenScale = true;
 
-	g_Rectangle.m_program = Program_ClipSpaceColour;
+	g_Rectangle.m_program = Program_Texture;
 
-	g_Rectangle.GenBindVerts();
-
+	g_Rectangle.AddUniform(new AnimationUniform(Texture_NoCap, 8, 2.0f, &g_Rectangle), "ImageTexture");
+	g_Rectangle.AddUniform(new FloatUniform(0), "offset");
 	g_Rectangle.AddUniform(new FloatUniform(CurrentTime), "CurrentTime");
 	g_Rectangle.AddUniform(new Mat4Uniform(g_Rectangle.m_PVMMat), "PVMMat");
+
+	g_Rectangle.GenBindVerts();
 }
 
 void GenTexture(GLuint& texture, const char* texPath)
@@ -288,6 +293,7 @@ void Update()
 	g_Hexagon.UpdateUniform(new Mat4Uniform(g_Hexagon.m_PVMMat), "PVMMat");
 	g_Hexagon.UpdateUniform(new FloatUniform(CurrentTime), "CurrentTime");
 
+	g_Rectangle.UpdateUniform(new FloatUniform(CurrentTime), "offset");
 	g_Rectangle.UpdateUniform(new FloatUniform(CurrentTime), "CurrentTime");
 	g_Rectangle.UpdateUniform(new Mat4Uniform(g_Rectangle.m_PVMMat), "PVMMat");
 

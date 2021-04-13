@@ -8,7 +8,8 @@
 
 #include "CVertexArray.h"
 #include <map>
-#include "CUniform.h"
+
+class CUniform;
 
 //enum class UniformType {
 //	Int,
