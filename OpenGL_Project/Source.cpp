@@ -59,30 +59,6 @@ glm::vec3 CameraUpDir = glm::vec3(0.0f, 1.0f, 0.0f);
 glm::mat4 ViewMat; 
 glm::mat4 ProjectionMat;
 
-GLuint VBO_Tri;
-GLuint VAO_Tri;
-
-vector3 pos;
-float ang = 0;
-float size = 1.0f;
-
-GLfloat Vert_Quad[] = {
-	//Pos					//Col					//Texture Coords
-	-0.5f, 0.5f, 0.0f,		0.0f, 1.0f, 0.0f,		0.0f, 1.0f,		//Top - Left
-	-0.5f, -0.5f, 0.0f,		0.0f, 0.0f, 1.0f,		0.0f, 0.0f,		//Bot - Left
-	0.5f, -0.5f, 0.0f,		0.0f, 0.0f, 1.0f,		1.0f, 0.0f,		//Bot - Right
-	0.5f, 0.5f, 0.0f,		1.0f, 0.0f, 0.0f,		1.0f, 1.0f,		//Top - Right
-};
-
-GLuint Indices_Quad[] = {
-	0, 1, 2,
-	0, 2, 3
-};
-
-GLuint VBO_Quad;
-GLuint VAO_Quad;
-GLuint EBO_Quad;
-
 GLuint Texture_Rayman;
 GLuint Texture_Awesome;
 GLuint Texture_NoCap;
@@ -245,9 +221,8 @@ void InitialSetup()
 
 	g_Rectangle.m_program = Program_Texture;
 
-	g_Rectangle.AddUniform(new AnimationUniform(Texture_NoCap, 8, 2.0f, &g_Rectangle), "ImageTexture");
+	g_Rectangle.AddUniform(new AnimationUniform(Texture_NoCap, 8, 0.1f, &g_Rectangle), "ImageTexture");
 	g_Rectangle.AddUniform(new FloatUniform(0), "offset");
-	g_Rectangle.AddUniform(new FloatUniform(CurrentTime), "CurrentTime");
 	g_Rectangle.AddUniform(new Mat4Uniform(g_Rectangle.m_PVMMat), "PVMMat");
 
 	g_Rectangle.GenBindVerts();
@@ -283,6 +258,8 @@ void GenTexture(GLuint& texture, const char* texPath)
 void Update()
 {
 	CurrentTime = (float)glfwGetTime();
+	g_Hexagon.currentTime = CurrentTime;
+	g_Rectangle.currentTime = CurrentTime;
 
 	//std::cout << CurrentTime << std::endl;
 
@@ -291,10 +268,10 @@ void Update()
 	UpdatePVM(g_Rectangle);
 
 	g_Hexagon.UpdateUniform(new Mat4Uniform(g_Hexagon.m_PVMMat), "PVMMat");
-	g_Hexagon.UpdateUniform(new FloatUniform(CurrentTime), "CurrentTime");
+	g_Hexagon.UpdateUniform(new FloatUniform(g_Hexagon.currentTime), "CurrentTime");
 
-	g_Rectangle.UpdateUniform(new FloatUniform(CurrentTime), "offset");
-	g_Rectangle.UpdateUniform(new FloatUniform(CurrentTime), "CurrentTime");
+	//g_Rectangle.UpdateUniform(new FloatUniform(CurrentTime), "offset");
+	g_Rectangle.UpdateUniform(new FloatUniform(g_Rectangle.currentTime), "CurrentTime");
 	g_Rectangle.UpdateUniform(new Mat4Uniform(g_Rectangle.m_PVMMat), "PVMMat");
 
 	CheckInput();

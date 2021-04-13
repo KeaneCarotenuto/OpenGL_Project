@@ -48,7 +48,7 @@ public:
 	AnimationUniform(GLuint _val, int _count, float _speed, CShape* _shape) :
 		value(_val),
 		frameCount(_count),
-		speed(_speed)
+		SPF(_speed)
 	{
 		for (int i = 6; i < _shape->m_VertexArray.vertices.size(); i += 8) {
 			_shape->m_VertexArray.vertices[i] /= frameCount;
@@ -57,8 +57,9 @@ public:
 
 	GLuint value = NULL;
 	int frameCount = NULL;
-	float speed = NULL;
+	float SPF = NULL;
 	int currentFrame = 0;
+	float lastFrameTime = 0;
 	void Send(CShape * _shape) {
 		//Activate and bind texture
 		glActiveTexture(33984 + value);
@@ -69,9 +70,14 @@ public:
 
 		_shape->UpdateUniform(new FloatUniform(newVal), "offset");
 
-		currentFrame++;
+		if (_shape->currentTime >= lastFrameTime + SPF) {
+			lastFrameTime = _shape->currentTime;
+			currentFrame++;
 
-		if (currentFrame >= frameCount) currentFrame = 0;
+			if (currentFrame >= frameCount) currentFrame = 0;
+		}
+
+		
 
 		/*for (int i = 6; i < _shape->m_VertexArray.vertices.size(); i += 8) {
 			_shape->m_VertexArray.vertices[i] += 1/ frameCount;
