@@ -1,3 +1,15 @@
+// Bachelor of Software Engineering
+// Media Design School
+// Auckland
+// New Zealand
+// 
+// (c) 2021 Media Design School
+//
+// File Name   : CUniform.h
+// Description : Contains datastructures to create Uniforms for shapes
+// Author      : Keane Carotenuto
+// Mail        : KeaneCarotenuto@gmail.com
+
 #pragma once
 #include <string>
 #include <glew.h>
@@ -8,7 +20,7 @@
 
 class CUniform {
 public:
-	GLint location;
+	GLint location = NULL;
 	virtual void Send(CShape * _shape) = 0;
 };
 
@@ -67,7 +79,7 @@ public:
 		frameCount(_count),
 		SPF(_speed)
 	{
-		for (int i = 6; i < _shape->m_VertexArray.vertices.size(); i += 8) {
+		for (int i = 6; i < (int)_shape->m_VertexArray.vertices.size(); i += 8) {
 			_shape->m_VertexArray.vertices[i] /= frameCount;
 		}
 	}

@@ -12,15 +12,16 @@ CShape::CShape(int _verts, glm::vec3 _pos, float _rot, glm::vec3 _scale, bool _s
 	m_useScreenScale = _screenScale;
 
 
-	float angle = 360 / _verts;
+	float angle = 360.0f / (float)_verts;
 
 	m_VertexArray.vertices = { 0.0f, 0.0f, 0.0f,		1.0f, 1.0f, 1.0f,		0.5f, 0.5f, };
 
 	float near1 = 0;
 
+	//Create all verticies, check which if any are equal to 1 on x or y, if not, scale the verts so that at least 1 coord x/y = 1 (otherwise images arent applied correctly)
 	for (int i = 1; i <= _verts; i++) {
-		float xCoord = cos((((float)i - 2) * angle + angle * 0.5f) * M_PI / 180.0);
-		float yCoord = sin((((float)i - 2) * angle + angle * 0.5f) * M_PI / 180.0);
+		float xCoord = cos((((float)i - 2) * angle + angle * 0.5f) * (float)M_PI / 180.0f);
+		float yCoord = sin((((float)i - 2) * angle + angle * 0.5f) * (float)M_PI / 180.0f);
 		
 		if (abs(xCoord) >= 0.99f) continue;
 
@@ -28,21 +29,28 @@ CShape::CShape(int _verts, glm::vec3 _pos, float _rot, glm::vec3 _scale, bool _s
 		else if (abs(yCoord) > near1) near1 = abs(yCoord);
 	}
 
+	//For each vert desired, calculate its position and send info to the list
 	for (int i = 1; i <= _verts; i++) {
-		float xCoord = cos((((float)i - 2) * angle + angle * 0.5f) * M_PI / 180.0);
-		float yCoord = sin((((float)i - 2) * angle + angle * 0.5f) * M_PI / 180.0);
+		//Calc x y pos
+		float xCoord = cos((((float)i - 2) * angle + angle * 0.5f) * (float)M_PI / 180.0f);
+		float yCoord = sin((((float)i - 2) * angle + angle * 0.5f) * (float)M_PI / 180.0f);
 
+		//Apply position
 		float xPos = xCoord;
 		float yPos = yCoord;
 		float zPos = 0;
 
+		//Make white
 		float rCol = 1.0f;
 		float gCol = 1.0f;
 		float bCol = 1.0f;
 
+		//Adjust x y pos for image points
 		float xTex = (xCoord / (near1 > 0 ? near1 : 1) + 1) / 2;
 		float yTex = (yCoord / (near1 > 0 ? near1 : 1) + 1) / 2;
 
+
+		//Push all data
 		m_VertexArray.vertices.push_back(xPos);
 		m_VertexArray.vertices.push_back(yPos);
 		m_VertexArray.vertices.push_back(zPos);
@@ -68,6 +76,11 @@ void CShape::AddUniform(CUniform* _uniform, std::string _name)
 	m_uniforms.push_back(_uniform);
 }
 
+/// <summary>
+/// Update a uniform with a new one, if it exists
+/// </summary>
+/// <param name="_NewUniform"></param>
+/// <param name="_name"></param>
 void CShape::UpdateUniform(CUniform* _NewUniform, std::string _name)
 {
 	GLuint loc = glGetUniformLocation(m_program, _name.c_str());
@@ -81,12 +94,20 @@ void CShape::UpdateUniform(CUniform* _NewUniform, std::string _name)
 	}
 }
 
+/// <summary>
+/// Update funciton for shapes
+/// </summary>
+/// <param name="deltaTime"></param>
+/// <param name="currentTime"></param>
 void CShape::Update(float deltaTime, float currentTime)
 {
 	m_currentTime = currentTime;
 	UpdateUniform(new FloatUniform(currentTime), "CurrentTime");
 }
 
+/// <summary>
+/// Renders shape
+/// </summary>
 void CShape::Render()
 {
 	glUseProgram(m_program);
@@ -103,6 +124,7 @@ void CShape::Render()
 	glUseProgram(0);
 }
 
+//Bind vertices with pos, colour, and texture coords
 void CShape::GenBindVerts()
 {
 	glGenVertexArrays(1, &m_VAO);

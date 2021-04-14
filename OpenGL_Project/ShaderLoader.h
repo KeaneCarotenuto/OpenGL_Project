@@ -1,3 +1,15 @@
+// Bachelor of Software Engineering
+// Media Design School
+// Auckland
+// New Zealand
+// 
+// (c) 2021 Media Design School
+//
+// File Name   : ShaderLoader.h
+// Description : Used for creating shaders and programs
+// Author      : Keane Carotenuto, Callan Moore (Supplied Code ideas/pictures/descriptions etc)
+// Mail        : KeaneCarotenuto@gmail.com
+
 #pragma once
 
 // Library Includes
@@ -9,6 +21,9 @@
 #include <vector>
 #include <string>
 
+/// <summary>
+/// Shader class to store info about shader
+/// </summary>
 class CShader {
 public:
 	GLuint m_id;
@@ -19,9 +34,14 @@ public:
 	~CShader();
 };
 
+/// <summary>
+/// Program class to store info about Programs
+/// </summary>
 class CProgram {
 public:
 	GLuint m_id;
+
+	//list of shaders in program
 	std::vector<CShader*> m_shaders;
 
 	CProgram(GLuint _id, std::vector<CShader*> _shaders);
