@@ -36,6 +36,7 @@ public:
 
 	GLuint m_program = NULL;
 
+	//List of uniforms
 	std::vector<CUniform*> m_uniforms;
 
 	float m_currentTime;
@@ -53,14 +54,7 @@ public:
 
 	glm::mat4 m_PVMMat2 = glm::mat4();
 
-	/*void SendUniform(UniformType _type, float _value, std::string _name);
-
-	void SendUniform(UniformType _type, GLuint _value, std::string _name, int imageNum = 0);
-
-	void SendUniform(UniformType _type, glm::mat4 _value, std::string _name);
-
-	void SendUniform(UniformType _type, glm::vec3 _value, std::string _name);*/
-
+	//Adding/updating uniforms
 	void AddUniform(CUniform* _uniform, std::string _name);
 	void UpdateUniform(CUniform* _NewUniform, std::string _name);
 

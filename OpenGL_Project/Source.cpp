@@ -19,12 +19,9 @@
 #include "CShape.h"
 #include "CUniform.h"
 
-struct vector3 {
-	float x;
-	float y;
-	float z;
-};
-
+/// <summary>
+/// Camera Class for viewing shapes
+/// </summary>
 class CCamera {
 public:
 	// Camera Variables 
@@ -49,20 +46,20 @@ void UpdatePVM(CShape* _shape);
 void CheckInput();
 void Render();
 
+void DrawCopy(CShape* _toCopy, glm::vec3 _pos, float _rot, glm::vec3 _scale);
+
 GLFWwindow* window = nullptr;
 
+//Width and height of window
 const int width = 800;
 const int height = 800;
 
+//Storing previous time step
 float previousTimeStep = 0;
 
 //Move to map/vector later
-GLuint Program_ColorFadeTri;
 GLuint Program_Texture;
-GLuint Program_TextureMix;
-GLuint Program_WorldSpace;
 GLuint Program_ClipSpace;
-GLuint Program_ClipSpaceColour;
 GLuint Program_ClipSpaceFractal;
 
 //Move to map/vector later
@@ -71,6 +68,7 @@ GLuint Texture_Awesome;
 GLuint Texture_CapMan;
 GLuint Texture_Frac;
 
+//Make shapes (Add them to vector later)
 CShape* g_Hexagon = new CShape(6, glm::vec3(0.25f, 0.25f, 0.0f), 0.0f, glm::vec3(0.5f, 0.5f, 1.0f), true);
 CShape* g_Rectangle = new CShape(4, glm::vec3(-0.25f, -0.25f, 0.0f), 0.0f, glm::vec3(0.5f, 1.0f, 1.0f), true);
 CShape* g_Fractal = new CShape(40, glm::vec3(0.5f, -0.5f, 0.0f), 0.0f, glm::vec3(0.5f, 0.5f, 1.0f), true);
@@ -79,6 +77,7 @@ float CurrentTime;
 
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
+	//Quit if esc key pressed
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
 		glfwSetWindowShouldClose(window, GL_TRUE);
 	}
@@ -151,14 +150,9 @@ void InitialSetup()
 	// Maps the range of the window size to NDC (-1 -> 1)
 	glViewport(0, 0, width, height);
 
-	//Program_FixedColour = ShaderLoader::CreateProgram("Resources/Shaders/Triangle.vs", "Resources/Shaders/Color.fs");
-	//GLuint test_ProgramTri = ShaderLoader::CreateProgram("Resources/Shaders/Triangle.vs", "Resources/Shaders/Color.fs");
-	//Program_ColorFadeTri = ShaderLoader::CreateProgram("Resources/Shaders/Triangle.vert", "Resources/Shaders/VertexColorFade.frag");
+	//Create programs
 	Program_Texture = ShaderLoader::CreateProgram("Resources/Shaders/ClipSpace.vert", "Resources/Shaders/Texture.frag");
-	//Program_TextureMix = ShaderLoader::CreateProgram("Resources/Shaders/NDC_Texture.vert", "Resources/Shaders/TextureMix.frag");
-	//Program_WorldSpace = ShaderLoader::CreateProgram("Resources/Shaders/WorldSpace.vert", "Resources/Shaders/TextureMix.frag");
 	Program_ClipSpace = ShaderLoader::CreateProgram("Resources/Shaders/ClipSpace.vert", "Resources/Shaders/TextureMix.frag");
-	//Program_ClipSpaceColour = ShaderLoader::CreateProgram("Resources/Shaders/ClipSpace.vert", "Resources/Shaders/VertexColorFade.frag");
 	Program_ClipSpaceFractal = ShaderLoader::CreateProgram("Resources/Shaders/ClipSpace.vert", "Resources/Shaders/Fractal.frag");
 
 	glfwSetKeyCallback(window, key_callback);
@@ -205,7 +199,6 @@ void InitialSetup()
 	g_Rectangle->GenBindVerts();
 
 
-
 	//Set program and add uniforms to Rectangle
 	g_Fractal->m_program = Program_ClipSpaceFractal;
 
@@ -220,7 +213,7 @@ void CheckInput()
 {
 	//bool updated = false;
 
-	//Move Triangle
+	//Move Triangle SWAD
 	if (glfwGetKey(window, GLFW_KEY_D))
 	{
 		g_Hexagon->m_position.x += 0.01f;
@@ -240,7 +233,7 @@ void CheckInput()
 		g_Hexagon->m_position.y -= 0.01f;
 	}
 
-	//Scale Triangle
+	//Scale Triangle SHIFT, CTRL
 	if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL))
 	{
 		g_Hexagon->m_scale -= 0.01f;
@@ -250,7 +243,7 @@ void CheckInput()
 		g_Hexagon->m_scale += 0.01f;
 	}
 
-	//Rotate Triangle
+	//Rotate Triangle QE
 	if (glfwGetKey(window, GLFW_KEY_Q))
 	{
 		g_Hexagon->m_rotation += 0.5f;
@@ -259,12 +252,13 @@ void CheckInput()
 	{
 		g_Hexagon->m_rotation -= 0.5f;
 	}
-
-	//if (updated) {
-	//	EquiTriangle(pos, size, ang);
-	//}
 }
 
+/// <summary>
+/// Generates a texture and binds it to a GLuint
+/// </summary>
+/// <param name="texture">the GLuint to bind</param>
+/// <param name="texPath">the folder pathing + name of file</param>
 void GenTexture(GLuint& texture, const char* texPath)
 {
 	//Load the image data
@@ -287,50 +281,54 @@ void GenTexture(GLuint& texture, const char* texPath)
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 
+	//Unbind and free texture and image
 	stbi_image_free(ImageData);
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
+float accum = 0;
 //Called each frame
 void Update()
 {
+	//Get current time and calc delta time
 	CurrentTime = (float)glfwGetTime();
 	float DeltaTime = CurrentTime - previousTimeStep;
 	previousTimeStep = CurrentTime;
 
+	//Add up accumulator
+	accum += DeltaTime;
+
+	//Call update func for shapes (make into vector)
 	g_Hexagon->Update(DeltaTime, CurrentTime);
 	g_Rectangle->Update(DeltaTime, CurrentTime);
 	g_Fractal->Update(DeltaTime, CurrentTime);
 
-	CheckInput();
+	//Check for user input at fixed rate
+	if (accum >= 0.01) {
+		//Reset accumulator
+		accum = 0;
+		
+		//Check for input
+		CheckInput();
+	}
 }
 
-//Render window
+/// <summary>
+/// Renders objects in order
+/// </summary>
 void Render()
 {
 	//Clear Screen
 	glClear(GL_COLOR_BUFFER_BIT);
 
-	//Draw shapes
+	//Draw rect
 	camera.Draw(g_Rectangle);
 
+	//Draw hex
 	camera.Draw(g_Hexagon);
 
-	//copy current hex to keep most data stored
-	CShape tempShape(*g_Hexagon);
-
-	//Change relevant data
-	g_Hexagon->m_position = { -0.7, 0.7, 0 };
-	g_Hexagon->m_rotation = 90.0f;
-	g_Hexagon->m_scale = { 0.3, 0.3, 1 };
-
-	//Draw hex again with new data
-	camera.Draw(g_Hexagon);
-
-	//Reset hex values
-	g_Hexagon->m_position = tempShape.m_position;
-	g_Hexagon->m_rotation = tempShape.m_rotation;
-	g_Hexagon->m_scale = tempShape.m_scale;
+	//Draw copy
+	DrawCopy(g_Hexagon, glm::vec3(-0.7, 0.7, 0), 90.0f, glm::vec3(0.3, 0.3, 1));
 
 	//Draw fractal
 	camera.Draw(g_Fractal);
@@ -338,23 +336,57 @@ void Render()
 	glfwSwapBuffers(window);
 }
 
+void DrawCopy(CShape* _toCopy, glm::vec3 _pos, float _rot, glm::vec3 _scale)
+{
+	//copy current hex to keep most data stored
+	CShape tempShape(*_toCopy);
+
+	//Change relevant data
+	_toCopy->m_position = _pos;
+	_toCopy->m_rotation = _rot;
+	_toCopy->m_scale = _scale;
+
+	//Draw hex again with new data
+	camera.Draw(_toCopy);
+
+	//Reset hex values
+	_toCopy->m_position = tempShape.m_position;
+	_toCopy->m_rotation = tempShape.m_rotation;
+	_toCopy->m_scale = tempShape.m_scale;
+}
+
+/// <summary>
+/// Updates PVM and Uniforms, then Draws
+/// </summary>
+/// <param name="_shape">Shape to Draw</param>
 void CCamera::Draw(CShape* _shape)
 {
+	//Update PVM
 	UpdatePVM(_shape);
 
+	//Update uniforms
 	_shape->UpdateUniform(new Mat4Uniform(_shape->m_PVMMat), "PVMMat");
 
+
+	//Render
 	_shape->Render();
 }
 
+/// <summary>
+/// Updates the PVM of a shape with the camera vars
+/// </summary>
+/// <param name="_shape">Shape to update PVM</param>
 void UpdatePVM(CShape* _shape)
 {
+	//Calc transformation matrices
 	_shape->m_translationMat = glm::translate(glm::mat4(), _shape->m_position);
 	_shape->m_rotationMat = glm::rotate(glm::mat4(), glm::radians(_shape->m_rotation), glm::vec3(0.0f, 0.0f, 1.0f));
 	_shape->m_scaleMat = glm::scale(glm::mat4(), _shape->m_scale);
 
+	//Convert from world space to screen space for ortho
 	glm::mat4 pixelScale = (_shape->m_useScreenScale ? glm::scale(glm::mat4(), glm::vec3(width / 2, height / 2, 1)) : glm::scale(glm::mat4(), glm::vec3(1, 1, 1)));
 
+	//Calculate model matrix for shape
 	_shape->m_modelMat = pixelScale * _shape->m_translationMat * _shape->m_rotationMat * _shape->m_scaleMat;
 
 	//Ortho project
@@ -365,7 +397,9 @@ void UpdatePVM(CShape* _shape)
 	//Perspective project
 	//ProjectionMat = glm::perspective(glm::radians(45.0f), (float)width / (float)height, 0.1f, 100.0f);
 
+	//Calculate the new View matrix using all camera vars
 	camera.ViewMat = glm::lookAt(camera.CameraPos, camera.CameraPos + camera.CameraLookDir, camera.CameraUpDir);
 
+	//Calculate the PVM mat for the shape using camera view mat
 	_shape->m_PVMMat = camera.ProjectionMat * camera.ViewMat * _shape->m_modelMat;
 }

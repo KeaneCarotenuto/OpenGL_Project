@@ -1,8 +1,6 @@
 #pragma once
 #include <vector>
 
-#include "CVertex.h"
-
 class CVertexArray
 {
 public:

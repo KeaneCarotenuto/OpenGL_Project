@@ -12,6 +12,9 @@ public:
 	virtual void Send(CShape * _shape) = 0;
 };
 
+/// <summary>
+/// Uniform for "static" images
+/// </summary>
 class ImageUniform : public CUniform { 
 public:
 	ImageUniform(GLuint _val):
@@ -29,6 +32,9 @@ public:
 	}
 };
 
+/// <summary>
+/// uniform for floats
+/// </summary>
 class FloatUniform : public CUniform {
 public:
 	FloatUniform(float _val) :
@@ -43,8 +49,19 @@ public:
 	}
 };
 
+/// <summary>
+/// Uniform for animated images
+/// </summary>
 class AnimationUniform : public CUniform { 
 public:
+	/// <summary>
+	/// 
+	/// </summary>
+	/// <param name="_val">Image GLuint</param>
+	/// <param name="_count">Amount of frames in image</param>
+	/// <param name="_speed">Seconds per frame</param>
+	/// <param name="_shape">The shape that is using the image</param>
+	/// <returns></returns>
 	AnimationUniform(GLuint _val, int _count, float _speed, CShape* _shape) :
 		value(_val),
 		frameCount(_count),
@@ -68,7 +85,7 @@ public:
 		glUniform1i(location, value);
 
 
-
+		//Increment the current frame based on speed defined
 		if (_shape->m_currentTime >= lastFrameTime + SPF) {
 			lastFrameTime = _shape->m_currentTime;
 			currentFrame++;
@@ -82,6 +99,9 @@ public:
 	}
 };
 
+/// <summary>
+/// Uniform for ints...
+/// </summary>
 class IntUniform : public CUniform { 
 public:
 	IntUniform(int _val) :
@@ -96,6 +116,9 @@ public:
 	}
 };
 
+/// <summary>
+/// Uniform for glm::mat4
+/// </summary>
 class Mat4Uniform : public CUniform { 
 public:
 	Mat4Uniform(glm::mat4 _val) :
@@ -110,6 +133,9 @@ public:
 	}
 };
 
+/// <summary>
+/// Uniform for glm::vec3
+/// </summary>
 class Vec3Uniform : public CUniform { 
 public:
 	Vec3Uniform(glm::vec3 _val) :
@@ -124,6 +150,9 @@ public:
 	}
 };
 
+/// <summary>
+/// Uniform for glm::vec2
+/// </summary>
 class Vec2Uniform : public CUniform {
 public:
 	Vec2Uniform(glm::vec2 _val) :
