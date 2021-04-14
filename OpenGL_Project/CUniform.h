@@ -60,22 +60,25 @@ public:
 	float SPF = NULL;
 	int currentFrame = 0;
 	float lastFrameTime = 0;
+
 	void Send(CShape * _shape) {
 		//Activate and bind texture
 		glActiveTexture(GL_TEXTURE0 + value);
 		glBindTexture(GL_TEXTURE_2D, value);
 		glUniform1i(location, value);
 
-		float newVal = (float)currentFrame * (1.0f / frameCount);
 
-		_shape->UpdateUniform(new FloatUniform(newVal), "offset");
 
-		if (_shape->currentTime >= lastFrameTime + SPF) {
-			lastFrameTime = _shape->currentTime;
+		if (_shape->m_currentTime >= lastFrameTime + SPF) {
+			lastFrameTime = _shape->m_currentTime;
 			currentFrame++;
 
 			if (currentFrame >= frameCount) currentFrame = 0;
 		}
+
+		float newVal = (float)currentFrame * (1.0f / frameCount);
+
+		_shape->UpdateUniform(new FloatUniform(newVal), "offset");
 	}
 };
 

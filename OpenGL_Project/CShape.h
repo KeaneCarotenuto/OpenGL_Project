@@ -38,7 +38,7 @@ public:
 
 	std::vector<CUniform*> m_uniforms;
 
-	float currentTime;
+	float m_currentTime;
 
 	glm::vec3 m_position = glm::vec3(0.0f, 0.0f, 0.0f);
 	GLfloat m_rotation = 0.0f;
@@ -64,6 +64,7 @@ public:
 	void AddUniform(CUniform* _uniform, std::string _name);
 	void UpdateUniform(CUniform* _NewUniform, std::string _name);
 
+	void Update(float deltaTime, float currentTime);
 	void Render();
 
 	void GenBindVerts();

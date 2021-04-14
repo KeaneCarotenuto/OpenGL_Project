@@ -54,22 +54,26 @@ GLFWwindow* window = nullptr;
 const int width = 800;
 const int height = 800;
 
-//GLuint Program_Tri;
+float previousTimeStep = 0;
+
+//Move to map/vector later
 GLuint Program_ColorFadeTri;
 GLuint Program_Texture;
 GLuint Program_TextureMix;
 GLuint Program_WorldSpace;
 GLuint Program_ClipSpace;
 GLuint Program_ClipSpaceColour;
+GLuint Program_ClipSpaceFractal;
 
-
-
+//Move to map/vector later
 GLuint Texture_Rayman;
 GLuint Texture_Awesome;
 GLuint Texture_CapMan;
+GLuint Texture_Frac;
 
 CShape* g_Hexagon = new CShape(6, glm::vec3(0.25f, 0.25f, 0.0f), 0.0f, glm::vec3(0.5f, 0.5f, 1.0f), true);
 CShape* g_Rectangle = new CShape(4, glm::vec3(-0.25f, -0.25f, 0.0f), 0.0f, glm::vec3(0.5f, 1.0f, 1.0f), true);
+CShape* g_Fractal = new CShape(40, glm::vec3(0.5f, -0.5f, 0.0f), 0.0f, glm::vec3(0.5f, 0.5f, 1.0f), true);
 
 float CurrentTime;
 
@@ -155,6 +159,7 @@ void InitialSetup()
 	//Program_WorldSpace = ShaderLoader::CreateProgram("Resources/Shaders/WorldSpace.vert", "Resources/Shaders/TextureMix.frag");
 	Program_ClipSpace = ShaderLoader::CreateProgram("Resources/Shaders/ClipSpace.vert", "Resources/Shaders/TextureMix.frag");
 	//Program_ClipSpaceColour = ShaderLoader::CreateProgram("Resources/Shaders/ClipSpace.vert", "Resources/Shaders/VertexColorFade.frag");
+	Program_ClipSpaceFractal = ShaderLoader::CreateProgram("Resources/Shaders/ClipSpace.vert", "Resources/Shaders/Fractal.frag");
 
 	glfwSetKeyCallback(window, key_callback);
 
@@ -171,24 +176,26 @@ void InitialSetup()
 	//Flip Images
 	stbi_set_flip_vertically_on_load(true);
 
+	//Create all textures and bind them
 	GenTexture(Texture_Rayman, "Resources/Textures/Rayman.jpg");
 	GenTexture(Texture_Awesome, "Resources/Textures/AwesomeFace.png");
 	GenTexture(Texture_CapMan, "Resources/Textures/Capguy_Walk.png");
+	GenTexture(Texture_Frac, "Resources/Textures/pal.png");
 
-	
-	
+
+	//Set program and add uniforms to hexagon
 	g_Hexagon->m_program = Program_ClipSpace;
 
 	g_Hexagon->AddUniform(new ImageUniform(Texture_Rayman), "ImageTexture");
 	g_Hexagon->AddUniform(new ImageUniform(Texture_Awesome), "ImageTexture1");
-	g_Hexagon->AddUniform(new FloatUniform(g_Hexagon->currentTime), "CurrentTime");
+	g_Hexagon->AddUniform(new FloatUniform(g_Hexagon->m_currentTime), "CurrentTime");
 	g_Hexagon->AddUniform(new FloatUniform(0), "offset");
 	g_Hexagon->AddUniform(new Mat4Uniform(g_Hexagon->m_PVMMat), "PVMMat");
 
 	g_Hexagon->GenBindVerts();
 
 
-
+	//Set program and add uniforms to Rectangle
 	g_Rectangle->m_program = Program_Texture;
 
 	g_Rectangle->AddUniform(new AnimationUniform(Texture_CapMan, 8, 0.1f, g_Rectangle), "ImageTexture");
@@ -196,6 +203,17 @@ void InitialSetup()
 	g_Rectangle->AddUniform(new Mat4Uniform(g_Rectangle->m_PVMMat), "PVMMat");
 
 	g_Rectangle->GenBindVerts();
+
+
+
+	//Set program and add uniforms to Rectangle
+	g_Fractal->m_program = Program_ClipSpaceFractal;
+
+	g_Fractal->AddUniform(new ImageUniform(Texture_Frac), "ImageTexture");
+	g_Fractal->AddUniform(new FloatUniform(g_Fractal->m_currentTime), "CurrentTime");
+	g_Fractal->AddUniform(new Mat4Uniform(g_Rectangle->m_PVMMat), "PVMMat");
+
+	g_Fractal->GenBindVerts();
 }
 
 void CheckInput()
@@ -277,12 +295,12 @@ void GenTexture(GLuint& texture, const char* texPath)
 void Update()
 {
 	CurrentTime = (float)glfwGetTime();
-	g_Hexagon->currentTime = CurrentTime;
-	g_Rectangle->currentTime = CurrentTime;
+	float DeltaTime = CurrentTime - previousTimeStep;
+	previousTimeStep = CurrentTime;
 
-	g_Hexagon->UpdateUniform(new FloatUniform(g_Hexagon->currentTime), "CurrentTime");
-
-	g_Rectangle->UpdateUniform(new FloatUniform(g_Rectangle->currentTime), "CurrentTime");
+	g_Hexagon->Update(DeltaTime, CurrentTime);
+	g_Rectangle->Update(DeltaTime, CurrentTime);
+	g_Fractal->Update(DeltaTime, CurrentTime);
 
 	CheckInput();
 }
@@ -293,8 +311,29 @@ void Render()
 	//Clear Screen
 	glClear(GL_COLOR_BUFFER_BIT);
 
+	//Draw shapes
 	camera.Draw(g_Rectangle);
+
 	camera.Draw(g_Hexagon);
+
+	//copy current hex to keep most data stored
+	CShape tempShape(*g_Hexagon);
+
+	//Change relevant data
+	g_Hexagon->m_position = { -0.7, 0.7, 0 };
+	g_Hexagon->m_rotation = 90.0f;
+	g_Hexagon->m_scale = { 0.3, 0.3, 1 };
+
+	//Draw hex again with new data
+	camera.Draw(g_Hexagon);
+
+	//Reset hex values
+	g_Hexagon->m_position = tempShape.m_position;
+	g_Hexagon->m_rotation = tempShape.m_rotation;
+	g_Hexagon->m_scale = tempShape.m_scale;
+
+	//Draw fractal
+	camera.Draw(g_Fractal);
 	
 	glfwSwapBuffers(window);
 }

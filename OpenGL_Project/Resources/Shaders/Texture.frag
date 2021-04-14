@@ -7,7 +7,7 @@ uniform sampler2D ImageTexture;
 uniform float offset;
 
 out vec4 FinalColor;
-
+ 
 
 void main() 
 {

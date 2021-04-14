@@ -16,6 +16,12 @@
     <Filter Include="Resource Files\Shaders">
       <UniqueIdentifier>{8f97af8c-b79f-473b-b773-fbf68c2dbc71}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Resource Files\Shaders\frag">
+      <UniqueIdentifier>{a469f2d3-5617-4620-9b37-0c916332f298}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\Shaders\vert">
+      <UniqueIdentifier>{0a6ee48f-9dd3-4656-99fc-60fbe2926649}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source.cpp">
@@ -61,34 +67,37 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="Resources\Shaders\Color.frag">
-      <Filter>Resource Files\Shaders</Filter>
-    </Text>
     <Text Include="Resources\Shaders\Triangle.vert">
-      <Filter>Resource Files\Shaders</Filter>
+      <Filter>Resource Files\Shaders\vert</Filter>
+    </Text>
+    <Text Include="Resources\Shaders\Color.frag">
+      <Filter>Resource Files\Shaders\frag</Filter>
     </Text>
     <Text Include="Resources\Shaders\VertexColorFade.frag">
-      <Filter>Resource Files\Shaders</Filter>
+      <Filter>Resource Files\Shaders\frag</Filter>
     </Text>
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\Shaders\ClipSpace.vert">
-      <Filter>Resource Files\Shaders</Filter>
+      <Filter>Resource Files\Shaders\vert</Filter>
     </None>
     <None Include="Resources\Shaders\NDC_Texture.vert">
-      <Filter>Resource Files\Shaders</Filter>
+      <Filter>Resource Files\Shaders\vert</Filter>
     </None>
     <None Include="Resources\Shaders\Quad.vert">
-      <Filter>Resource Files\Shaders</Filter>
-    </None>
-    <None Include="Resources\Shaders\Texture.frag">
-      <Filter>Resource Files\Shaders</Filter>
-    </None>
-    <None Include="Resources\Shaders\TextureMix.frag">
-      <Filter>Resource Files\Shaders</Filter>
+      <Filter>Resource Files\Shaders\vert</Filter>
     </None>
     <None Include="Resources\Shaders\WorldSpace.vert">
-      <Filter>Resource Files\Shaders</Filter>
+      <Filter>Resource Files\Shaders\vert</Filter>
+    </None>
+    <None Include="Resources\Shaders\Texture.frag">
+      <Filter>Resource Files\Shaders\frag</Filter>
+    </None>
+    <None Include="Resources\Shaders\TextureMix.frag">
+      <Filter>Resource Files\Shaders\frag</Filter>
+    </None>
+    <None Include="Resources\Shaders\Fractal.frag">
+      <Filter>Resource Files\Shaders\frag</Filter>
     </None>
   </ItemGroup>
 </Project>

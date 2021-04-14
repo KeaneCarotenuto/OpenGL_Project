@@ -81,6 +81,12 @@ void CShape::UpdateUniform(CUniform* _NewUniform, std::string _name)
 	}
 }
 
+void CShape::Update(float deltaTime, float currentTime)
+{
+	m_currentTime = currentTime;
+	UpdateUniform(new FloatUniform(currentTime), "CurrentTime");
+}
+
 void CShape::Render()
 {
 	glUseProgram(m_program);
