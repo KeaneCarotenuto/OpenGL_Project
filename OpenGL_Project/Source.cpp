@@ -127,7 +127,7 @@ bool Startup()
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
 
 	//Create a GLFW controlled context window
-	window = glfwCreateWindow(width, height, "First OpenGL Window", NULL, NULL);
+	window = glfwCreateWindow(width, height, "Keane Carotenuto - Summative  1", NULL, NULL);
 
 	//Check for failure
 	if (window == NULL) {
