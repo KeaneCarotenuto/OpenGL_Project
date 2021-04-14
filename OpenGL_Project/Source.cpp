@@ -49,9 +49,6 @@ void UpdatePVM(CShape* _shape);
 void CheckInput();
 void Render();
 
-void Triangle(vector3 v1, vector3 c1, vector3 v2, vector3 c2, vector3 v3, vector3 c3);
-void EquiTriangle(vector3 position, float height, float angle);
-
 GLFWwindow* window = nullptr;
 
 const int width = 800;
@@ -152,12 +149,12 @@ void InitialSetup()
 
 	//Program_FixedColour = ShaderLoader::CreateProgram("Resources/Shaders/Triangle.vs", "Resources/Shaders/Color.fs");
 	//GLuint test_ProgramTri = ShaderLoader::CreateProgram("Resources/Shaders/Triangle.vs", "Resources/Shaders/Color.fs");
-	Program_ColorFadeTri = ShaderLoader::CreateProgram("Resources/Shaders/Triangle.vs", "Resources/Shaders/VertexColorFade.fs");
-	Program_Texture = ShaderLoader::CreateProgram("Resources/Shaders/ClipSpace.vs", "Resources/Shaders/Texture.fs");
-	Program_TextureMix = ShaderLoader::CreateProgram("Resources/Shaders/NDC_Texture.vs", "Resources/Shaders/TextureMix.fs");
-	Program_WorldSpace = ShaderLoader::CreateProgram("Resources/Shaders/WorldSpace.vs", "Resources/Shaders/TextureMix.fs");
-	Program_ClipSpace = ShaderLoader::CreateProgram("Resources/Shaders/ClipSpace.vs", "Resources/Shaders/TextureMix.fs");
-	Program_ClipSpaceColour = ShaderLoader::CreateProgram("Resources/Shaders/ClipSpace.vs", "Resources/Shaders/VertexColorFade.fs");
+	//Program_ColorFadeTri = ShaderLoader::CreateProgram("Resources/Shaders/Triangle.vert", "Resources/Shaders/VertexColorFade.frag");
+	Program_Texture = ShaderLoader::CreateProgram("Resources/Shaders/ClipSpace.vert", "Resources/Shaders/Texture.frag");
+	//Program_TextureMix = ShaderLoader::CreateProgram("Resources/Shaders/NDC_Texture.vert", "Resources/Shaders/TextureMix.frag");
+	//Program_WorldSpace = ShaderLoader::CreateProgram("Resources/Shaders/WorldSpace.vert", "Resources/Shaders/TextureMix.frag");
+	Program_ClipSpace = ShaderLoader::CreateProgram("Resources/Shaders/ClipSpace.vert", "Resources/Shaders/TextureMix.frag");
+	//Program_ClipSpaceColour = ShaderLoader::CreateProgram("Resources/Shaders/ClipSpace.vert", "Resources/Shaders/VertexColorFade.frag");
 
 	glfwSetKeyCallback(window, key_callback);
 
@@ -199,69 +196,6 @@ void InitialSetup()
 	g_Rectangle->AddUniform(new Mat4Uniform(g_Rectangle->m_PVMMat), "PVMMat");
 
 	g_Rectangle->GenBindVerts();
-}
-
-void GenTexture(GLuint& texture, const char* texPath)
-{
-	//Load the image data
-	int ImageWidth;
-	int ImageHeight;
-	int ImageComponents;
-	unsigned char* ImageData = stbi_load(texPath, &ImageWidth, &ImageHeight, &ImageComponents, 0);
-	//Gen and bind texture
-	glGenTextures(1, &texture);
-	glBindTexture(GL_TEXTURE_2D, texture);
-
-	//Check how many components in image (RGBA or RGB)
-	GLint LoadedComponents = ((ImageComponents == 4) ? GL_RGBA : GL_RGB);
-
-	//Populate the texture with the image data
-	glTexImage2D(GL_TEXTURE_2D, 0, LoadedComponents, ImageWidth, ImageHeight, 0, LoadedComponents, GL_UNSIGNED_BYTE, ImageData);
-
-	//Generating the mipmaps, free the memory and unbind the texture
-	glGenerateMipmap(GL_TEXTURE_2D);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-
-	stbi_image_free(ImageData);
-	glBindTexture(GL_TEXTURE_2D, 0);
-}
-
-//Called each frame
-void Update()
-{
-	CurrentTime = (float)glfwGetTime();
-	g_Hexagon->currentTime = CurrentTime;
-	g_Rectangle->currentTime = CurrentTime;
-
-	g_Hexagon->UpdateUniform(new FloatUniform(g_Hexagon->currentTime), "CurrentTime");
-
-	g_Rectangle->UpdateUniform(new FloatUniform(g_Rectangle->currentTime), "CurrentTime");
-
-	CheckInput();
-}
-
-void UpdatePVM(CShape* _shape)
-{
-	_shape->m_translationMat = glm::translate(glm::mat4(), _shape->m_position);
-	_shape->m_rotationMat = glm::rotate(glm::mat4(), glm::radians(_shape->m_rotation), glm::vec3(0.0f, 0.0f, 1.0f));
-	_shape->m_scaleMat = glm::scale(glm::mat4(), _shape->m_scale);
-
-	glm::mat4 pixelScale = (_shape->m_useScreenScale ? glm::scale(glm::mat4(), glm::vec3(width / 2, height / 2, 1)) : glm::scale(glm::mat4(), glm::vec3(1, 1, 1)));
-
-	_shape->m_modelMat = pixelScale * _shape->m_translationMat * _shape->m_rotationMat * _shape->m_scaleMat;
-
-	//Ortho project
-	float halfWindowWidth = (float)width / 2.0f;
-	float halfWindowHeight = (float)height / 2.0f;
-	camera.ProjectionMat = glm::ortho(-halfWindowWidth, halfWindowWidth, -halfWindowHeight, halfWindowHeight, 0.1f, 100.0f);
-
-	//Perspective project
-	//ProjectionMat = glm::perspective(glm::radians(45.0f), (float)width / (float)height, 0.1f, 100.0f);
-
-	camera.ViewMat = glm::lookAt(camera.CameraPos, camera.CameraPos + camera.CameraLookDir, camera.CameraUpDir);
-
-	_shape->m_PVMMat = camera.ProjectionMat * camera.ViewMat * _shape->m_modelMat;
 }
 
 void CheckInput()
@@ -313,6 +247,46 @@ void CheckInput()
 	//}
 }
 
+void GenTexture(GLuint& texture, const char* texPath)
+{
+	//Load the image data
+	int ImageWidth;
+	int ImageHeight;
+	int ImageComponents;
+	unsigned char* ImageData = stbi_load(texPath, &ImageWidth, &ImageHeight, &ImageComponents, 0);
+	//Gen and bind texture
+	glGenTextures(1, &texture);
+	glBindTexture(GL_TEXTURE_2D, texture);
+
+	//Check how many components in image (RGBA or RGB)
+	GLint LoadedComponents = ((ImageComponents == 4) ? GL_RGBA : GL_RGB);
+
+	//Populate the texture with the image data
+	glTexImage2D(GL_TEXTURE_2D, 0, LoadedComponents, ImageWidth, ImageHeight, 0, LoadedComponents, GL_UNSIGNED_BYTE, ImageData);
+
+	//Generating the mipmaps, free the memory and unbind the texture
+	glGenerateMipmap(GL_TEXTURE_2D);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+
+	stbi_image_free(ImageData);
+	glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+//Called each frame
+void Update()
+{
+	CurrentTime = (float)glfwGetTime();
+	g_Hexagon->currentTime = CurrentTime;
+	g_Rectangle->currentTime = CurrentTime;
+
+	g_Hexagon->UpdateUniform(new FloatUniform(g_Hexagon->currentTime), "CurrentTime");
+
+	g_Rectangle->UpdateUniform(new FloatUniform(g_Rectangle->currentTime), "CurrentTime");
+
+	CheckInput();
+}
+
 //Render window
 void Render()
 {
@@ -322,32 +296,7 @@ void Render()
 	camera.Draw(g_Rectangle);
 	camera.Draw(g_Hexagon);
 	
-	
 	glfwSwapBuffers(window);
-}
-
-void EquiTriangle(vector3 position, float height, float angle) {
-	Triangle(	vector3{ position.x + (float)sin(angle * M_PI / 180) * (height / 2), position.y + (float)cos(angle * M_PI / 180) * (height / 2) , 0.0f },
-				vector3{ 1.0f,0.0f,0.0f },
-
-				vector3{ position.x + (float)sin((angle + 120) * M_PI / 180) * (height/2), position.y + (float)cos((angle + 120) * M_PI / 180) * (height/2) , 0.0f },	
-				vector3{ 0.0f,1.0f,0.0f },
-
-				vector3{ position.x + (float)sin((angle + 240) * M_PI / 180) * (height/2), position.y + (float)cos((angle + 240) * M_PI / 180) * (height/2) , 0.0f },	
-				vector3{ 0.0f,0.0f,1.0f }) ;
-}
-
-void Triangle(vector3 v1, vector3 c1, vector3 v2 , vector3 c2, vector3 v3 , vector3 c3)
-{
-	vector3 vertices[] = {
-		v1,  c1,
-		v2,  c2,
-		v3,  c3,
-	};
-
-	//copy our vertices array in a buffer for OpenGL to use
-	//glBindBuffer(GL_ARRAY_BUFFER, VBO_Tri);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_DYNAMIC_DRAW);
 }
 
 void CCamera::Draw(CShape* _shape)
@@ -357,4 +306,27 @@ void CCamera::Draw(CShape* _shape)
 	_shape->UpdateUniform(new Mat4Uniform(_shape->m_PVMMat), "PVMMat");
 
 	_shape->Render();
+}
+
+void UpdatePVM(CShape* _shape)
+{
+	_shape->m_translationMat = glm::translate(glm::mat4(), _shape->m_position);
+	_shape->m_rotationMat = glm::rotate(glm::mat4(), glm::radians(_shape->m_rotation), glm::vec3(0.0f, 0.0f, 1.0f));
+	_shape->m_scaleMat = glm::scale(glm::mat4(), _shape->m_scale);
+
+	glm::mat4 pixelScale = (_shape->m_useScreenScale ? glm::scale(glm::mat4(), glm::vec3(width / 2, height / 2, 1)) : glm::scale(glm::mat4(), glm::vec3(1, 1, 1)));
+
+	_shape->m_modelMat = pixelScale * _shape->m_translationMat * _shape->m_rotationMat * _shape->m_scaleMat;
+
+	//Ortho project
+	float halfWindowWidth = (float)width / 2.0f;
+	float halfWindowHeight = (float)height / 2.0f;
+	camera.ProjectionMat = glm::ortho(-halfWindowWidth, halfWindowWidth, -halfWindowHeight, halfWindowHeight, 0.1f, 100.0f);
+
+	//Perspective project
+	//ProjectionMat = glm::perspective(glm::radians(45.0f), (float)width / (float)height, 0.1f, 100.0f);
+
+	camera.ViewMat = glm::lookAt(camera.CameraPos, camera.CameraPos + camera.CameraLookDir, camera.CameraUpDir);
+
+	_shape->m_PVMMat = camera.ProjectionMat * camera.ViewMat * _shape->m_modelMat;
 }

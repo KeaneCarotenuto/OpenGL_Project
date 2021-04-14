@@ -91,7 +91,7 @@ void CShape::Render()
 	}
 
 	//Draw Elements	//Type	//Vertices
-	glDrawElements(GL_TRIANGLES, m_VertexArray.vertices.size(), GL_UNSIGNED_INT, 0);
+	glDrawElements(GL_TRIANGLES, m_VertexArray.indices.size(), GL_UNSIGNED_INT, 0);
 
 	glBindVertexArray(0);
 	glUseProgram(0);

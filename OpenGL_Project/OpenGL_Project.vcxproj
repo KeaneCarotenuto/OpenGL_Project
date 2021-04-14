@@ -149,17 +149,17 @@
     <ClInclude Include="Utility.h" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="Resources\Shaders\Color.fs" />
-    <Text Include="Resources\Shaders\Triangle.vs" />
-    <Text Include="Resources\Shaders\VertexColorFade.fs" />
+    <Text Include="Resources\Shaders\Color.frag" />
+    <Text Include="Resources\Shaders\Triangle.vert" />
+    <Text Include="Resources\Shaders\VertexColorFade.frag" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Resources\Shaders\ClipSpace.vs" />
-    <None Include="Resources\Shaders\NDC_Texture.vs" />
-    <None Include="Resources\Shaders\Quad.vs" />
-    <None Include="Resources\Shaders\Texture.fs" />
-    <None Include="Resources\Shaders\TextureMix.fs" />
-    <None Include="Resources\Shaders\WorldSpace.vs" />
+    <None Include="Resources\Shaders\ClipSpace.vert" />
+    <None Include="Resources\Shaders\NDC_Texture.vert" />
+    <None Include="Resources\Shaders\Quad.vert" />
+    <None Include="Resources\Shaders\Texture.frag" />
+    <None Include="Resources\Shaders\TextureMix.frag" />
+    <None Include="Resources\Shaders\WorldSpace.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

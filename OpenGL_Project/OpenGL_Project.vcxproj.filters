@@ -61,33 +61,33 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="Resources\Shaders\Color.fs">
+    <Text Include="Resources\Shaders\Color.frag">
       <Filter>Resource Files\Shaders</Filter>
     </Text>
-    <Text Include="Resources\Shaders\VertexColorFade.fs">
+    <Text Include="Resources\Shaders\Triangle.vert">
       <Filter>Resource Files\Shaders</Filter>
     </Text>
-    <Text Include="Resources\Shaders\Triangle.vs">
+    <Text Include="Resources\Shaders\VertexColorFade.frag">
       <Filter>Resource Files\Shaders</Filter>
     </Text>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Resources\Shaders\Quad.vs">
+    <None Include="Resources\Shaders\ClipSpace.vert">
       <Filter>Resource Files\Shaders</Filter>
     </None>
-    <None Include="Resources\Shaders\Texture.fs">
+    <None Include="Resources\Shaders\NDC_Texture.vert">
       <Filter>Resource Files\Shaders</Filter>
     </None>
-    <None Include="Resources\Shaders\TextureMix.fs">
+    <None Include="Resources\Shaders\Quad.vert">
       <Filter>Resource Files\Shaders</Filter>
     </None>
-    <None Include="Resources\Shaders\NDC_Texture.vs">
+    <None Include="Resources\Shaders\Texture.frag">
       <Filter>Resource Files\Shaders</Filter>
     </None>
-    <None Include="Resources\Shaders\WorldSpace.vs">
+    <None Include="Resources\Shaders\TextureMix.frag">
       <Filter>Resource Files\Shaders</Filter>
     </None>
-    <None Include="Resources\Shaders\ClipSpace.vs">
+    <None Include="Resources\Shaders\WorldSpace.vert">
       <Filter>Resource Files\Shaders</Filter>
     </None>
   </ItemGroup>

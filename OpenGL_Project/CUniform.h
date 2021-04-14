@@ -120,3 +120,17 @@ public:
 		//glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(value));
 	}
 };
+
+class Vec2Uniform : public CUniform {
+public:
+	Vec2Uniform(glm::vec2 _val) :
+		value(_val)
+	{
+
+	}
+
+	glm::vec2 value;
+	void Send(CShape* _shape) {
+		glUniform2fv(location, 1, glm::value_ptr(value));
+	}
+};
