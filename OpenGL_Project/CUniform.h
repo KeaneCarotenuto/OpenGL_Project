@@ -62,7 +62,7 @@ public:
 	float lastFrameTime = 0;
 	void Send(CShape * _shape) {
 		//Activate and bind texture
-		glActiveTexture(33984 + value);
+		glActiveTexture(GL_TEXTURE0 + value);
 		glBindTexture(GL_TEXTURE_2D, value);
 		glUniform1i(location, value);
 
@@ -76,23 +76,6 @@ public:
 
 			if (currentFrame >= frameCount) currentFrame = 0;
 		}
-
-		
-
-		/*for (int i = 6; i < _shape->m_VertexArray.vertices.size(); i += 8) {
-			_shape->m_VertexArray.vertices[i] += 1/ frameCount;
-		}
-
-		bool reset = false;
-		for (int i = 6; i < _shape->m_VertexArray.vertices.size(); i += 8) {
-			if (_shape->m_VertexArray.vertices[i] > 1.0f) reset = true;
-		}
-
-		if (reset) {
-			for (int i = 6; i < _shape->m_VertexArray.vertices.size(); i += 8) {
-				_shape->m_VertexArray.vertices[i] -= 1;
-			}
-		}*/
 	}
 };
 

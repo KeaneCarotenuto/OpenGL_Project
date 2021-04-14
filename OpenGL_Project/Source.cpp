@@ -25,13 +25,27 @@ struct vector3 {
 	float z;
 };
 
+class CCamera {
+public:
+	// Camera Variables 
+	glm::vec3 CameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
+	glm::vec3 CameraLookDir = glm::vec3(0.0f, 0.0f, -1.0f);
+	glm::vec3 CameraTargetPos = glm::vec3(0.0f, 0.0f, 0.0f);
+	glm::vec3 CameraUpDir = glm::vec3(0.0f, 1.0f, 0.0f);
+	glm::mat4 ViewMat;
+	glm::mat4 ProjectionMat;
+
+	void Draw(CShape* _shape);
+}camera;
+
+
 bool Startup();
 void InitialSetup();
 
 void GenTexture(GLuint& texture, const char* texPath);
 
 void Update();
-void UpdatePVM(CShape& _shape);
+void UpdatePVM(CShape* _shape);
 void CheckInput();
 void Render();
 
@@ -51,20 +65,14 @@ GLuint Program_WorldSpace;
 GLuint Program_ClipSpace;
 GLuint Program_ClipSpaceColour;
 
-// Camera Variables 
-glm::vec3 CameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
-glm::vec3 CameraLookDir = glm::vec3(0.0f, 0.0f, -1.0f); 
-glm::vec3 CameraTargetPos = glm::vec3(0.0f, 0.0f, 0.0f); 
-glm::vec3 CameraUpDir = glm::vec3(0.0f, 1.0f, 0.0f); 
-glm::mat4 ViewMat; 
-glm::mat4 ProjectionMat;
+
 
 GLuint Texture_Rayman;
 GLuint Texture_Awesome;
-GLuint Texture_NoCap;
+GLuint Texture_CapMan;
 
-CShape g_Hexagon;
-CShape g_Rectangle;
+CShape* g_Hexagon = new CShape(6, glm::vec3(0.25f, 0.25f, 0.0f), 0.0f, glm::vec3(0.5f, 0.5f, 1.0f), true);
+CShape* g_Rectangle = new CShape(4, glm::vec3(-0.25f, -0.25f, 0.0f), 0.0f, glm::vec3(0.5f, 1.0f, 1.0f), true);
 
 float CurrentTime;
 
@@ -137,7 +145,7 @@ bool Startup()
 void InitialSetup()
 {
 	//Set the clear colour as blue (used by glClear)
-	glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
 	// Maps the range of the window size to NDC (-1 -> 1)
 	glViewport(0, 0, width, height);
@@ -168,64 +176,29 @@ void InitialSetup()
 
 	GenTexture(Texture_Rayman, "Resources/Textures/Rayman.jpg");
 	GenTexture(Texture_Awesome, "Resources/Textures/AwesomeFace.png");
-	GenTexture(Texture_NoCap, "Resources/Textures/Capguy_Walk.png");
+	GenTexture(Texture_CapMan, "Resources/Textures/Capguy_Walk.png");
 
-	g_Hexagon.m_VertexArray.vertices = {
-		//Pos					//Col					//Texture Coords
-		-0.5f, 1.0f, 0.0f,		1.0f, 0.0f, 0.0f,		0.25f, 1.0f,		//Top - Left
-		-1.0f, 0.0f, 0.0f,		0.0f, 1.0f, 0.0f,		0.0f, 0.5f,		//Mid - Left
-		-0.5f, -1.0f, 0.0f,		0.0f, 0.0f, 1.0f,		0.25f, 0.0f,		//Bot - Left
-		0.5f, -1.0f, 0.0f,		0.0f, 1.0f, 0.0f,		0.75f, 0.0f,		//Bot - Right
-		1.0f, 0.0f, 0.0f,		1.0f, 0.0f, 0.0f,		1.0f, 0.5f,		//Mid - Right
-		0.5f, 1.0f, 0.0f,		0.0f, 1.0f, 0.0f,		0.75f, 1.0f,		//Top - Right
-	};
+	
+	
+	g_Hexagon->m_program = Program_ClipSpace;
 
-	g_Hexagon.m_VertexArray.indices = {
-		0, 1, 2,
-		0, 2, 5,
-		5, 2, 4,
-		4, 2, 3,
-	};
+	g_Hexagon->AddUniform(new ImageUniform(Texture_Rayman), "ImageTexture");
+	g_Hexagon->AddUniform(new ImageUniform(Texture_Awesome), "ImageTexture1");
+	g_Hexagon->AddUniform(new FloatUniform(g_Hexagon->currentTime), "CurrentTime");
+	g_Hexagon->AddUniform(new FloatUniform(0), "offset");
+	g_Hexagon->AddUniform(new Mat4Uniform(g_Hexagon->m_PVMMat), "PVMMat");
 
-	g_Hexagon.m_position = glm::vec3(0.25f, 0.25f, 0.0f);
-	g_Hexagon.m_rotation = 90.0f;
-	g_Hexagon.m_scale = glm::vec3(0.5f, 0.5f, 1.0f);
-	g_Hexagon.m_useScreenScale = true;
+	g_Hexagon->GenBindVerts();
 
-	g_Hexagon.m_program = Program_ClipSpace;
 
-	g_Hexagon.GenBindVerts();
 
-	g_Hexagon.AddUniform(new ImageUniform(Texture_Rayman), "ImageTexture");
-	g_Hexagon.AddUniform(new ImageUniform(Texture_Awesome), "ImageTexture1");
-	g_Hexagon.AddUniform(new FloatUniform(CurrentTime), "CurrentTime");
-	g_Hexagon.AddUniform(new Mat4Uniform(g_Hexagon.m_PVMMat), "PVMMat");
+	g_Rectangle->m_program = Program_Texture;
 
-	g_Rectangle.m_VertexArray.vertices = {
-		//Pos					//Col					//Texture Coords
-		-0.5f, 0.5f, 0.0f,		0.0f, 1.0f, 0.0f,		0.0f, 1.0f,		//Top - Left
-		-0.5f, -0.5f, 0.0f,		0.0f, 0.0f, 1.0f,		0.0f, 0.0f,		//Bot - Left
-		0.5f, -0.5f, 0.0f,		0.0f, 0.0f, 1.0f,		1.0f, 0.0f,		//Bot - Right
-		0.5f, 0.5f, 0.0f,		1.0f, 0.0f, 0.0f,		1.0f, 1.0f,		//Top - Right
-	};
+	g_Rectangle->AddUniform(new AnimationUniform(Texture_CapMan, 8, 0.1f, g_Rectangle), "ImageTexture");
+	g_Rectangle->AddUniform(new FloatUniform(0), "offset");
+	g_Rectangle->AddUniform(new Mat4Uniform(g_Rectangle->m_PVMMat), "PVMMat");
 
-	g_Rectangle.m_VertexArray.indices = {
-		0, 1, 2,
-		0, 2, 3
-	};
-
-	g_Rectangle.m_position = glm::vec3(-0.25f, -0.25f, 0.0f);
-	g_Rectangle.m_rotation = 0.0f;
-	g_Rectangle.m_scale = glm::vec3(0.5f, 1.0f, 1.0f);
-	g_Rectangle.m_useScreenScale = true;
-
-	g_Rectangle.m_program = Program_Texture;
-
-	g_Rectangle.AddUniform(new AnimationUniform(Texture_NoCap, 8, 0.1f, &g_Rectangle), "ImageTexture");
-	g_Rectangle.AddUniform(new FloatUniform(0), "offset");
-	g_Rectangle.AddUniform(new Mat4Uniform(g_Rectangle.m_PVMMat), "PVMMat");
-
-	g_Rectangle.GenBindVerts();
+	g_Rectangle->GenBindVerts();
 }
 
 void GenTexture(GLuint& texture, const char* texPath)
@@ -258,101 +231,86 @@ void GenTexture(GLuint& texture, const char* texPath)
 void Update()
 {
 	CurrentTime = (float)glfwGetTime();
-	g_Hexagon.currentTime = CurrentTime;
-	g_Rectangle.currentTime = CurrentTime;
+	g_Hexagon->currentTime = CurrentTime;
+	g_Rectangle->currentTime = CurrentTime;
 
-	//std::cout << CurrentTime << std::endl;
+	g_Hexagon->UpdateUniform(new FloatUniform(g_Hexagon->currentTime), "CurrentTime");
 
-	UpdatePVM(g_Hexagon);
-
-	UpdatePVM(g_Rectangle);
-
-	g_Hexagon.UpdateUniform(new Mat4Uniform(g_Hexagon.m_PVMMat), "PVMMat");
-	g_Hexagon.UpdateUniform(new FloatUniform(g_Hexagon.currentTime), "CurrentTime");
-
-	//g_Rectangle.UpdateUniform(new FloatUniform(CurrentTime), "offset");
-	g_Rectangle.UpdateUniform(new FloatUniform(g_Rectangle.currentTime), "CurrentTime");
-	g_Rectangle.UpdateUniform(new Mat4Uniform(g_Rectangle.m_PVMMat), "PVMMat");
+	g_Rectangle->UpdateUniform(new FloatUniform(g_Rectangle->currentTime), "CurrentTime");
 
 	CheckInput();
 }
 
-void UpdatePVM(CShape &_shape)
+void UpdatePVM(CShape* _shape)
 {
-	_shape.m_translationMat = glm::translate(glm::mat4(), _shape.m_position);
-	_shape.m_rotationMat = glm::rotate(glm::mat4(), glm::radians(_shape.m_rotation), glm::vec3(0.0f, 0.0f, 1.0f));
-	_shape.m_scaleMat = glm::scale(glm::mat4(), _shape.m_scale);
+	_shape->m_translationMat = glm::translate(glm::mat4(), _shape->m_position);
+	_shape->m_rotationMat = glm::rotate(glm::mat4(), glm::radians(_shape->m_rotation), glm::vec3(0.0f, 0.0f, 1.0f));
+	_shape->m_scaleMat = glm::scale(glm::mat4(), _shape->m_scale);
 
-	glm::mat4 pixelScale = (_shape.m_useScreenScale ? glm::scale(glm::mat4(), glm::vec3(width / 2, height / 2, 1)) : glm::scale(glm::mat4(), glm::vec3(1, 1, 1)));
+	glm::mat4 pixelScale = (_shape->m_useScreenScale ? glm::scale(glm::mat4(), glm::vec3(width / 2, height / 2, 1)) : glm::scale(glm::mat4(), glm::vec3(1, 1, 1)));
 
-	_shape.m_modelMat = pixelScale * _shape.m_translationMat * _shape.m_rotationMat * _shape.m_scaleMat;
+	_shape->m_modelMat = pixelScale * _shape->m_translationMat * _shape->m_rotationMat * _shape->m_scaleMat;
 
 	//Ortho project
 	float halfWindowWidth = (float)width / 2.0f;
 	float halfWindowHeight = (float)height / 2.0f;
-	ProjectionMat = glm::ortho(-halfWindowWidth, halfWindowWidth, -halfWindowHeight, halfWindowHeight, 0.1f, 100.0f);
+	camera.ProjectionMat = glm::ortho(-halfWindowWidth, halfWindowWidth, -halfWindowHeight, halfWindowHeight, 0.1f, 100.0f);
 
 	//Perspective project
 	//ProjectionMat = glm::perspective(glm::radians(45.0f), (float)width / (float)height, 0.1f, 100.0f);
 
-	ViewMat = glm::lookAt(CameraPos, CameraPos + CameraLookDir, CameraUpDir);
+	camera.ViewMat = glm::lookAt(camera.CameraPos, camera.CameraPos + camera.CameraLookDir, camera.CameraUpDir);
 
-	_shape.m_PVMMat = ProjectionMat * ViewMat * _shape.m_modelMat;
+	_shape->m_PVMMat = camera.ProjectionMat * camera.ViewMat * _shape->m_modelMat;
 }
 
 void CheckInput()
 {
-	bool updated = false;
+	//bool updated = false;
 
 	//Move Triangle
 	if (glfwGetKey(window, GLFW_KEY_D))
 	{
-		pos.x += 0.01f;
-		updated = true;
+		g_Hexagon->m_position.x += 0.01f;
+		/*pos.x += 0.01f;
+		updated = true;*/
 	}
 	if (glfwGetKey(window, GLFW_KEY_A))
 	{
-		pos.x -= 0.01f;
-		updated = true;
+		g_Hexagon->m_position.x -= 0.01f;
 	}
 	if (glfwGetKey(window, GLFW_KEY_W))
 	{
-		pos.y += 0.01f;
-		updated = true;
+		g_Hexagon->m_position.y += 0.01f;
 	}
 	if (glfwGetKey(window, GLFW_KEY_S))
 	{
-		pos.y -= 0.01f;
-		updated = true;
+		g_Hexagon->m_position.y -= 0.01f;
 	}
 
 	//Scale Triangle
 	if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL))
 	{
-		size -= 0.01f;
-		updated = true;
+		g_Hexagon->m_scale -= 0.01f;
 	}
 	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT))
 	{
-		size += 0.01f;
-		updated = true;
+		g_Hexagon->m_scale += 0.01f;
 	}
 
 	//Rotate Triangle
 	if (glfwGetKey(window, GLFW_KEY_Q))
 	{
-		ang -= 0.5f;
-		updated = true;
+		g_Hexagon->m_rotation += 0.5f;
 	}
 	if (glfwGetKey(window, GLFW_KEY_E))
 	{
-		ang += 0.5f;
-		updated = true;
+		g_Hexagon->m_rotation -= 0.5f;
 	}
 
-	if (updated) {
-		EquiTriangle(pos, size, ang);
-	}
+	//if (updated) {
+	//	EquiTriangle(pos, size, ang);
+	//}
 }
 
 //Render window
@@ -361,9 +319,9 @@ void Render()
 	//Clear Screen
 	glClear(GL_COLOR_BUFFER_BIT);
 
-	g_Hexagon.Render();
-
-	g_Rectangle.Render();
+	camera.Draw(g_Rectangle);
+	camera.Draw(g_Hexagon);
+	
 	
 	glfwSwapBuffers(window);
 }
@@ -388,6 +346,15 @@ void Triangle(vector3 v1, vector3 c1, vector3 v2 , vector3 c2, vector3 v3 , vect
 	};
 
 	//copy our vertices array in a buffer for OpenGL to use
-	glBindBuffer(GL_ARRAY_BUFFER, VBO_Tri);
+	//glBindBuffer(GL_ARRAY_BUFFER, VBO_Tri);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_DYNAMIC_DRAW);
+}
+
+void CCamera::Draw(CShape* _shape)
+{
+	UpdatePVM(_shape);
+
+	_shape->UpdateUniform(new Mat4Uniform(_shape->m_PVMMat), "PVMMat");
+
+	_shape->Render();
 }

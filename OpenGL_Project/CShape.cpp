@@ -4,8 +4,60 @@
 
 //#include <stb_image.h>
 
-CShape::CShape()
+CShape::CShape(int _verts, glm::vec3 _pos, float _rot, glm::vec3 _scale, bool _screenScale)
 {
+	m_position = _pos;
+	m_rotation = _rot;
+	m_scale = _scale;
+	m_useScreenScale = _screenScale;
+
+
+	float angle = 360 / _verts;
+
+	m_VertexArray.vertices = { 0.0f, 0.0f, 0.0f,		1.0f, 1.0f, 1.0f,		0.5f, 0.5f, };
+
+	float near1 = 0;
+
+	for (int i = 1; i <= _verts; i++) {
+		float xCoord = cos((((float)i - 2) * angle + angle * 0.5f) * M_PI / 180.0);
+		float yCoord = sin((((float)i - 2) * angle + angle * 0.5f) * M_PI / 180.0);
+		
+		if (abs(xCoord) >= 0.99f) continue;
+
+		if (abs(xCoord) > near1) near1 = abs(xCoord);
+		else if (abs(yCoord) > near1) near1 = abs(yCoord);
+	}
+
+	for (int i = 1; i <= _verts; i++) {
+		float xCoord = cos((((float)i - 2) * angle + angle * 0.5f) * M_PI / 180.0);
+		float yCoord = sin((((float)i - 2) * angle + angle * 0.5f) * M_PI / 180.0);
+
+		float xPos = xCoord;
+		float yPos = yCoord;
+		float zPos = 0;
+
+		float rCol = 1.0f;
+		float gCol = 1.0f;
+		float bCol = 1.0f;
+
+		float xTex = (xCoord / (near1 > 0 ? near1 : 1) + 1) / 2;
+		float yTex = (yCoord / (near1 > 0 ? near1 : 1) + 1) / 2;
+
+		m_VertexArray.vertices.push_back(xPos);
+		m_VertexArray.vertices.push_back(yPos);
+		m_VertexArray.vertices.push_back(zPos);
+
+		m_VertexArray.vertices.push_back(rCol);
+		m_VertexArray.vertices.push_back(gCol);
+		m_VertexArray.vertices.push_back(bCol);
+
+		m_VertexArray.vertices.push_back(xTex);
+		m_VertexArray.vertices.push_back(yTex);
+
+		m_VertexArray.indices.push_back(0);
+		m_VertexArray.indices.push_back(i);
+		m_VertexArray.indices.push_back((i + 1 > _verts ? 1 : i + 1));
+	}
 }
 
 void CShape::AddUniform(CUniform* _uniform, std::string _name)
@@ -39,7 +91,7 @@ void CShape::Render()
 	}
 
 	//Draw Elements	//Type	//Vertices
-	glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, 0);
+	glDrawElements(GL_TRIANGLES, m_VertexArray.vertices.size(), GL_UNSIGNED_INT, 0);
 
 	glBindVertexArray(0);
 	glUseProgram(0);

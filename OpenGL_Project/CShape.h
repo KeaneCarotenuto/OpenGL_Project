@@ -3,6 +3,8 @@
 
 #include <string>
 #include <iostream>
+#define _USE_MATH_DEFINES
+#include <math.h>
 #include <glm.hpp>
 #include <gtc/type_ptr.hpp>
 
@@ -22,7 +24,7 @@ class CUniform;
 class CShape
 {
 public:
-	CShape();
+	CShape(int _verts, glm::vec3 _pos, float _rot, glm::vec3 _scale, bool _screenScale);
 
 	//std::map<std::string, void(*)()> test;
 
