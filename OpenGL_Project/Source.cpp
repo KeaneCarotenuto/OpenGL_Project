@@ -75,6 +75,7 @@ float previousTimeStep = 0;
 GLuint Program_Texture;
 GLuint Program_ClipSpace;
 GLuint Program_ClipSpaceFractal;
+GLuint Program_Text;
 
 //Move to map/vector later
 GLuint Texture_Rayman;
@@ -172,6 +173,7 @@ void InitialSetup()
 	Program_Texture = ShaderLoader::CreateProgram("Resources/Shaders/ClipSpace.vert", "Resources/Shaders/Texture.frag");
 	Program_ClipSpace = ShaderLoader::CreateProgram("Resources/Shaders/ClipSpace.vert", "Resources/Shaders/TextureMix.frag");
 	Program_ClipSpaceFractal = ShaderLoader::CreateProgram("Resources/Shaders/ClipSpace.vert", "Resources/Shaders/Fractal.frag");
+	Program_Text = ShaderLoader::CreateProgram("Resources/Shaders/Text.vert", "Resources/Shaders/Text.frag");
 
 	glfwSetKeyCallback(window, key_callback);
 
@@ -194,7 +196,7 @@ void InitialSetup()
 	GenTexture(Texture_CapMan, "Resources/Textures/Capguy_Walk.png");
 	GenTexture(Texture_Frac, "Resources/Textures/pal.png");
 
-	Text_Message = new TextLabel("This is some JUICY text!", "Resources/Fonts/ARIAL.TTF", glm::ivec2(0,48), glm::vec2(0.0f, 0.0f));
+	Text_Message = new TextLabel("This is some JUICY text!", "Resources/Fonts/ARIAL.ttf", glm::ivec2(0,48), glm::vec2(100.0f, 100.0f));
 
 
 	//Set program and add uniforms to hexagon
@@ -323,6 +325,10 @@ void Update()
 	g_Rectangle->Update(DeltaTime, CurrentTime);
 	g_Fractal->Update(DeltaTime, CurrentTime);
 
+	glUseProgram(Program_Text);
+	glUniform1f(glGetUniformLocation(Program_Text, "CurrentTime"), CurrentTime);
+	glUseProgram(0);
+
 	//Check for user input at fixed rate
 	if (accum >= 0.01) {
 		//Reset accumulator
@@ -342,18 +348,18 @@ void Render()
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	//Draw rect
-	//camera.Draw(g_Rectangle);
+	camera.Draw(g_Rectangle);
 
 	//Draw hex
-	//camera.Draw(g_Hexagon);
-
-	Text_Message->Render();
+	camera.Draw(g_Hexagon);
 
 	//Draw copy
 	//DrawCopy(g_Hexagon, glm::vec3(-0.7, 0.7, 0), 90.0f, glm::vec3(0.3, 0.3, 1));
 
 	//Draw fractal
-	//camera.Draw(g_Fractal);
+	camera.Draw(g_Fractal);
+
+	Text_Message->Render();
 	
 	glfwSwapBuffers(window);
 }

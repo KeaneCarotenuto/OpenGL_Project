@@ -1,31 +1,5 @@
 #include "TextLabel.h"
 
-GLuint TextLabel::GenerateTexture(FT_Face _face)
-{
-    GLuint TextureID;
-    glGenTextures(1, &TextureID);
-    glBindTexture(GL_TEXTURE_2D, TextureID);
-
-    glTexImage2D(   
-        GL_TEXTURE_2D,
-        0,
-        GL_RED,
-        _face->glyph->bitmap.width,
-        _face->glyph->bitmap.rows,
-        0,
-        GL_RED,
-        GL_UNSIGNED_BYTE,
-        _face->glyph->bitmap.buffer
-    );
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,  GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    return TextureID;
-}
-
 TextLabel::TextLabel(std::string _text, std::string _font, glm::ivec2 _pixelSize, glm::vec2 _pos, glm::vec3 _color, glm::vec2 _scale)
 {
     SetText(_text);
@@ -33,12 +7,7 @@ TextLabel::TextLabel(std::string _text, std::string _font, glm::ivec2 _pixelSize
     SetScale(_scale);
     SetPosition(_pos);
 
-
-    float halfWindowWidth = (float)utils::windowWidth / 2.0f;
-    float halfWindowHeight = (float)utils::windowHeight / 2.0f;
-    glm::mat4 pixelScale = glm::scale(glm::mat4(), glm::vec3(utils::windowWidth / 2, utils::windowHeight / 2, 1));
-
-    ProjectionMat = glm::ortho(-halfWindowWidth, halfWindowWidth, -halfWindowHeight, halfWindowHeight, 0.1f, 100.0f);
+    ProjectionMat = glm::ortho(0.0f, (float)utils::windowWidth, 0.0f, (float)utils::windowHeight, 0.0f, 100.0f);
     Program_Text = ShaderLoader::CreateProgram("Resources/Shaders/Text.vert", "Resources/Shaders/Text.frag");
 
     FT_Library FontLibrary;
@@ -121,8 +90,8 @@ void TextLabel::Render()
         GLfloat Height = FontCharacter.size.y * m_scale.y;
 
         GLfloat vertices[6][4] = {
-            {PosX, PosY + Height, 0.0f, 0.0f}, {PosX, PosY, 0.0f, 1.0f}, {PosX + Width, PosY, 1.0f, 1.0f},
-            {PosX, PosY + Height, 0.0f, 0.0f}, {PosX + Width, PosY, 1.0f, 1.0f}, {PosX + Width, PosY + Height, 1.0f, 0.0f}
+            {PosX, PosY + Height, 0.0, 0.0}, {PosX, PosY, 0.0, 1.0}, {PosX + Width, PosY, 1.0, 1.0},
+            {PosX, PosY + Height, 0.0, 0.0}, {PosX + Width, PosY, 1.0, 1.0}, {PosX + Width, PosY + Height, 1.0, 0.0}
         };
 
         glBindBuffer(GL_ARRAY_BUFFER, VBO_DynamicQuad);
@@ -142,4 +111,30 @@ void TextLabel::Render()
     glBindTexture(GL_TEXTURE_2D, 0);
 
     glDisable(GL_BLEND);
+}
+
+GLuint TextLabel::GenerateTexture(FT_Face _face)
+{
+    GLuint TextureID;
+    glGenTextures(1, &TextureID);
+    glBindTexture(GL_TEXTURE_2D, TextureID);
+
+    glTexImage2D(
+        GL_TEXTURE_2D,
+        0,
+        GL_RED,
+        _face->glyph->bitmap.width,
+        _face->glyph->bitmap.rows,
+        0,
+        GL_RED,
+        GL_UNSIGNED_BYTE,
+        _face->glyph->bitmap.buffer
+    );
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    return TextureID;
 }

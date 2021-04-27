@@ -6,10 +6,9 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
-#include <iostream>
-#include <Windows.h>
 #include <map>
 #include <string>
+#include <iostream>
 
 #include "ShaderLoader.h"
 
@@ -23,8 +22,8 @@ private:
 	struct FontChar
 	{
 		GLuint textureID = 0;
-		glm::ivec2 size = glm::ivec2();
-		glm::ivec2 bearing = glm::ivec2();
+		glm::ivec2 size;
+		glm::ivec2 bearing;
 		GLuint advance = 0;
 	};
 
