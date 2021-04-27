@@ -25,11 +25,16 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
+#include <map>
+
 #include "Source.h"
 #include "ShaderLoader.h"
+#include "TextLabel.h"
 
 #include "CShape.h"
 #include "CUniform.h"
+
+#include "Utility.h"
 
 /// <summary>
 /// Camera Class for viewing shapes
@@ -62,9 +67,6 @@ void DrawCopy(CShape* _toCopy, glm::vec3 _pos, float _rot, glm::vec3 _scale);
 
 GLFWwindow* window = nullptr;
 
-//Width and height of window
-const int width = 800;
-const int height = 800;
 
 //Storing previous time step
 float previousTimeStep = 0;
@@ -79,6 +81,10 @@ GLuint Texture_Rayman;
 GLuint Texture_Awesome;
 GLuint Texture_CapMan;
 GLuint Texture_Frac;
+
+std::map<GLuint, std::string> textures;
+
+TextLabel* Text_Message;
 
 //Make shapes (Add them to vector later)
 CShape* g_Hexagon = new CShape(6, glm::vec3(0.25f, 0.25f, 0.0f), 0.0f, glm::vec3(0.5f, 0.5f, 1.0f), true);
@@ -127,7 +133,7 @@ bool Startup()
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
 
 	//Create a GLFW controlled context window
-	window = glfwCreateWindow(width, height, "Keane Carotenuto - Summative  1", NULL, NULL);
+	window = glfwCreateWindow(utils::windowWidth, utils::windowHeight, "Keane Carotenuto - Summative  1", NULL, NULL);
 
 	//Check for failure
 	if (window == NULL) {
@@ -157,10 +163,10 @@ bool Startup()
 void InitialSetup()
 {
 	//Set the clear colour as blue (used by glClear)
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
 
 	// Maps the range of the window size to NDC (-1 -> 1)
-	glViewport(0, 0, width, height);
+	glViewport(0, 0, utils::windowWidth, utils::windowHeight);
 
 	//Create programs
 	Program_Texture = ShaderLoader::CreateProgram("Resources/Shaders/ClipSpace.vert", "Resources/Shaders/Texture.frag");
@@ -187,6 +193,8 @@ void InitialSetup()
 	GenTexture(Texture_Awesome, "Resources/Textures/AwesomeFace.png");
 	GenTexture(Texture_CapMan, "Resources/Textures/Capguy_Walk.png");
 	GenTexture(Texture_Frac, "Resources/Textures/pal.png");
+
+	Text_Message = new TextLabel("This is some JUICY text!", "Resources/Fonts/ARIAL.TTF", glm::ivec2(0,48), glm::vec2(0.0f, 0.0f));
 
 
 	//Set program and add uniforms to hexagon
@@ -334,16 +342,18 @@ void Render()
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	//Draw rect
-	camera.Draw(g_Rectangle);
+	//camera.Draw(g_Rectangle);
 
 	//Draw hex
-	camera.Draw(g_Hexagon);
+	//camera.Draw(g_Hexagon);
+
+	Text_Message->Render();
 
 	//Draw copy
-	DrawCopy(g_Hexagon, glm::vec3(-0.7, 0.7, 0), 90.0f, glm::vec3(0.3, 0.3, 1));
+	//DrawCopy(g_Hexagon, glm::vec3(-0.7, 0.7, 0), 90.0f, glm::vec3(0.3, 0.3, 1));
 
 	//Draw fractal
-	camera.Draw(g_Fractal);
+	//camera.Draw(g_Fractal);
 	
 	glfwSwapBuffers(window);
 }
@@ -396,14 +406,14 @@ void UpdatePVM(CShape* _shape)
 	_shape->m_scaleMat = glm::scale(glm::mat4(), _shape->m_scale);
 
 	//Convert from world space to screen space for ortho
-	glm::mat4 pixelScale = (_shape->m_useScreenScale ? glm::scale(glm::mat4(), glm::vec3(width / 2, height / 2, 1)) : glm::scale(glm::mat4(), glm::vec3(1, 1, 1)));
+	glm::mat4 pixelScale = (_shape->m_useScreenScale ? glm::scale(glm::mat4(), glm::vec3(utils::windowWidth / 2, utils::windowHeight / 2, 1)) : glm::scale(glm::mat4(), glm::vec3(1, 1, 1)));
 
 	//Calculate model matrix for shape
 	_shape->m_modelMat = pixelScale * _shape->m_translationMat * _shape->m_rotationMat * _shape->m_scaleMat;
 
 	//Ortho project
-	float halfWindowWidth = (float)width / 2.0f;
-	float halfWindowHeight = (float)height / 2.0f;
+	float halfWindowWidth = (float)utils::windowWidth / 2.0f;
+	float halfWindowHeight = (float)utils::windowHeight / 2.0f;
 	camera.ProjectionMat = glm::ortho(-halfWindowWidth, halfWindowWidth, -halfWindowHeight, halfWindowHeight, 0.1f, 100.0f);
 
 	//Perspective project

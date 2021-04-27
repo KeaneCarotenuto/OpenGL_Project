@@ -39,6 +39,9 @@
     <ClCompile Include="CUniform.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="TextLabel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source.h">
@@ -54,6 +57,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="CUniform.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TextLabel.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Utility.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -89,6 +98,12 @@
     </None>
     <None Include="Resources\Shaders\Fractal.frag">
       <Filter>Resource Files\Shaders\frag</Filter>
+    </None>
+    <None Include="Resources\Shaders\Text.frag">
+      <Filter>Resource Files\Shaders\frag</Filter>
+    </None>
+    <None Include="Resources\Shaders\Text.vert">
+      <Filter>Resource Files\Shaders\vert</Filter>
     </None>
   </ItemGroup>
 </Project>
