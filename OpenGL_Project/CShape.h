@@ -56,6 +56,8 @@ public:
 	glm::vec3 m_position = glm::vec3(0.0f, 0.0f, 0.0f);
 	GLfloat m_rotation = 0.0f;
 	glm::vec3 m_scale = glm::vec3(1.0f, 1.0f, 1.0f);
+
+	bool isPerspective = false;
 	bool m_useScreenScale = false;
 
 	glm::mat4 m_modelMat = glm::mat4();

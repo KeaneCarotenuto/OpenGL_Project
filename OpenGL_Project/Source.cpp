@@ -19,6 +19,9 @@
 #include <glm.hpp>
 #include <gtc/matrix_transform.hpp>
 #include <gtc/type_ptr.hpp>
+#include <gtx/rotate_vector.hpp>
+
+#include <fmod.hpp>
 
 #include <iostream>
 #include <Windows.h>
@@ -53,8 +56,16 @@ public:
 }camera;
 
 
+void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
+
+void MouseCallback(GLFWwindow* window, int button, int action, int mods);
+
+void TextInput(GLFWwindow* window, unsigned int codePoint);
+
 bool Startup();
 void InitialSetup();
+
+bool AudioInit();
 
 void GenTexture(GLuint& texture, const char* texPath);
 
@@ -70,6 +81,8 @@ GLFWwindow* window = nullptr;
 
 //Storing previous time step
 float previousTimeStep = 0;
+
+bool doInput = false;
 
 //Move to map/vector later
 GLuint Program_Texture;
@@ -88,18 +101,42 @@ std::map<GLuint, std::string> textures;
 TextLabel* Text_Message;
 
 //Make shapes (Add them to vector later)
-CShape* g_Hexagon = new CShape(6, glm::vec3(0.25f, 0.25f, 0.0f), 0.0f, glm::vec3(0.5f, 0.5f, 1.0f), true);
-CShape* g_Rectangle = new CShape(4, glm::vec3(-0.25f, -0.25f, 0.0f), 0.0f, glm::vec3(0.5f, 1.0f, 1.0f), true);
-CShape* g_Fractal = new CShape(40, glm::vec3(0.5f, -0.5f, 0.0f), 0.0f, glm::vec3(0.5f, 0.5f, 1.0f), true);
+CShape* g_Hexagon = new CShape(6, glm::vec3(0.25f, 0.25f, 0.0f), 0.0f, glm::vec3(0.5f, 0.5f, 1.0f), false);
+CShape* g_Rectangle = new CShape(4, glm::vec3(-0.25f, -0.25f, 0.0f), 0.0f, glm::vec3(0.5f, 1.0f, 1.0f), false);
+CShape* g_Fractal = new CShape(40, glm::vec3(0.5f, -0.5f, 0.0f), 0.0f, glm::vec3(0.5f, 0.5f, 1.0f), false);
+
+FMOD::System* AudioSystem;
+FMOD::Sound* FX_Gunshot;
+FMOD::Sound* Track_Dance;
 
 float CurrentTime;
 
-static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
 	//Quit if esc key pressed
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
 		glfwSetWindowShouldClose(window, GL_TRUE);
 	}
+
+	if (key == GLFW_KEY_ENTER && action == GLFW_PRESS) {
+		doInput = !doInput;
+		std::cout << "Input is now " << (doInput ? "Enabled." : "Disabled.") << std::endl;
+		(doInput == true) ? glfwSetCharCallback(window, TextInput) : glfwSetCharCallback(window, 0);
+	}
+
+
+
+	
+}
+
+void MouseCallback(GLFWwindow* window, int button, int action, int mods) {
+	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+		AudioSystem->playSound(FX_Gunshot, 0, false, 0);
+	}
+}
+
+void TextInput(GLFWwindow* window, unsigned int codePoint) {
+	std::cout << "Text input detected: " << (unsigned char)codePoint << std::endl;
 }
 
 int main() {
@@ -119,6 +156,10 @@ int main() {
 		//Render all the objects
 		Render();
 	}
+
+	FX_Gunshot->release();
+	Track_Dance->release();
+	AudioSystem->release();
 
 	//Close GLFW correctly
 	glfwTerminate();
@@ -175,7 +216,8 @@ void InitialSetup()
 	Program_ClipSpaceFractal = ShaderLoader::CreateProgram("Resources/Shaders/ClipSpace.vert", "Resources/Shaders/Fractal.frag");
 	Program_Text = ShaderLoader::CreateProgram("Resources/Shaders/Text.vert", "Resources/Shaders/Text.frag");
 
-	glfwSetKeyCallback(window, key_callback);
+	glfwSetKeyCallback(window, KeyCallback);
+	glfwSetMouseButtonCallback(window, MouseCallback);
 
 	//Cull polygons not facing
 	glCullFace(GL_BACK);
@@ -229,30 +271,61 @@ void InitialSetup()
 	g_Fractal->AddUniform(new Mat4Uniform(g_Rectangle->m_PVMMat), "PVMMat");
 
 	g_Fractal->GenBindVerts();
+
+	AudioInit();
+}
+
+bool AudioInit()
+{
+	if (FMOD::System_Create(&AudioSystem) != FMOD_OK) {
+		std::cout << "FMOD ERROR: Audio System failed to create." << std::endl;
+		return false;
+	}
+
+	if (AudioSystem->init(100, FMOD_INIT_NORMAL | FMOD_INIT_3D_RIGHTHANDED, 0) != FMOD_OK) {
+		std::cout << "FMOD ERROR: Audio system failed to initialize." << std::endl;
+		return false;
+	}
+
+	if (AudioSystem->createSound("Resources/Audio/Gunshot.wav", FMOD_DEFAULT, 0, &FX_Gunshot) != FMOD_OK) {
+		std::cout << "FMOD ERROR: Failed to load sound using createsound(...)" << std::endl;
+	}
+
+	if (AudioSystem->createSound("Resources/Audio/DanceTrack.mp3", FMOD_LOOP_NORMAL, 0, &Track_Dance) != FMOD_OK) {
+		std::cout << "FMOD ERROR: Failed to load sound using createsound(...)" << std::endl;
+	}
+
+	AudioSystem->playSound(Track_Dance, 0, false, 0);
+
+	return true;
 }
 
 void CheckInput()
 {
 	//bool updated = false;
 
-	//Move Triangle SWAD
-	if (glfwGetKey(window, GLFW_KEY_D))
-	{
-		g_Hexagon->m_position.x += 0.01f;
-		/*pos.x += 0.01f;
-		updated = true;*/
-	}
+	double xPos;
+	double yPos;
+	glfwGetCursorPos(window, &xPos, &yPos);
+	SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), {5,50});
+	std::cout << "x: " << xPos << ", y: " << yPos << "          " << std::endl;
+
+	//Move camera SWAD
 	if (glfwGetKey(window, GLFW_KEY_A))
 	{
-		g_Hexagon->m_position.x -= 0.01f;
+		camera.CameraPos += glm::normalize(glm::rotate(camera.CameraLookDir, glm::radians(90.0f), camera.CameraUpDir)) * 0.05f;
+	}
+	if (glfwGetKey(window, GLFW_KEY_D))
+	{
+		camera.CameraPos -= glm::normalize(glm::rotate(camera.CameraLookDir, glm::radians(90.0f), camera.CameraUpDir)) * 0.05f;
 	}
 	if (glfwGetKey(window, GLFW_KEY_W))
 	{
-		g_Hexagon->m_position.y += 0.01f;
+		camera.CameraPos += glm::normalize(camera.CameraLookDir) * 0.05f;
 	}
 	if (glfwGetKey(window, GLFW_KEY_S))
 	{
-		g_Hexagon->m_position.y -= 0.01f;
+		camera.CameraPos -= glm::normalize(camera.CameraLookDir) * 0.05f;
 	}
 
 	//Scale Triangle SHIFT, CTRL
@@ -265,6 +338,10 @@ void CheckInput()
 		g_Hexagon->m_scale += 0.01f;
 	}
 
+
+	//NOTE THIS STUFF NEESD TO BE CHANGED SO THAT LOOK DIR AND UP DIR ARE LOCKED TOGETHER AT 90 DEGREES
+
+
 	//Rotate Triangle QE
 	if (glfwGetKey(window, GLFW_KEY_Q))
 	{
@@ -273,6 +350,36 @@ void CheckInput()
 	if (glfwGetKey(window, GLFW_KEY_E))
 	{
 		g_Hexagon->m_rotation -= 0.5f;
+	}
+
+	if (glfwGetKey(window, GLFW_KEY_LEFT))
+	{
+		camera.CameraLookDir = glm::rotate(camera.CameraLookDir, glm::radians(1.0f), camera.CameraUpDir);
+	}
+
+	if (glfwGetKey(window, GLFW_KEY_RIGHT))
+	{
+		camera.CameraLookDir = glm::rotate(camera.CameraLookDir, glm::radians(-1.0f), camera.CameraUpDir);
+	}
+
+	if (glfwGetKey(window, GLFW_KEY_UP))
+	{
+		/*camera.CameraUpDir = glm::rotate(camera.CameraUpDir, glm::radians(-1.0f), camera.CameraLookDir);*/
+	}
+
+	if (glfwGetKey(window, GLFW_KEY_DOWN))
+	{
+		
+	}
+
+	if (glfwGetKey(window, GLFW_KEY_KP_ADD))
+	{
+		camera.CameraPos += glm::normalize(camera.CameraUpDir) * 0.05f;
+	}
+
+	if (glfwGetKey(window, GLFW_KEY_KP_SUBTRACT))
+	{
+		camera.CameraPos -= glm::normalize(camera.CameraUpDir) * 0.05f;
 	}
 }
 
@@ -337,6 +444,9 @@ void Update()
 		//Check for input
 		CheckInput();
 	}
+
+	//Update the FMOD Audio System
+	AudioSystem->update();
 }
 
 /// <summary>
@@ -420,10 +530,10 @@ void UpdatePVM(CShape* _shape)
 	//Ortho project
 	float halfWindowWidth = (float)utils::windowWidth / 2.0f;
 	float halfWindowHeight = (float)utils::windowHeight / 2.0f;
-	camera.ProjectionMat = glm::ortho(-halfWindowWidth, halfWindowWidth, -halfWindowHeight, halfWindowHeight, 0.1f, 100.0f);
+	//camera.ProjectionMat = glm::ortho(-halfWindowWidth, halfWindowWidth, -halfWindowHeight, halfWindowHeight, 0.1f, 100.0f);
 
 	//Perspective project
-	//ProjectionMat = glm::perspective(glm::radians(45.0f), (float)width / (float)height, 0.1f, 100.0f);
+	camera.ProjectionMat = glm::perspective(glm::radians(45.0f), (float)utils::windowWidth / (float)utils::windowHeight, 0.1f, 100.0f);
 
 	//Calculate the new View matrix using all camera vars
 	camera.ViewMat = glm::lookAt(camera.CameraPos, camera.CameraPos + camera.CameraLookDir, camera.CameraUpDir);
