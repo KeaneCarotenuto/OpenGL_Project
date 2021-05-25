@@ -37,11 +37,17 @@ private:
 	glm::vec3 m_color;
 	glm::vec2 m_position;
 
+	GLuint EBO_Text;
 	GLuint VAO_Text;
 	GLuint VBO_DynamicQuad;
 	GLuint Program_Text;
 	glm::mat4 ProjectionMat;
 	std::map<GLchar, FontChar> CharacterMap;
+
+	GLuint indices[6] = {
+		0,1,2,
+		0,2,3
+	};
 	
 	
 

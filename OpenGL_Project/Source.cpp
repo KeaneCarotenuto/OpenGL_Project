@@ -432,6 +432,9 @@ void Update()
 	g_Rectangle->Update(DeltaTime, CurrentTime);
 	g_Fractal->Update(DeltaTime, CurrentTime);
 
+	/*Text_Message->SetScale(0.5f*(sin((float)CurrentTime) + 2) * glm::vec2(1,1));
+	Text_Message->SetPosition(glm::vec2(400, 400) - 0.5f * (sin((float)CurrentTime) + 2) * glm::vec2(400, 24));*/
+
 	glUseProgram(Program_Text);
 	glUniform1f(glGetUniformLocation(Program_Text, "CurrentTime"), CurrentTime);
 	glUseProgram(0);

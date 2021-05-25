@@ -44,13 +44,44 @@ TextLabel::TextLabel(std::string _text, std::string _font, glm::ivec2 _pixelSize
     FT_Done_Face(FontFace);
     FT_Done_FreeType(FontLibrary);
 
+
+	//glGenVertexArrays(1, &m_VAO);
+	//glBindVertexArray(m_VAO);
+
+	////Gen EBO 
+	//glGenBuffers(1, &m_EBO);
+	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_EBO);
+	//int* ind = &m_VertexArray.indices[0];
+	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_VertexArray.indices.size() * sizeof(int), ind, GL_DYNAMIC_DRAW);
+
+	////Gen VBO 
+	//glGenBuffers(1, &m_VBO);
+	////copy our vertices array in a buffer for OpenGL to use
+	//glBindBuffer(GL_ARRAY_BUFFER, m_VBO);
+	//float* verts = &m_VertexArray.vertices[0];
+	//glBufferData(GL_ARRAY_BUFFER, m_VertexArray.vertices.size() * sizeof(float), verts, GL_DYNAMIC_DRAW);
+
+	////Set the vertex attributes pointers (How to interperet Vertex Data)
+	//glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)0);
+	//glEnableVertexAttribArray(0);
+	//glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
+	//glEnableVertexAttribArray(1);
+	//glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(6 * sizeof(GLfloat)));
+	//glEnableVertexAttribArray(2);
+
     glGenVertexArrays(1, &VAO_Text);
     glBindVertexArray(VAO_Text);
 
-    //Gen EBO 
-    glGenBuffers(1, &VBO_DynamicQuad);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO_DynamicQuad);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 6 * 4, NULL, GL_DYNAMIC_DRAW);
+	//Gen EBO 
+	glGenBuffers(1, &EBO_Text);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO_Text);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_DYNAMIC_DRAW);
+
+	//Gen VBO 
+	glGenBuffers(1, &VBO_DynamicQuad);
+	//copy our vertices array in a buffer for OpenGL to use
+	glBindBuffer(GL_ARRAY_BUFFER, VBO_DynamicQuad);
+	glBufferData(GL_ARRAY_BUFFER, 4 * 4 * sizeof(float), NULL, GL_DYNAMIC_DRAW);
 
     //Set the vertex attributes pointers (How to interperet Vertex Data)
     glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), 0);
@@ -89,9 +120,9 @@ void TextLabel::Render()
         GLfloat Width = FontCharacter.size.x * m_scale.x;
         GLfloat Height = FontCharacter.size.y * m_scale.y;
 
-        GLfloat vertices[6][4] = {
-            {PosX, PosY + Height, 0.0, 0.0}, {PosX, PosY, 0.0, 1.0}, {PosX + Width, PosY, 1.0, 1.0},
-            {PosX, PosY + Height, 0.0, 0.0}, {PosX + Width, PosY, 1.0, 1.0}, {PosX + Width, PosY + Height, 1.0, 0.0}
+        GLfloat vertices[4][4] = {
+			{PosX, PosY + Height, 0.0, 0.0}, {PosX, PosY, 0.0, 1.0},
+			{PosX + Width, PosY, 1.0, 1.0}, {PosX + Width, PosY + Height, 1.0, 0.0}
         };
 
         glBindBuffer(GL_ARRAY_BUFFER, VBO_DynamicQuad);
@@ -100,7 +131,7 @@ void TextLabel::Render()
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, FontCharacter.textureID);
         glUniform1i(glGetUniformLocation(Program_Text, "TextTexture"), 0);
-        glDrawArrays(GL_TRIANGLES, 0, 6);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
         CharacterOrigin.x += FontCharacter.advance * m_scale.x;
     }
