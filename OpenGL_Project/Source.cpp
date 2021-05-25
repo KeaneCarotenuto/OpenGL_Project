@@ -1,4 +1,4 @@
-// Bachelor of Software Engineering
+﻿// Bachelor of Software Engineering
 // Media Design School
 // Auckland
 // New Zealand
@@ -99,6 +99,7 @@ GLuint Texture_Frac;
 std::map<GLuint, std::string> textures;
 
 TextLabel* Text_Message;
+TextLabel* Text_Message2;
 
 //Make shapes (Add them to vector later)
 CShape* g_Hexagon = new CShape(6, glm::vec3(0.25f, 0.25f, 0.0f), 0.0f, glm::vec3(0.5f, 0.5f, 1.0f), false);
@@ -219,6 +220,8 @@ void InitialSetup()
 	glfwSetKeyCallback(window, KeyCallback);
 	glfwSetMouseButtonCallback(window, MouseCallback);
 
+	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
 	//Cull polygons not facing
 	glCullFace(GL_BACK);
 
@@ -239,6 +242,7 @@ void InitialSetup()
 	GenTexture(Texture_Frac, "Resources/Textures/pal.png");
 
 	Text_Message = new TextLabel("This is some JUICY text!", "Resources/Fonts/ARIAL.ttf", glm::ivec2(0,48), glm::vec2(100.0f, 100.0f));
+	Text_Message2 = new TextLabel("FINGERS", "Resources/Fonts/Roboto.ttf", glm::ivec2(0,48), glm::vec2(100.0f, 300.0f));
 
 
 	//Set program and add uniforms to hexagon
@@ -458,7 +462,7 @@ void Update()
 void Render()
 {
 	//Clear Screen
-	glClear(GL_COLOR_BUFFER_BIT);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	//Draw rect
 	camera.Draw(g_Rectangle);
@@ -473,6 +477,7 @@ void Render()
 	camera.Draw(g_Fractal);
 
 	Text_Message->Render();
+	Text_Message2->Render();
 	
 	glfwSwapBuffers(window);
 }

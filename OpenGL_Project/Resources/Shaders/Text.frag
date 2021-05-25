@@ -15,9 +15,11 @@ void main()
 {
 	float characterWidth = 50;
 
+	
+
 	float Alpha = texture(TextTexture, FragTexCoords).r;
 	if (VertexCopy.x < (leftClip + characterWidth) || VertexCopy.x > (rightClip - characterWidth)){
 		Alpha = 0;
 	}
-	FinalColor = vec4(TextColor.x, TextColor.yz, Alpha);
+	FinalColor = vec4(TextColor.xyz, Alpha);
 }

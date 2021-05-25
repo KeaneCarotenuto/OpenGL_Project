@@ -116,7 +116,7 @@ void TextLabel::Render()
     for (std::string::const_iterator TextCharacter = m_text.begin(); TextCharacter != m_text.end(); TextCharacter++) {
         FontChar FontCharacter = CharacterMap[*TextCharacter];
         GLfloat PosX = CharacterOrigin.x + FontCharacter.bearing.x * m_scale.x;
-        GLfloat PosY = CharacterOrigin.y + (FontCharacter.size.y - FontCharacter.bearing.y) * m_scale.y;
+        GLfloat PosY = CharacterOrigin.y - (FontCharacter.size.y - FontCharacter.bearing.y) * m_scale.y;
         GLfloat Width = FontCharacter.size.x * m_scale.x;
         GLfloat Height = FontCharacter.size.y * m_scale.y;
 
