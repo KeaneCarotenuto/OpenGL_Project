@@ -498,6 +498,17 @@ void Update()
 	g_Fractal->Update(DeltaTime, CurrentTime);
 	g_Cube->Update(DeltaTime, CurrentTime);
 
+	if (Text_Message2->GetWidth() > 0 && Text_Message2->GetHeight() > 0) {
+		glm::vec2 pos = Text_Message2->GetCopyPos();
+
+		float width = 292;// Text_Message2->GetWidth();
+		float height = 32;  Text_Message2->GetHeight();
+
+		Text_Message2->SetScale((((sin(CurrentTime) + 1) / 2)) * glm::vec2(1, 1));
+		Text_Message2->SetPosition(glm::vec2(pos.x + width  - (float)((((sin(CurrentTime) + 1) / 2)) * width / 2), pos.y + height - (float)((((sin(CurrentTime) + 1) / 2)) * height / 2)));
+	}
+
+	
 	/*Text_Message->SetScale(0.5f*(sin((float)CurrentTime) + 2) * glm::vec2(1,1));
 	Text_Message->SetPosition(glm::vec2(400, 400) - 0.5f * (sin((float)CurrentTime) + 2) * glm::vec2(400, 24));*/
 

@@ -1,6 +1,7 @@
 #include "TextLabel.h"
 
-TextLabel::TextLabel(std::string _text, std::string _font, glm::ivec2 _pixelSize, glm::vec2 _pos, glm::vec3 _color, glm::vec2 _scale)
+TextLabel::TextLabel(std::string _text, std::string _font, glm::ivec2 _pixelSize, glm::vec2 _pos, glm::vec3 _color, glm::vec2 _scale):
+    m_copyPosition(_pos)
 {
     SetText(_text);
     SetColor(_color);
@@ -88,12 +89,16 @@ void TextLabel::Render()
 
     glm::vec2 CharacterOrigin = m_position;
 
+    m_height = 0.0f;
+
     for (std::string::const_iterator TextCharacter = m_text.begin(); TextCharacter != m_text.end(); TextCharacter++) {
         FontChar FontCharacter = CharacterMap[*TextCharacter];
         GLfloat PosX = CharacterOrigin.x + FontCharacter.bearing.x * m_scale.x;
         GLfloat PosY = CharacterOrigin.y - (FontCharacter.size.y - FontCharacter.bearing.y) * m_scale.y;
         GLfloat Width = FontCharacter.size.x * m_scale.x;
         GLfloat Height = FontCharacter.size.y * m_scale.y;
+
+        if (Height > m_height) m_height = Height;
 
         GLfloat vertices[4][4] = {
 			{PosX, PosY + Height, 0.0, 0.0}, {PosX, PosY, 0.0, 1.0},
@@ -108,8 +113,12 @@ void TextLabel::Render()
         glUniform1i(glGetUniformLocation(Program_Text, "TextTexture"), 0);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
+        m_width = CharacterOrigin.x;
+
         CharacterOrigin.x += FontCharacter.advance * m_scale.x;
     }
+
+    m_width = CharacterOrigin.x;
 
     glUseProgram(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);

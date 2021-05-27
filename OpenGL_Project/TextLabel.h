@@ -36,6 +36,7 @@ private:
 	glm::vec2 m_scale;
 	glm::vec3 m_color;
 	glm::vec2 m_position;
+	const glm::vec2 m_copyPosition;
 
 	GLuint EBO_Text;
 	GLuint VAO_Text;
@@ -48,6 +49,9 @@ private:
 		0,1,2,
 		0,2,3
 	};
+
+	float m_width = 0.0f;
+	float m_height = 0.0f;
 	
 	
 
@@ -69,6 +73,11 @@ public:
 	void SetScale(glm::vec2 _scale) { this->m_scale = _scale; };
 	void SetPosition(glm::vec2 _pos) { this->m_position = _pos; };
 
+	float GetWidth() { return m_width; };
+	float GetHeight() { return m_height; };
+
 	std::string GetText();
+	glm::vec2 GetPos() { return m_position; };
+	glm::vec2 GetCopyPos() { return m_copyPosition; };
 };
 
