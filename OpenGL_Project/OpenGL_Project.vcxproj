@@ -132,6 +132,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="CCamera.cpp" />
     <ClCompile Include="CShape.cpp" />
     <ClCompile Include="CUniform.cpp" />
     <ClCompile Include="CVertexArray.cpp" />
@@ -140,6 +141,7 @@
     <ClCompile Include="TextLabel.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CCamera.h" />
     <ClInclude Include="CShape.h" />
     <ClInclude Include="CUniform.h" />
     <ClInclude Include="CVertexArray.h" />

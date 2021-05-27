@@ -33,27 +33,12 @@
 #include "Source.h"
 #include "ShaderLoader.h"
 #include "TextLabel.h"
+#include "CCamera.h"
 
 #include "CShape.h"
 #include "CUniform.h"
 
 #include "Utility.h"
-
-/// <summary>
-/// Camera Class for viewing shapes
-/// </summary>
-class CCamera {
-public:
-	// Camera Variables 
-	glm::vec3 CameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
-	glm::vec3 CameraLookDir = glm::vec3(0.0f, 0.0f, -1.0f);
-	glm::vec3 CameraTargetPos = glm::vec3(0.0f, 0.0f, 0.0f);
-	glm::vec3 CameraUpDir = glm::vec3(0.0f, 1.0f, 0.0f);
-	glm::mat4 ViewMat;
-	glm::mat4 ProjectionMat;
-
-	void Draw(CShape* _shape);
-}camera;
 
 
 void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
@@ -70,13 +55,14 @@ bool AudioInit();
 void GenTexture(GLuint& texture, const char* texPath);
 
 void Update();
-void UpdatePVM(CShape* _shape);
 void CheckInput();
 void Render();
 
 void DrawCopy(CShape* _toCopy, glm::vec3 _pos, float _rot, glm::vec3 _scale);
 
 GLFWwindow* window = nullptr;
+
+CCamera* camera = new CCamera();
 
 
 //Storing previous time step
@@ -106,6 +92,8 @@ CShape* g_Hexagon = new CShape(6, glm::vec3(0.25f, 0.25f, 0.0f), 0.0f, glm::vec3
 CShape* g_Rectangle = new CShape(4, glm::vec3(-0.25f, -0.25f, 0.0f), 0.0f, glm::vec3(0.5f, 1.0f, 1.0f), false);
 CShape* g_Fractal = new CShape(40, glm::vec3(0.5f, -0.5f, 0.0f), 0.0f, glm::vec3(0.5f, 0.5f, 1.0f), false);
 
+CShape* g_Cube = new CShape(glm::vec3(0.0f, 0.0f, 0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), false);
+
 FMOD::System* AudioSystem;
 FMOD::Sound* FX_Gunshot;
 FMOD::Sound* Track_Dance;
@@ -125,9 +113,9 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 		(doInput == true) ? glfwSetCharCallback(window, TextInput) : glfwSetCharCallback(window, 0);
 	}
 
-
-
-	
+	if (doInput && key == GLFW_KEY_BACKSPACE && (action == GLFW_REPEAT || action == GLFW_PRESS)) {
+		Text_Message->SetText( Text_Message->GetText().substr(0, Text_Message->GetText().size()-1) );
+	}
 }
 
 void MouseCallback(GLFWwindow* window, int button, int action, int mods) {
@@ -138,6 +126,9 @@ void MouseCallback(GLFWwindow* window, int button, int action, int mods) {
 
 void TextInput(GLFWwindow* window, unsigned int codePoint) {
 	std::cout << "Text input detected: " << (unsigned char)codePoint << std::endl;
+	unsigned char uc = (unsigned char)codePoint;
+	std::string s(1, static_cast<char>(uc));
+	Text_Message->SetText(Text_Message->GetText() + s);
 }
 
 int main() {
@@ -220,7 +211,7 @@ void InitialSetup()
 	glfwSetKeyCallback(window, KeyCallback);
 	glfwSetMouseButtonCallback(window, MouseCallback);
 
-	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 	//Cull polygons not facing
 	glCullFace(GL_BACK);
@@ -231,6 +222,9 @@ void InitialSetup()
 	//Enable Culling
 	glEnable(GL_CULL_FACE);
 	//glDisable(GL_CULL_FACE);
+
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LESS);
 
 	//Flip Images
 	stbi_set_flip_vertically_on_load(true);
@@ -244,9 +238,9 @@ void InitialSetup()
 	Text_Message = new TextLabel("This is some JUICY text!", "Resources/Fonts/ARIAL.ttf", glm::ivec2(0,48), glm::vec2(100.0f, 100.0f));
 	Text_Message2 = new TextLabel("FINGERS", "Resources/Fonts/Roboto.ttf", glm::ivec2(0,48), glm::vec2(100.0f, 300.0f));
 
-
 	//Set program and add uniforms to hexagon
 	g_Hexagon->m_program = Program_ClipSpace;
+	g_Hexagon->m_camera = camera;
 
 	g_Hexagon->AddUniform(new ImageUniform(Texture_Rayman), "ImageTexture");
 	g_Hexagon->AddUniform(new ImageUniform(Texture_Awesome), "ImageTexture1");
@@ -259,6 +253,7 @@ void InitialSetup()
 
 	//Set program and add uniforms to Rectangle
 	g_Rectangle->m_program = Program_Texture;
+	g_Rectangle->m_camera = camera;
 
 	g_Rectangle->AddUniform(new AnimationUniform(Texture_CapMan, 8, 0.1f, g_Rectangle), "ImageTexture");
 	g_Rectangle->AddUniform(new FloatUniform(0), "offset");
@@ -266,15 +261,81 @@ void InitialSetup()
 
 	g_Rectangle->GenBindVerts();
 
-
 	//Set program and add uniforms to Rectangle
 	g_Fractal->m_program = Program_ClipSpaceFractal;
+	g_Fractal->m_camera = camera;
 
 	g_Fractal->AddUniform(new ImageUniform(Texture_Frac), "ImageTexture");
 	g_Fractal->AddUniform(new FloatUniform(g_Fractal->m_currentTime), "CurrentTime");
 	g_Fractal->AddUniform(new Mat4Uniform(g_Rectangle->m_PVMMat), "PVMMat");
 
 	g_Fractal->GenBindVerts();
+
+	//Set program and add uniforms to Pyramid
+	g_Cube->m_program = Program_ClipSpace;
+	g_Cube->m_camera = camera;
+
+	g_Cube->AddUniform(new ImageUniform(Texture_Rayman), "ImageTexture");
+	g_Cube->AddUniform(new ImageUniform(Texture_Awesome), "ImageTexture1");
+	g_Cube->AddUniform(new FloatUniform(g_Cube->m_currentTime), "CurrentTime");
+	g_Cube->AddUniform(new FloatUniform(0), "offset");
+	g_Cube->AddUniform(new Mat4Uniform(g_Cube->m_PVMMat), "PVMMat");
+
+	g_Cube->m_VertexArray.vertices = {
+		// Index        // Position                     //Texture Coords
+						//Front Quad
+		/* 00 */        -0.5f,  0.5f,  0.5f,	-1.0f,  1.0f,  1.0f,         0.0f, 1.0f,     /* 00 */
+		/* 01 */        -0.5f, -0.5f,  0.5f,	-1.0f,  1.0f,  1.0f,         0.0f, 0.0f,     /* 01 */
+		/* 02 */         0.5f, -0.5f,  0.5f,	-1.0f,  1.0f,  1.0f,         1.0f, 0.0f,     /* 02 */
+		/* 03 */         0.5f,  0.5f,  0.5f,	-1.0f,  1.0f,  1.0f,         1.0f, 1.0f,     /* 03 */
+		//Back Quad
+		/* 04 */         0.5f,  0.5f, -0.5f,	-1.0f,  1.0f,  1.0f,         0.0f, 1.0f,     /* 04 */
+		/* 05 */         0.5f, -0.5f, -0.5f,	-1.0f,  1.0f,  1.0f,         0.0f, 0.0f,     /* 05 */
+		/* 06 */        -0.5f, -0.5f, -0.5f,	-1.0f,  1.0f,  1.0f,         1.0f, 0.0f,     /* 06 */
+		/* 07 */        -0.5f,  0.5f, -0.5f,	-1.0f,  1.0f,  1.0f,         1.0f, 1.0f,     /* 07 */
+		//Right
+		/* 08 */         0.5f,  0.5f,  0.5f,	-1.0f,  1.0f,  1.0f,         0.0f, 1.0f,     /* 03 */
+		/* 09 */         0.5f, -0.5f,  0.5f,	-1.0f,  1.0f,  1.0f,         0.0f, 0.0f,     /* 02 */
+		/* 10 */         0.5f, -0.5f, -0.5f,	-1.0f,  1.0f,  1.0f,         1.0f, 0.0f,     /* 05 */
+		/* 11 */         0.5f,  0.5f, -0.5f,	-1.0f,  1.0f,  1.0f,         1.0f, 1.0f,     /* 04 */
+		//Left
+		/* 12 */        -0.5f,  0.5f, -0.5f,	-1.0f,  1.0f,  1.0f,         0.0f, 1.0f,     /* 07 */
+		/* 13 */        -0.5f, -0.5f, -0.5f,	-1.0f,  1.0f,  1.0f,         0.0f, 0.0f,     /* 06 */
+		/* 14 */        -0.5f, -0.5f,  0.5f,	-1.0f,  1.0f,  1.0f,         1.0f, 0.0f,     /* 01 */
+		/* 15 */        -0.5f,  0.5f,  0.5f,	-1.0f,  1.0f,  1.0f,         1.0f, 1.0f,     /* 00 */
+		//Top
+		/* 16 */        -0.5f,  0.5f, -0.5f,	-1.0f,  1.0f,  1.0f,         0.0f, 1.0f,     /* 07 */
+		/* 17 */        -0.5f,  0.5f,  0.5f,	-1.0f,  1.0f,  1.0f,         0.0f, 0.0f,     /* 00 */
+		/* 18 */         0.5f,  0.5f,  0.5f,	-1.0f,  1.0f,  1.0f,         1.0f, 0.0f,     /* 03 */
+		/* 19 */         0.5f,  0.5f, -0.5f,	-1.0f,  1.0f,  1.0f,         1.0f, 1.0f,     /* 04 */
+		//Bottom
+		/* 20 */        -0.5f, -0.5f,  0.5f,	-1.0f,  1.0f,  1.0f,         0.0f, 1.0f,     /* 01 */
+		/* 21 */        -0.5f, -0.5f, -0.5f,	-1.0f,  1.0f,  1.0f,         0.0f, 0.0f,     /* 06 */
+		/* 22 */         0.5f, -0.5f, -0.5f,	-1.0f,  1.0f,  1.0f,         1.0f, 0.0f,     /* 05 */
+		/* 23 */         0.5f, -0.5f,  0.5f,	-1.0f,  1.0f,  1.0f,         1.0f, 1.0f,     /* 02 */
+	};
+
+	g_Cube->m_VertexArray.indices = {
+		0, 1, 2, // Front Tri 1
+		0, 2, 3, // Front Tri 2
+
+		4, 5, 6, // Back Tri 1
+		4, 6, 7, // Back Tri 2
+
+		8, 9,  10, // Right Tri 1
+		8, 10, 11, // Right Tri 2
+
+		12, 13, 14, // Left Tri 1
+		12, 14, 15, // Left Tri 2
+
+		16, 17, 18, // Top Tri 1
+		16, 18, 19, // Top Tri 2
+
+		20, 21, 22, // Bottom Tri 1
+		20, 22, 23, // Bottom Tri 2
+	};
+
+	g_Cube->GenBindVerts();
 
 	AudioInit();
 }
@@ -317,19 +378,19 @@ void CheckInput()
 	//Move camera SWAD
 	if (glfwGetKey(window, GLFW_KEY_A))
 	{
-		camera.CameraPos += glm::normalize(glm::rotate(camera.CameraLookDir, glm::radians(90.0f), camera.CameraUpDir)) * 0.05f;
+		camera->CameraPos += glm::normalize(glm::rotate(camera->CameraLookDir, glm::radians(90.0f), camera->CameraUpDir)) * 0.05f;
 	}
 	if (glfwGetKey(window, GLFW_KEY_D))
 	{
-		camera.CameraPos -= glm::normalize(glm::rotate(camera.CameraLookDir, glm::radians(90.0f), camera.CameraUpDir)) * 0.05f;
+		camera->CameraPos -= glm::normalize(glm::rotate(camera->CameraLookDir, glm::radians(90.0f), camera->CameraUpDir)) * 0.05f;
 	}
 	if (glfwGetKey(window, GLFW_KEY_W))
 	{
-		camera.CameraPos += glm::normalize(camera.CameraLookDir) * 0.05f;
+		camera->CameraPos += glm::normalize(camera->CameraLookDir) * 0.05f;
 	}
 	if (glfwGetKey(window, GLFW_KEY_S))
 	{
-		camera.CameraPos -= glm::normalize(camera.CameraLookDir) * 0.05f;
+		camera->CameraPos -= glm::normalize(camera->CameraLookDir) * 0.05f;
 	}
 
 	//Scale Triangle SHIFT, CTRL
@@ -358,17 +419,17 @@ void CheckInput()
 
 	if (glfwGetKey(window, GLFW_KEY_LEFT))
 	{
-		camera.CameraLookDir = glm::rotate(camera.CameraLookDir, glm::radians(1.0f), camera.CameraUpDir);
+		camera->CameraLookDir = glm::rotate(camera->CameraLookDir, glm::radians(1.0f), camera->CameraUpDir);
 	}
 
 	if (glfwGetKey(window, GLFW_KEY_RIGHT))
 	{
-		camera.CameraLookDir = glm::rotate(camera.CameraLookDir, glm::radians(-1.0f), camera.CameraUpDir);
+		camera->CameraLookDir = glm::rotate(camera->CameraLookDir, glm::radians(-1.0f), camera->CameraUpDir);
 	}
 
 	if (glfwGetKey(window, GLFW_KEY_UP))
 	{
-		/*camera.CameraUpDir = glm::rotate(camera.CameraUpDir, glm::radians(-1.0f), camera.CameraLookDir);*/
+		/*camera->CameraUpDir = glm::rotate(camera->CameraUpDir, glm::radians(-1.0f), camera->CameraLookDir);*/
 	}
 
 	if (glfwGetKey(window, GLFW_KEY_DOWN))
@@ -378,12 +439,12 @@ void CheckInput()
 
 	if (glfwGetKey(window, GLFW_KEY_KP_ADD))
 	{
-		camera.CameraPos += glm::normalize(camera.CameraUpDir) * 0.05f;
+		camera->CameraPos += glm::normalize(camera->CameraUpDir) * 0.05f;
 	}
 
 	if (glfwGetKey(window, GLFW_KEY_KP_SUBTRACT))
 	{
-		camera.CameraPos -= glm::normalize(camera.CameraUpDir) * 0.05f;
+		camera->CameraPos -= glm::normalize(camera->CameraUpDir) * 0.05f;
 	}
 }
 
@@ -435,6 +496,7 @@ void Update()
 	g_Hexagon->Update(DeltaTime, CurrentTime);
 	g_Rectangle->Update(DeltaTime, CurrentTime);
 	g_Fractal->Update(DeltaTime, CurrentTime);
+	g_Cube->Update(DeltaTime, CurrentTime);
 
 	/*Text_Message->SetScale(0.5f*(sin((float)CurrentTime) + 2) * glm::vec2(1,1));
 	Text_Message->SetPosition(glm::vec2(400, 400) - 0.5f * (sin((float)CurrentTime) + 2) * glm::vec2(400, 24));*/
@@ -465,16 +527,18 @@ void Render()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	//Draw rect
-	camera.Draw(g_Rectangle);
+	g_Rectangle->Render();
 
 	//Draw hex
-	camera.Draw(g_Hexagon);
+	g_Hexagon->Render();
 
 	//Draw copy
-	//DrawCopy(g_Hexagon, glm::vec3(-0.7, 0.7, 0), 90.0f, glm::vec3(0.3, 0.3, 1));
+	DrawCopy(g_Hexagon, glm::vec3(-0.7, 0.7, 0), 90.0f, glm::vec3(0.3, 0.3, 1));
 
 	//Draw fractal
-	camera.Draw(g_Fractal);
+	g_Fractal->Render();
+
+	g_Cube->Render();
 
 	Text_Message->Render();
 	Text_Message2->Render();
@@ -493,59 +557,10 @@ void DrawCopy(CShape* _toCopy, glm::vec3 _pos, float _rot, glm::vec3 _scale)
 	_toCopy->m_scale = _scale;
 
 	//Draw hex again with new data
-	camera.Draw(_toCopy);
+	_toCopy->Render();
 
 	//Reset hex values
 	_toCopy->m_position = tempShape.m_position;
 	_toCopy->m_rotation = tempShape.m_rotation;
 	_toCopy->m_scale = tempShape.m_scale;
-}
-
-/// <summary>
-/// Updates PVM and Uniforms, then Draws
-/// </summary>
-/// <param name="_shape">Shape to Draw</param>
-void CCamera::Draw(CShape* _shape)
-{
-	//Update PVM
-	UpdatePVM(_shape);
-
-	//Update uniforms
-	_shape->UpdateUniform(new Mat4Uniform(_shape->m_PVMMat), "PVMMat");
-
-
-	//Render
-	_shape->Render();
-}
-
-/// <summary>
-/// Updates the PVM of a shape with the camera vars
-/// </summary>
-/// <param name="_shape">Shape to update PVM</param>
-void UpdatePVM(CShape* _shape)
-{
-	//Calc transformation matrices
-	_shape->m_translationMat = glm::translate(glm::mat4(), _shape->m_position);
-	_shape->m_rotationMat = glm::rotate(glm::mat4(), glm::radians(_shape->m_rotation), glm::vec3(0.0f, 0.0f, 1.0f));
-	_shape->m_scaleMat = glm::scale(glm::mat4(), _shape->m_scale);
-
-	//Convert from world space to screen space for ortho
-	glm::mat4 pixelScale = (_shape->m_useScreenScale ? glm::scale(glm::mat4(), glm::vec3(utils::windowWidth / 2, utils::windowHeight / 2, 1)) : glm::scale(glm::mat4(), glm::vec3(1, 1, 1)));
-
-	//Calculate model matrix for shape
-	_shape->m_modelMat = pixelScale * _shape->m_translationMat * _shape->m_rotationMat * _shape->m_scaleMat;
-
-	//Ortho project
-	float halfWindowWidth = (float)utils::windowWidth / 2.0f;
-	float halfWindowHeight = (float)utils::windowHeight / 2.0f;
-	//camera.ProjectionMat = glm::ortho(-halfWindowWidth, halfWindowWidth, -halfWindowHeight, halfWindowHeight, 0.1f, 100.0f);
-
-	//Perspective project
-	camera.ProjectionMat = glm::perspective(glm::radians(45.0f), (float)utils::windowWidth / (float)utils::windowHeight, 0.1f, 100.0f);
-
-	//Calculate the new View matrix using all camera vars
-	camera.ViewMat = glm::lookAt(camera.CameraPos, camera.CameraPos + camera.CameraLookDir, camera.CameraUpDir);
-
-	//Calculate the PVM mat for the shape using camera view mat
-	_shape->m_PVMMat = camera.ProjectionMat * camera.ViewMat * _shape->m_modelMat;
 }

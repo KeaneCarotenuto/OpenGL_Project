@@ -68,5 +68,7 @@ public:
 	void SetColor(glm::vec3 _color) { this->m_color = _color; };
 	void SetScale(glm::vec2 _scale) { this->m_scale = _scale; };
 	void SetPosition(glm::vec2 _pos) { this->m_position = _pos; };
+
+	std::string GetText();
 };
 

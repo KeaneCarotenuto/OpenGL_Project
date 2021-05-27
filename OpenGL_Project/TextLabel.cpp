@@ -44,31 +44,6 @@ TextLabel::TextLabel(std::string _text, std::string _font, glm::ivec2 _pixelSize
     FT_Done_Face(FontFace);
     FT_Done_FreeType(FontLibrary);
 
-
-	//glGenVertexArrays(1, &m_VAO);
-	//glBindVertexArray(m_VAO);
-
-	////Gen EBO 
-	//glGenBuffers(1, &m_EBO);
-	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_EBO);
-	//int* ind = &m_VertexArray.indices[0];
-	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_VertexArray.indices.size() * sizeof(int), ind, GL_DYNAMIC_DRAW);
-
-	////Gen VBO 
-	//glGenBuffers(1, &m_VBO);
-	////copy our vertices array in a buffer for OpenGL to use
-	//glBindBuffer(GL_ARRAY_BUFFER, m_VBO);
-	//float* verts = &m_VertexArray.vertices[0];
-	//glBufferData(GL_ARRAY_BUFFER, m_VertexArray.vertices.size() * sizeof(float), verts, GL_DYNAMIC_DRAW);
-
-	////Set the vertex attributes pointers (How to interperet Vertex Data)
-	//glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)0);
-	//glEnableVertexAttribArray(0);
-	//glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
-	//glEnableVertexAttribArray(1);
-	//glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(6 * sizeof(GLfloat)));
-	//glEnableVertexAttribArray(2);
-
     glGenVertexArrays(1, &VAO_Text);
     glBindVertexArray(VAO_Text);
 
@@ -142,6 +117,11 @@ void TextLabel::Render()
     glBindTexture(GL_TEXTURE_2D, 0);
 
     glDisable(GL_BLEND);
+}
+
+std::string TextLabel::GetText()
+{
+    return m_text;
 }
 
 GLuint TextLabel::GenerateTexture(FT_Face _face)

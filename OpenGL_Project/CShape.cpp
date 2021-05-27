@@ -68,6 +68,14 @@ CShape::CShape(int _verts, glm::vec3 _pos, float _rot, glm::vec3 _scale, bool _s
 	}
 }
 
+CShape::CShape(glm::vec3 _pos, float _rot, glm::vec3 _scale, bool _screenScale)
+{
+	m_position = _pos;
+	m_rotation = _rot;
+	m_scale = _scale;
+	m_useScreenScale = _screenScale;
+}
+
 void CShape::AddUniform(CUniform* _uniform, std::string _name)
 {
 	const char* val = _name.c_str();
@@ -110,6 +118,8 @@ void CShape::Update(float deltaTime, float currentTime)
 /// </summary>
 void CShape::Render()
 {
+	UpdatePVM();
+
 	glUseProgram(m_program);
 	glBindVertexArray(m_VAO);
 
@@ -122,6 +132,36 @@ void CShape::Render()
 
 	glBindVertexArray(0);
 	glUseProgram(0);
+}
+
+void CShape::UpdatePVM()
+{
+	//Calc transformation matrices
+	m_translationMat = glm::translate(glm::mat4(), m_position);
+	m_rotationMat = glm::rotate(glm::mat4(), glm::radians(m_rotation), glm::vec3(0.0f, 0.0f, 1.0f));
+	m_scaleMat = glm::scale(glm::mat4(), m_scale);
+
+	//Convert from world space to screen space for ortho
+	glm::mat4 pixelScale = (m_useScreenScale ? glm::scale(glm::mat4(), glm::vec3(utils::windowWidth / 2, utils::windowHeight / 2, 1)) : glm::scale(glm::mat4(), glm::vec3(1, 1, 1)));
+
+	//Calculate model matrix for shape
+	m_modelMat = pixelScale * m_translationMat * m_rotationMat * m_scaleMat;
+
+	//Ortho project
+	float halfWindowWidth = (float)utils::windowWidth / 2.0f;
+	float halfWindowHeight = (float)utils::windowHeight / 2.0f;
+	//camera.ProjectionMat = glm::ortho(-halfWindowWidth, halfWindowWidth, -halfWindowHeight, halfWindowHeight, 0.1f, 100.0f);
+
+	//Perspective project
+	m_camera->ProjectionMat = glm::perspective(glm::radians(45.0f), (float)utils::windowWidth / (float)utils::windowHeight, 0.1f, 100.0f);
+
+	//Calculate the new View matrix using all camera vars
+	m_camera->ViewMat = glm::lookAt(m_camera->CameraPos, m_camera->CameraPos + m_camera->CameraLookDir, m_camera->CameraUpDir);
+
+	//Calculate the PVM mat for the shape using camera view mat
+	m_PVMMat = m_camera->ProjectionMat * m_camera->ViewMat * m_modelMat;
+
+	UpdateUniform(new Mat4Uniform(m_PVMMat), "PVMMat");
 }
 
 //Bind vertices with pos, colour, and texture coords

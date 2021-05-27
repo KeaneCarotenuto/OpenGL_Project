@@ -21,5 +21,5 @@ void main()
 	if (VertexCopy.x < (leftClip + characterWidth) || VertexCopy.x > (rightClip - characterWidth)){
 		Alpha = 0;
 	}
-	FinalColor = vec4(TextColor.xyz, Alpha);
+	FinalColor = vec4(TextColor, Alpha);
 }

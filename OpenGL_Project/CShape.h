@@ -18,10 +18,14 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include <glm.hpp>
+#include <gtc/matrix_transform.hpp>
 #include <gtc/type_ptr.hpp>
 
 #include "CVertexArray.h"
 #include <map>
+
+#include "CCamera.h"
+#include "Utility.h"
 
 class CUniform;
 
@@ -37,6 +41,7 @@ class CShape
 {
 public:
 	CShape(int _verts, glm::vec3 _pos, float _rot, glm::vec3 _scale, bool _screenScale);
+	CShape(glm::vec3 _pos, float _rot, glm::vec3 _scale, bool _screenScale);
 
 	//std::map<std::string, void(*)()> test;
 
@@ -47,6 +52,8 @@ public:
 	GLuint m_EBO = NULL;
 
 	GLuint m_program = NULL;
+
+	CCamera* m_camera;
 
 	//List of uniforms
 	std::vector<CUniform*> m_uniforms;
@@ -74,6 +81,8 @@ public:
 
 	void Update(float deltaTime, float currentTime);
 	void Render();
+
+	void UpdatePVM();
 
 	void GenBindVerts();
 };
