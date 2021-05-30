@@ -57,8 +57,6 @@ void Update();
 void CheckInput();
 void Render();
 
-void DrawCopy(CShape* _toCopy, glm::vec3 _pos, float _rot, glm::vec3 _scale);
-
 GLFWwindow* window = nullptr;
 
 CCamera* camera = new CCamera();
@@ -92,6 +90,7 @@ CShape* g_Hexagon;
 CShape* g_Rectangle;
 CShape* g_Fractal;
 CShape* g_Cube;
+CShape* g_Cube2;
 
 FMOD::System* AudioSystem;
 FMOD::Sound* FX_Gunshot;
@@ -255,7 +254,9 @@ void InitialSetup()
 	g_Hexagon = new CShape(6, glm::vec3(0.25f, 0.25f, 0.0f), 0.0f, glm::vec3(0.5f, 0.5f, 1.0f), false);
 	g_Rectangle = new CShape(4, glm::vec3(-0.25f, -0.25f, 0.0f), 0.0f, glm::vec3(0.5f, 1.0f, 1.0f), false);
 	g_Fractal = new CShape(40, glm::vec3(0.5f, -0.5f, 0.0f), 0.0f, glm::vec3(0.5f, 0.5f, 1.0f), false);
-	g_Cube = new CShape("cube", glm::vec3(0.0f, 0.0f, 0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), false);
+
+	g_Cube = new CShape("cube", glm::vec3(5.0f, 0.0f, 0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), false);
+	g_Cube2 = new CShape("cube", glm::vec3(-5.0f, 0.0f, 0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), false);
 
 	//Set the clear colour as blue (used by glClear)
 	glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
@@ -303,40 +304,48 @@ void InitialSetup()
 	Text_Message2->SetBouncing(true);
 
 	//Set program and add uniforms to hexagon
-	g_Hexagon->m_program = Program_ClipSpace;
-	g_Hexagon->m_camera = camera;
+	g_Hexagon->SetProgram(Program_ClipSpace);
+	g_Hexagon->SetCamera(camera);
 
 	g_Hexagon->AddUniform(new ImageUniform(Texture_Rayman), "ImageTexture");
 	g_Hexagon->AddUniform(new ImageUniform(Texture_Awesome), "ImageTexture1");
-	g_Hexagon->AddUniform(new FloatUniform(g_Hexagon->m_currentTime), "CurrentTime");
-	g_Hexagon->AddUniform(new Mat4Uniform(g_Hexagon->m_PVMMat), "PVMMat");
+	g_Hexagon->AddUniform(new FloatUniform(0), "CurrentTime");
+	g_Hexagon->AddUniform(new Mat4Uniform(g_Hexagon->GetPVM()), "PVMMat");
 
 	//Set program and add uniforms to Rectangle
-	g_Rectangle->m_program = Program_Texture;
-	g_Rectangle->m_camera = camera;
+	g_Rectangle->SetProgram(Program_Texture);
+	g_Rectangle->SetCamera(camera);
 
 	g_Rectangle->AddUniform(new AnimationUniform(Texture_CapMan, 8, 0.1f, g_Rectangle), "ImageTexture");
 	g_Rectangle->AddUniform(new IntUniform(8), "frameCount");
 	g_Rectangle->AddUniform(new FloatUniform(0), "offset");
-	g_Rectangle->AddUniform(new Mat4Uniform(g_Rectangle->m_PVMMat), "PVMMat");
+	g_Rectangle->AddUniform(new Mat4Uniform(g_Rectangle->GetPVM()), "PVMMat");
 
 	//Set program and add uniforms to Rectangle
-	g_Fractal->m_program = Program_ClipSpaceFractal;
-	g_Fractal->m_camera = camera;
+	g_Fractal->SetProgram(Program_ClipSpaceFractal);
+	g_Fractal->SetCamera(camera);
 
 	g_Fractal->AddUniform(new ImageUniform(Texture_Frac), "ImageTexture");
-	g_Fractal->AddUniform(new FloatUniform(g_Fractal->m_currentTime), "CurrentTime");
-	g_Fractal->AddUniform(new Mat4Uniform(g_Rectangle->m_PVMMat), "PVMMat");
+	g_Fractal->AddUniform(new FloatUniform(0), "CurrentTime");
+	g_Fractal->AddUniform(new Mat4Uniform(g_Rectangle->GetPVM()), "PVMMat");
 
-	//Set program and add uniforms to Pyramid
-	g_Cube->m_program = Program_ClipSpace;
-	g_Cube->m_camera = camera;
+	//Set program and add uniforms to Cube
+	g_Cube->SetProgram(Program_ClipSpace);
+	g_Cube->SetCamera(camera);
 
 	g_Cube->AddUniform(new ImageUniform(Texture_Rayman), "ImageTexture");
 	g_Cube->AddUniform(new ImageUniform(Texture_Awesome), "ImageTexture1");
-	g_Cube->AddUniform(new FloatUniform(g_Cube->m_currentTime), "CurrentTime");
-	g_Cube->AddUniform(new FloatUniform(0), "offset");
-	g_Cube->AddUniform(new Mat4Uniform(g_Cube->m_PVMMat), "PVMMat");
+	g_Cube->AddUniform(new FloatUniform(0), "CurrentTime");
+	g_Cube->AddUniform(new Mat4Uniform(g_Cube->GetPVM()), "PVMMat");
+
+	//Set program and add uniforms to Cube
+	g_Cube2->SetProgram(Program_ClipSpace);
+	g_Cube2->SetCamera(camera);
+
+	g_Cube2->AddUniform(new ImageUniform(Texture_Awesome), "ImageTexture");
+	g_Cube2->AddUniform(new ImageUniform(Texture_Rayman), "ImageTexture1");
+	g_Cube2->AddUniform(new FloatUniform(0), "CurrentTime");
+	g_Cube2->AddUniform(new Mat4Uniform(g_Cube2->GetPVM()), "PVMMat");
 
 	AudioInit();
 }
@@ -397,11 +406,11 @@ void CheckInput()
 	//Scale Triangle SHIFT, CTRL
 	if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL))
 	{
-		g_Hexagon->m_scale -= 0.01f;
+		//g_Hexagon->m_scale -= 0.01f;
 	}
 	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT))
 	{
-		g_Hexagon->m_scale += 0.01f;
+		//g_Hexagon->m_scale += 0.01f;
 	}
 
 
@@ -411,11 +420,11 @@ void CheckInput()
 	//Rotate Triangle QE
 	if (glfwGetKey(window, GLFW_KEY_Q))
 	{
-		g_Hexagon->m_rotation += 0.5f;
+		//g_Hexagon->m_rotation += 0.5f;
 	}
 	if (glfwGetKey(window, GLFW_KEY_E))
 	{
-		g_Hexagon->m_rotation -= 0.5f;
+		//g_Hexagon->m_rotation -= 0.5f;
 	}
 
 	if (glfwGetKey(window, GLFW_KEY_LEFT))
@@ -487,6 +496,7 @@ void Update()
 {
 	//Get current time and calc delta time
 	CurrentTime = (float)glfwGetTime();
+	utils::time = CurrentTime;
 	float DeltaTime = CurrentTime - previousTimeStep;
 	previousTimeStep = CurrentTime;
 
@@ -497,7 +507,13 @@ void Update()
 	g_Hexagon->Update(DeltaTime, CurrentTime);
 	g_Rectangle->Update(DeltaTime, CurrentTime);
 	g_Fractal->Update(DeltaTime, CurrentTime);
+
 	g_Cube->Update(DeltaTime, CurrentTime);
+	g_Cube2->Update(DeltaTime, CurrentTime);
+
+	g_Cube->SetPosition(glm::vec3(sin(CurrentTime + glm::pi<float>())*2, 0, cos(CurrentTime + glm::pi<float>())*2));
+	g_Cube2->SetPosition(glm::vec3(sin(CurrentTime)*2, 0, cos(CurrentTime)*2));
+
 	Text_Message->Update(DeltaTime, CurrentTime);
 	Text_Message2->Update(DeltaTime, CurrentTime);
 
@@ -532,35 +548,14 @@ void Render()
 	//Draw hex
 	g_Hexagon->Render();
 
-	//Draw copy
-	DrawCopy(g_Hexagon, glm::vec3(-0.7, 0.7, 0), 90.0f, glm::vec3(0.3, 0.3, 1));
-
 	//Draw fractal
 	g_Fractal->Render();
 
 	g_Cube->Render();
+	g_Cube2->Render();
 
 	Text_Message->Render();
 	Text_Message2->Render();
 	
 	glfwSwapBuffers(window);
-}
-
-void DrawCopy(CShape* _toCopy, glm::vec3 _pos, float _rot, glm::vec3 _scale)
-{
-	//copy current hex to keep most data stored
-	CShape tempShape(*_toCopy);
-
-	//Change relevant data
-	_toCopy->m_position = _pos;
-	_toCopy->m_rotation = _rot;
-	_toCopy->m_scale = _scale;
-
-	//Draw hex again with new data
-	_toCopy->Render();
-
-	//Reset hex values
-	_toCopy->m_position = tempShape.m_position;
-	_toCopy->m_rotation = tempShape.m_rotation;
-	_toCopy->m_scale = tempShape.m_scale;
 }

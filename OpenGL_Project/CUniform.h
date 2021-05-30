@@ -94,10 +94,9 @@ public:
 		glBindTexture(GL_TEXTURE_2D, value);
 		glUniform1i(location, value);
 
-
 		//Increment the current frame based on speed defined
-		if (_shape->m_currentTime >= lastFrameTime + SPF) {
-			lastFrameTime = _shape->m_currentTime;
+		if (utils::time >= lastFrameTime + SPF) {
+			lastFrameTime = utils::time;
 			currentFrame++;
 
 			if (currentFrame >= frameCount) currentFrame = 0;

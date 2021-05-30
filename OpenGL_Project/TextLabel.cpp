@@ -1,7 +1,7 @@
 #include "TextLabel.h"
 
 TextLabel::TextLabel(std::string _text, std::string _font, glm::ivec2 _pixelSize, glm::vec2 _pos, glm::vec3 _color, glm::vec2 _scale):
-    m_copyPosition(_pos), m_pixelSize(_pixelSize)
+    m_copyPosition(_pos), m_pixelSize(_pixelSize), m_copyScale(_scale)
 {
     SetText(_text);
     SetColor(_color);
@@ -151,13 +151,13 @@ void TextLabel::Update(float deltaTime, float currentTime)
         if (GetUnscaledWidth() > 0 && GetUnscaledHeight() > 0) {
             glm::vec2 pos = GetCopyPos();
 
-            float width = GetUnscaledWidth();
-            float height = GetUnscaledHeight();
+            float width = GetUnscaledWidth() * GetCopyScale().x;
+            float height = GetUnscaledHeight() * GetCopyScale().y;
 
-            float sinVal = (((sin(currentTime) + 1) / 2)) + 1;
+            float sinVal = (((sin(currentTime - glm::half_pi<float>()) + 1) / 2)) + 1;
 
-            SetScale(sinVal * glm::vec2(1, 1));
-            SetPosition(glm::vec2(pos.x + width - (float)(sinVal * width / 2), pos.y + height - (float)(sinVal * height / 2)));
+            SetScale(sinVal * GetCopyScale());
+            SetPosition(glm::vec2(pos.x + (width/2) - (float)(sinVal * width / 2), pos.y + (height/2) - (float)(sinVal * height / 2)));
         }
     }
 }

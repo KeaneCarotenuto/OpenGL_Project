@@ -84,7 +84,6 @@ void CShape::Render()
 	UpdatePVM();
 
 	glUseProgram(m_program);
-	
 
 	for (CUniform* _uniform : m_uniforms) {
 		_uniform->Send(this);

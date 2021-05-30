@@ -119,7 +119,6 @@ CMesh* CMesh::GetMesh(std::string _name, bool* _doesExist)
 void CMesh::Render()
 {
 	glBindVertexArray(GetVAO());
-	//Draw Elements	//Type	//Vertices
 	glDrawElements(GL_TRIANGLES, GetIndices().size(), GL_UNSIGNED_INT, 0);
 	glBindVertexArray(0);
 }

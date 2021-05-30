@@ -40,17 +40,8 @@ class CUniform;
 
 class CShape
 {
-public:
-	CShape(int _verts, glm::vec3 _pos, float _rot, glm::vec3 _scale, bool _screenScale);
-	CShape(std::string _meshName, glm::vec3 _pos, float _rot, glm::vec3 _scale, bool _screenScale);
-
-	//std::map<std::string, void(*)()> test;
-
-	/*CVertexArray m_VertexArray;
-
-	GLuint m_VBO = NULL;
-	GLuint m_VAO = NULL;
-	GLuint m_EBO = NULL;*/
+private:
+	
 
 	CMesh* m_mesh;
 
@@ -76,7 +67,17 @@ public:
 	glm::mat4 m_scaleMat = glm::mat4();
 	glm::mat4 m_PVMMat = glm::mat4();
 
-	glm::mat4 m_PVMMat2 = glm::mat4();
+public:
+	CShape(int _verts, glm::vec3 _pos, float _rot, glm::vec3 _scale, bool _screenScale);
+	CShape(std::string _meshName, glm::vec3 _pos, float _rot, glm::vec3 _scale, bool _screenScale);
+
+	void SetProgram(GLuint _program) { m_program = _program; };
+	void SetCamera(CCamera* _camera) { m_camera = _camera; };
+	void SetMesh(CMesh* _mesh) { m_mesh = _mesh; };
+	void SetPosition(glm::vec3 _pos) { m_position = _pos; };
+
+	glm::mat4 GetPVM() { return m_PVMMat; };
+
 
 	//Adding/updating uniforms
 	void AddUniform(CUniform* _uniform, std::string _name);

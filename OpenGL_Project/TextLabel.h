@@ -36,7 +36,10 @@ private:
 	glm::vec2 m_scale;
 	glm::vec3 m_color;
 	glm::vec2 m_position;
+
+	glm::vec2 m_copyScale;
 	glm::vec2 m_copyPosition;
+	
 
 	glm::vec2 m_pixelSize;
 
@@ -93,5 +96,7 @@ public:
 	std::string GetText();
 	glm::vec2 GetPos() { return m_position; };
 	glm::vec2 GetCopyPos() { return m_copyPosition; };
+
+	glm::vec2 GetCopyScale() { return m_copyScale; };
 };
 
