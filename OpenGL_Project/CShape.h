@@ -59,7 +59,7 @@ private:
 	glm::vec3 m_scale = glm::vec3(1.0f, 1.0f, 1.0f);
 
 	bool isPerspective = false;
-	bool m_useScreenScale = false;
+	
 
 	glm::mat4 m_modelMat = glm::mat4();
 	glm::mat4 m_translationMat = glm::mat4();
@@ -68,6 +68,8 @@ private:
 	glm::mat4 m_PVMMat = glm::mat4();
 
 public:
+	bool m_orthoProject = false;
+
 	CShape(int _verts, glm::vec3 _pos, float _rot, glm::vec3 _scale, bool _screenScale);
 	CShape(std::string _meshName, glm::vec3 _pos, float _rot, glm::vec3 _scale, bool _screenScale);
 
@@ -77,6 +79,8 @@ public:
 	void SetPosition(glm::vec3 _pos) { m_position = _pos; };
 
 	glm::mat4 GetPVM() { return m_PVMMat; };
+	glm::vec3 GetPosition() { return m_position; };
+	glm::vec3 GetScale() { return m_scale; };
 
 
 	//Adding/updating uniforms

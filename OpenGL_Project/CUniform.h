@@ -175,3 +175,17 @@ public:
 		glUniform2fv(location, 1, glm::value_ptr(value));
 	}
 };
+
+class Vec4Uniform : public CUniform {
+public:
+	Vec4Uniform(glm::vec4 _val) :
+		value(_val)
+	{
+
+	}
+
+	glm::vec4 value;
+	void Send(CShape* _shape) {
+		glUniform4fv(location, 1, glm::value_ptr(value));
+	}
+};

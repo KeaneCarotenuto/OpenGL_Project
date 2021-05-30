@@ -86,8 +86,6 @@ TextLabel* Text_Message;
 TextLabel* Text_Message2;
 
 //Make shapes (Add them to vector later)
-CShape* g_Hexagon;
-CShape* g_Rectangle;
 CShape* g_Fractal;
 CShape* g_Cube;
 CShape* g_Cube2;
@@ -251,12 +249,24 @@ void InitialSetup()
 		}
 	);
 
-	g_Hexagon = new CShape(6, glm::vec3(0.25f, 0.25f, 0.0f), 0.0f, glm::vec3(0.5f, 0.5f, 1.0f), false);
-	g_Rectangle = new CShape(4, glm::vec3(-0.25f, -0.25f, 0.0f), 0.0f, glm::vec3(0.5f, 1.0f, 1.0f), false);
-	g_Fractal = new CShape(40, glm::vec3(0.5f, -0.5f, 0.0f), 0.0f, glm::vec3(0.5f, 0.5f, 1.0f), false);
+	//Create cube mesh
+	CMesh::NewCMesh(
+		"square",
+		{
+			// Index        // Position                     //Texture Coords
+						//Front Quad
+			/* 00 */        -0.5f,  0.5f,  0.5f,	-1.0f,  1.0f,  1.0f,         0.0f, 1.0f,     /* 00 */
+			/* 01 */        -0.5f, -0.5f,  0.5f,	-1.0f,  1.0f,  1.0f,         0.0f, 0.0f,     /* 01 */
+			/* 02 */         0.5f, -0.5f,  0.5f,	-1.0f,  1.0f,  1.0f,         1.0f, 0.0f,     /* 02 */
+			/* 03 */         0.5f,  0.5f,  0.5f,	-1.0f,  1.0f,  1.0f,         1.0f, 1.0f,     /* 03 */
+		},
+		{
+			0, 1, 2, // Front Tri 1
+			0, 2, 3, // Front Tri 2
+		}
+		);
 
-	g_Cube = new CShape("cube", glm::vec3(5.0f, 0.0f, 0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), false);
-	g_Cube2 = new CShape("cube", glm::vec3(-5.0f, 0.0f, 0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), false);
+
 
 	//Set the clear colour as blue (used by glClear)
 	glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
@@ -267,7 +277,7 @@ void InitialSetup()
 	//Create programs
 	Program_Texture = ShaderLoader::CreateProgram("Resources/Shaders/ClipSpace.vert", "Resources/Shaders/Texture.frag");
 	Program_ClipSpace = ShaderLoader::CreateProgram("Resources/Shaders/ClipSpace.vert", "Resources/Shaders/TextureMix.frag");
-	Program_ClipSpaceFractal = ShaderLoader::CreateProgram("Resources/Shaders/ClipSpace.vert", "Resources/Shaders/Fractal.frag");
+	Program_ClipSpaceFractal = ShaderLoader::CreateProgram("Resources/Shaders/WorldSpace.vert", "Resources/Shaders/Fractal.frag");
 	Program_Text = ShaderLoader::CreateProgram("Resources/Shaders/Text.vert", "Resources/Shaders/Text.frag");
 	Program_TextScroll = ShaderLoader::CreateProgram("Resources/Shaders/TextScroll.vert", "Resources/Shaders/TextScroll.frag");
 
@@ -292,34 +302,21 @@ void InitialSetup()
 	//Flip Images
 	stbi_set_flip_vertically_on_load(true);
 
+	g_Fractal = new CShape("square", glm::vec3(0.5f, 0.5f, 0.0f), 0.0f, glm::vec3(0.5f, 0.5f, 1.0f), true);
+
+	g_Cube = new CShape("cube", glm::vec3(5.0f, 0.0f, 0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), false);
+	g_Cube2 = new CShape("cube", glm::vec3(-5.0f, 0.0f, 0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), false);
+
+	Text_Message = new TextLabel("Press [ENTER] to edit me!", "Resources/Fonts/ARIAL.ttf", glm::ivec2(0, 48), glm::vec2(100.0f, 100.0f));
+	Text_Message->SetProgram(Program_TextScroll);
+	Text_Message2 = new TextLabel("Bounce!", "Resources/Fonts/Roboto.ttf", glm::ivec2(0, 48), glm::vec2(100.0f, 700.0f));
+	Text_Message2->SetBouncing(true);
+
 	//Create all textures and bind them
 	GenTexture(Texture_Rayman, "Resources/Textures/Rayman.jpg");
 	GenTexture(Texture_Awesome, "Resources/Textures/AwesomeFace.png");
 	GenTexture(Texture_CapMan, "Resources/Textures/Capguy_Walk.png");
 	GenTexture(Texture_Frac, "Resources/Textures/pal.png");
-
-	Text_Message = new TextLabel("Press [ENTER] to edit me!", "Resources/Fonts/ARIAL.ttf", glm::ivec2(0,48), glm::vec2(100.0f, 100.0f));
-	Text_Message->SetProgram(Program_TextScroll);
-	Text_Message2 = new TextLabel("Bounce!", "Resources/Fonts/Roboto.ttf", glm::ivec2(0,48), glm::vec2(100.0f, 700.0f));
-	Text_Message2->SetBouncing(true);
-
-	//Set program and add uniforms to hexagon
-	g_Hexagon->SetProgram(Program_ClipSpace);
-	g_Hexagon->SetCamera(camera);
-
-	g_Hexagon->AddUniform(new ImageUniform(Texture_Rayman), "ImageTexture");
-	g_Hexagon->AddUniform(new ImageUniform(Texture_Awesome), "ImageTexture1");
-	g_Hexagon->AddUniform(new FloatUniform(0), "CurrentTime");
-	g_Hexagon->AddUniform(new Mat4Uniform(g_Hexagon->GetPVM()), "PVMMat");
-
-	//Set program and add uniforms to Rectangle
-	g_Rectangle->SetProgram(Program_Texture);
-	g_Rectangle->SetCamera(camera);
-
-	g_Rectangle->AddUniform(new AnimationUniform(Texture_CapMan, 8, 0.1f, g_Rectangle), "ImageTexture");
-	g_Rectangle->AddUniform(new IntUniform(8), "frameCount");
-	g_Rectangle->AddUniform(new FloatUniform(0), "offset");
-	g_Rectangle->AddUniform(new Mat4Uniform(g_Rectangle->GetPVM()), "PVMMat");
 
 	//Set program and add uniforms to Rectangle
 	g_Fractal->SetProgram(Program_ClipSpaceFractal);
@@ -327,7 +324,9 @@ void InitialSetup()
 
 	g_Fractal->AddUniform(new ImageUniform(Texture_Frac), "ImageTexture");
 	g_Fractal->AddUniform(new FloatUniform(0), "CurrentTime");
-	g_Fractal->AddUniform(new Mat4Uniform(g_Rectangle->GetPVM()), "PVMMat");
+	g_Fractal->AddUniform(new Vec4Uniform(glm::vec4(1,1,1,1)), "FractalColour");
+	g_Fractal->AddUniform(new Mat4Uniform(glm::mat4()), "ModelMat");
+	g_Fractal->AddUniform(new Mat4Uniform(g_Fractal->GetPVM()), "PVMMat");
 
 	//Set program and add uniforms to Cube
 	g_Cube->SetProgram(Program_ClipSpace);
@@ -382,8 +381,10 @@ void CheckInput()
 	double xPos;
 	double yPos;
 	glfwGetCursorPos(window, &xPos, &yPos);
+	utils::mousePos = glm::vec2(xPos, utils::windowHeight - yPos);
+
 	SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), {5,50});
-	std::cout << "x: " << xPos << ", y: " << yPos << "          " << std::endl;
+	std::cout << "x: " << utils::mousePos.x << ", y: " << utils::mousePos.y << "          " << std::endl;
 
 	//Move camera SWAD
 	if (glfwGetKey(window, GLFW_KEY_A))
@@ -504,9 +505,23 @@ void Update()
 	accum += DeltaTime;
 
 	//Call update func for shapes (make into vector)
-	g_Hexagon->Update(DeltaTime, CurrentTime);
-	g_Rectangle->Update(DeltaTime, CurrentTime);
 	g_Fractal->Update(DeltaTime, CurrentTime);
+
+	//Weird average radius distance stuff vvv
+	//glm::distance(utils::mousePos, glm::vec2(g_Fractal->GetPosition().x * utils::windowWidth/2.0f, g_Fractal->GetPosition().y * utils::windowHeight / 2.0f)) < (g_Fractal->GetScale().x + g_Fractal->GetScale().y)/2.0f * utils::windowHeight / 2.0f
+
+	if	(	utils::mousePos.x > (g_Fractal->GetPosition().x - g_Fractal->GetScale().x / 2) * (utils::windowWidth / 2.0f)
+		&&  utils::mousePos.x < (g_Fractal->GetPosition().x + g_Fractal->GetScale().x / 2) * (utils::windowWidth / 2.0f)
+		&&  utils::mousePos.y > (g_Fractal->GetPosition().y - g_Fractal->GetScale().y / 2) * (utils::windowHeight / 2.0f)
+		&&  utils::mousePos.y < (g_Fractal->GetPosition().y + g_Fractal->GetScale().y / 2) * (utils::windowHeight / 2.0f)
+		) 
+	{
+		float dist = glm::distance(utils::mousePos, (glm::vec2)g_Fractal->GetPosition() * (utils::windowWidth / 2.0f)) / ((utils::windowHeight / 2.0f) * (g_Fractal->GetScale().x / 2));
+		g_Fractal->UpdateUniform(new Vec4Uniform(glm::vec4(1, 1 - dist, dist, 1)), "FractalColour");
+	}
+	else {
+		g_Fractal->UpdateUniform(new Vec4Uniform(glm::vec4(1, 0, 1, 1)), "FractalColour");
+	}
 
 	g_Cube->Update(DeltaTime, CurrentTime);
 	g_Cube2->Update(DeltaTime, CurrentTime);
@@ -542,17 +557,13 @@ void Render()
 	//Clear Screen
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	//Draw rect
-	g_Rectangle->Render();
-
-	//Draw hex
-	g_Hexagon->Render();
-
-	//Draw fractal
-	g_Fractal->Render();
+	
 
 	g_Cube->Render();
 	g_Cube2->Render();
+
+	//Draw fractal
+	g_Fractal->Render();
 
 	Text_Message->Render();
 	Text_Message2->Render();

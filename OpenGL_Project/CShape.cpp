@@ -9,7 +9,7 @@ CShape::CShape(int _verts, glm::vec3 _pos, float _rot, glm::vec3 _scale, bool _s
 	m_position = _pos;
 	m_rotation = _rot;
 	m_scale = _scale;
-	m_useScreenScale = _screenScale;
+	m_orthoProject = _screenScale;
 
 
 	std::cout << "Finding mesh" << std::endl;
@@ -34,7 +34,7 @@ CShape::CShape(std::string _meshName ,glm::vec3 _pos, float _rot, glm::vec3 _sca
 	m_position = _pos;
 	m_rotation = _rot;
 	m_scale = _scale;
-	m_useScreenScale = _screenScale;
+	m_orthoProject = _screenScale;
 
 	m_mesh = CMesh::GetMesh(_meshName);
 }
@@ -102,18 +102,26 @@ void CShape::UpdatePVM()
 	m_scaleMat = glm::scale(glm::mat4(), m_scale);
 
 	//Convert from world space to screen space for ortho
-	glm::mat4 pixelScale = (m_useScreenScale ? glm::scale(glm::mat4(), glm::vec3(utils::windowWidth / 2, utils::windowHeight / 2, 1)) : glm::scale(glm::mat4(), glm::vec3(1, 1, 1)));
+	glm::mat4 pixelScale = (m_orthoProject ? glm::scale(glm::mat4(), glm::vec3(utils::windowWidth / 2, utils::windowHeight / 2, 1)) : glm::scale(glm::mat4(), glm::vec3(1, 1, 1)));
 
 	//Calculate model matrix for shape
-	m_modelMat = pixelScale * m_translationMat * m_rotationMat * m_scaleMat;
+	m_modelMat = pixelScale * m_translationMat * m_rotationMat * m_scaleMat ;
 
 	//Ortho project
 	float halfWindowWidth = (float)utils::windowWidth / 2.0f;
 	float halfWindowHeight = (float)utils::windowHeight / 2.0f;
-	//camera.ProjectionMat = glm::ortho(-halfWindowWidth, halfWindowWidth, -halfWindowHeight, halfWindowHeight, 0.1f, 100.0f);
 
 	//Perspective project
-	m_camera->ProjectionMat = glm::perspective(glm::radians(45.0f), (float)utils::windowWidth / (float)utils::windowHeight, 0.1f, 100.0f);
+	if (m_orthoProject) {
+		m_camera->ProjectionMat = glm::ortho(0.0f, (float)utils::windowWidth, 0.0f, (float)utils::windowHeight, 0.0f, 100.0f);
+
+		UpdateUniform(new Mat4Uniform(m_camera->ProjectionMat * m_modelMat), "ModelMat");
+		return;
+	}
+	else {
+		m_camera->ProjectionMat = glm::perspective(glm::radians(45.0f), (float)utils::windowWidth / (float)utils::windowHeight, 0.1f, 100.0f);
+	}
+	
 
 	//Calculate the new View matrix using all camera vars
 	m_camera->ViewMat = glm::lookAt(m_camera->CameraPos, m_camera->CameraPos + m_camera->CameraLookDir, m_camera->CameraUpDir);
