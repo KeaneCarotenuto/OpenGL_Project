@@ -26,6 +26,7 @@
 
 #include "CCamera.h"
 #include "Utility.h"
+#include "CMesh.h"
 
 class CUniform;
 
@@ -41,15 +42,17 @@ class CShape
 {
 public:
 	CShape(int _verts, glm::vec3 _pos, float _rot, glm::vec3 _scale, bool _screenScale);
-	CShape(glm::vec3 _pos, float _rot, glm::vec3 _scale, bool _screenScale);
+	CShape(std::string _meshName, glm::vec3 _pos, float _rot, glm::vec3 _scale, bool _screenScale);
 
 	//std::map<std::string, void(*)()> test;
 
-	CVertexArray m_VertexArray;
+	/*CVertexArray m_VertexArray;
 
 	GLuint m_VBO = NULL;
 	GLuint m_VAO = NULL;
-	GLuint m_EBO = NULL;
+	GLuint m_EBO = NULL;*/
+
+	CMesh* m_mesh;
 
 	GLuint m_program = NULL;
 
@@ -83,6 +86,4 @@ public:
 	void Render();
 
 	void UpdatePVM();
-
-	void GenBindVerts();
 };

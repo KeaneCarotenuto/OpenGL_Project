@@ -12,68 +12,31 @@ CShape::CShape(int _verts, glm::vec3 _pos, float _rot, glm::vec3 _scale, bool _s
 	m_useScreenScale = _screenScale;
 
 
-	float angle = 360.0f / (float)_verts;
+	std::cout << "Finding mesh" << std::endl;
 
-	m_VertexArray.vertices = { 0.0f, 0.0f, 0.0f,		1.0f, 1.0f, 1.0f,		0.5f, 0.5f, };
+	m_mesh = CMesh::GetMesh("poly" + std::to_string(_verts));
 
-	float near1 = 0;
+	if (m_mesh == nullptr) {
+		CMesh::NewCMesh(_verts);
 
-	//Create all verticies, check which if any are equal to 1 on x or y, if not, scale the verts so that at least 1 coord x/y = 1 (otherwise images arent applied correctly)
-	for (int i = 1; i <= _verts; i++) {
-		float xCoord = cos((((float)i - 2) * angle + angle * 0.5f) * (float)M_PI / 180.0f);
-		float yCoord = sin((((float)i - 2) * angle + angle * 0.5f) * (float)M_PI / 180.0f);
-		
-		if (abs(xCoord) >= 0.99f) continue;
+		m_mesh = CMesh::GetMesh("poly" + std::to_string(_verts));
 
-		if (abs(xCoord) > near1) near1 = abs(xCoord);
-		else if (abs(yCoord) > near1) near1 = abs(yCoord);
+		if (m_mesh == nullptr) {
+			std::cout << std::endl << "ERROR: Failed to create polygon mesh of " << _verts << " sides." << std::endl;
+		}
 	}
 
-	//For each vert desired, calculate its position and send info to the list
-	for (int i = 1; i <= _verts; i++) {
-		//Calc x y pos
-		float xCoord = cos((((float)i - 2) * angle + angle * 0.5f) * (float)M_PI / 180.0f);
-		float yCoord = sin((((float)i - 2) * angle + angle * 0.5f) * (float)M_PI / 180.0f);
-
-		//Apply position
-		float xPos = xCoord;
-		float yPos = yCoord;
-		float zPos = 0;
-
-		//Make white
-		float rCol = 1.0f;
-		float gCol = 1.0f;
-		float bCol = 1.0f;
-
-		//Adjust x y pos for image points
-		float xTex = (xCoord / (near1 > 0 ? near1 : 1) + 1) / 2;
-		float yTex = (yCoord / (near1 > 0 ? near1 : 1) + 1) / 2;
-
-
-		//Push all data
-		m_VertexArray.vertices.push_back(xPos);
-		m_VertexArray.vertices.push_back(yPos);
-		m_VertexArray.vertices.push_back(zPos);
-
-		m_VertexArray.vertices.push_back(rCol);
-		m_VertexArray.vertices.push_back(gCol);
-		m_VertexArray.vertices.push_back(bCol);
-
-		m_VertexArray.vertices.push_back(xTex);
-		m_VertexArray.vertices.push_back(yTex);
-
-		m_VertexArray.indices.push_back(0);
-		m_VertexArray.indices.push_back(i);
-		m_VertexArray.indices.push_back((i + 1 > _verts ? 1 : i + 1));
-	}
+	
 }
 
-CShape::CShape(glm::vec3 _pos, float _rot, glm::vec3 _scale, bool _screenScale)
+CShape::CShape(std::string _meshName ,glm::vec3 _pos, float _rot, glm::vec3 _scale, bool _screenScale)
 {
 	m_position = _pos;
 	m_rotation = _rot;
 	m_scale = _scale;
 	m_useScreenScale = _screenScale;
+
+	m_mesh = CMesh::GetMesh(_meshName);
 }
 
 void CShape::AddUniform(CUniform* _uniform, std::string _name)
@@ -121,16 +84,14 @@ void CShape::Render()
 	UpdatePVM();
 
 	glUseProgram(m_program);
-	glBindVertexArray(m_VAO);
+	
 
 	for (CUniform* _uniform : m_uniforms) {
 		_uniform->Send(this);
 	}
 
-	//Draw Elements	//Type	//Vertices
-	glDrawElements(GL_TRIANGLES, m_VertexArray.indices.size(), GL_UNSIGNED_INT, 0);
-
-	glBindVertexArray(0);
+	m_mesh->Render();
+	
 	glUseProgram(0);
 }
 
@@ -162,32 +123,4 @@ void CShape::UpdatePVM()
 	m_PVMMat = m_camera->ProjectionMat * m_camera->ViewMat * m_modelMat;
 
 	UpdateUniform(new Mat4Uniform(m_PVMMat), "PVMMat");
-}
-
-//Bind vertices with pos, colour, and texture coords
-void CShape::GenBindVerts()
-{
-	glGenVertexArrays(1, &m_VAO);
-	glBindVertexArray(m_VAO);
-
-	//Gen EBO 
-	glGenBuffers(1, &m_EBO);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_EBO);
-	int* ind = &m_VertexArray.indices[0];
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_VertexArray.indices.size() * sizeof(int), ind, GL_DYNAMIC_DRAW);
-
-	//Gen VBO 
-	glGenBuffers(1, &m_VBO);
-	//copy our vertices array in a buffer for OpenGL to use
-	glBindBuffer(GL_ARRAY_BUFFER, m_VBO);
-	float* verts = &m_VertexArray.vertices[0];
-	glBufferData(GL_ARRAY_BUFFER, m_VertexArray.vertices.size() * sizeof(float), verts, GL_DYNAMIC_DRAW);
-
-	//Set the vertex attributes pointers (How to interperet Vertex Data)
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)0);
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(6 * sizeof(GLfloat)));
-	glEnableVertexAttribArray(2);
 }

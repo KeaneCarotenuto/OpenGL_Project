@@ -45,6 +45,9 @@
     <ClCompile Include="CCamera.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="CMesh.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source.h">
@@ -69,6 +72,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="CCamera.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CMesh.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -110,6 +116,12 @@
     </None>
     <None Include="Resources\Shaders\Text.vert">
       <Filter>Resource Files\Shaders\vert</Filter>
+    </None>
+    <None Include="Resources\Shaders\TextScroll.vert">
+      <Filter>Resource Files\Shaders\vert</Filter>
+    </None>
+    <None Include="Resources\Shaders\TextScroll.frag">
+      <Filter>Resource Files\Shaders\frag</Filter>
     </None>
   </ItemGroup>
 </Project>

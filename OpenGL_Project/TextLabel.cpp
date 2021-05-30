@@ -1,7 +1,7 @@
 #include "TextLabel.h"
 
 TextLabel::TextLabel(std::string _text, std::string _font, glm::ivec2 _pixelSize, glm::vec2 _pos, glm::vec3 _color, glm::vec2 _scale):
-    m_copyPosition(_pos)
+    m_copyPosition(_pos), m_pixelSize(_pixelSize)
 {
     SetText(_text);
     SetColor(_color);
@@ -79,6 +79,13 @@ void TextLabel::Render()
         return;
     }
 
+
+    //Disable depth test for text
+    GLboolean _copyOfDepthTest = glIsEnabled(GL_DEPTH_TEST);
+    if (_copyOfDepthTest) glDisable(GL_DEPTH_TEST);
+    
+    
+
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -87,9 +94,16 @@ void TextLabel::Render()
     glUniformMatrix4fv(glGetUniformLocation(Program_Text, "ProjectionMat"), 1, GL_FALSE, glm::value_ptr(ProjectionMat));
     glBindVertexArray(VAO_Text);
 
+    glUniform2fv(glGetUniformLocation(Program_Text, "XCliping"), 1, glm::value_ptr(glm::vec2(0, 800)));
+    glUniform2fv(glGetUniformLocation(Program_Text, "CharacterSize"), 1, glm::value_ptr(m_pixelSize));
+
     glm::vec2 CharacterOrigin = m_position;
 
     m_height = 0.0f;
+    m_width = 0.0f;
+
+    m_unscaledHeight = 0;
+    m_unscaledWidth = 0;
 
     for (std::string::const_iterator TextCharacter = m_text.begin(); TextCharacter != m_text.end(); TextCharacter++) {
         FontChar FontCharacter = CharacterMap[*TextCharacter];
@@ -99,6 +113,7 @@ void TextLabel::Render()
         GLfloat Height = FontCharacter.size.y * m_scale.y;
 
         if (Height > m_height) m_height = Height;
+        if (FontCharacter.size.y > m_unscaledHeight) m_unscaledHeight = FontCharacter.size.y;
 
         GLfloat vertices[4][4] = {
 			{PosX, PosY + Height, 0.0, 0.0}, {PosX, PosY, 0.0, 1.0},
@@ -113,12 +128,11 @@ void TextLabel::Render()
         glUniform1i(glGetUniformLocation(Program_Text, "TextTexture"), 0);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
-        m_width = CharacterOrigin.x;
-
         CharacterOrigin.x += FontCharacter.advance * m_scale.x;
-    }
 
-    m_width = CharacterOrigin.x;
+        m_width += FontCharacter.advance * m_scale.x;
+        m_unscaledWidth += FontCharacter.advance;
+    }
 
     glUseProgram(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -126,6 +140,26 @@ void TextLabel::Render()
     glBindTexture(GL_TEXTURE_2D, 0);
 
     glDisable(GL_BLEND);
+
+    //Re enable depth testing if it was one previously
+    if (_copyOfDepthTest) glEnable(GL_DEPTH_TEST);
+}
+
+void TextLabel::Update(float deltaTime, float currentTime)
+{
+    if (m_bounceText) {
+        if (GetUnscaledWidth() > 0 && GetUnscaledHeight() > 0) {
+            glm::vec2 pos = GetCopyPos();
+
+            float width = GetUnscaledWidth();
+            float height = GetUnscaledHeight();
+
+            float sinVal = (((sin(currentTime) + 1) / 2)) + 1;
+
+            SetScale(sinVal * glm::vec2(1, 1));
+            SetPosition(glm::vec2(pos.x + width - (float)(sinVal * width / 2), pos.y + height - (float)(sinVal * height / 2)));
+        }
+    }
 }
 
 std::string TextLabel::GetText()

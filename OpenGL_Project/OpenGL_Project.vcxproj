@@ -133,6 +133,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="CCamera.cpp" />
+    <ClCompile Include="CMesh.cpp" />
     <ClCompile Include="CShape.cpp" />
     <ClCompile Include="CUniform.cpp" />
     <ClCompile Include="CVertexArray.cpp" />
@@ -142,6 +143,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CCamera.h" />
+    <ClInclude Include="CMesh.h" />
     <ClInclude Include="CShape.h" />
     <ClInclude Include="CUniform.h" />
     <ClInclude Include="CVertexArray.h" />
@@ -162,6 +164,8 @@
     <None Include="Resources\Shaders\Quad.vert" />
     <None Include="Resources\Shaders\Text.frag" />
     <None Include="Resources\Shaders\Text.vert" />
+    <None Include="Resources\Shaders\TextScroll.frag" />
+    <None Include="Resources\Shaders\TextScroll.vert" />
     <None Include="Resources\Shaders\Texture.frag" />
     <None Include="Resources\Shaders\TextureMix.frag" />
     <None Include="Resources\Shaders\WorldSpace.vert" />

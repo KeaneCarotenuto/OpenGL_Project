@@ -36,7 +36,9 @@ private:
 	glm::vec2 m_scale;
 	glm::vec3 m_color;
 	glm::vec2 m_position;
-	const glm::vec2 m_copyPosition;
+	glm::vec2 m_copyPosition;
+
+	glm::vec2 m_pixelSize;
 
 	GLuint EBO_Text;
 	GLuint VAO_Text;
@@ -52,8 +54,12 @@ private:
 
 	float m_width = 0.0f;
 	float m_height = 0.0f;
+
+	float m_unscaledWidth = 0.0f;
+	float m_unscaledHeight = 0.0f;
 	
-	
+	bool m_bounceText = false;
+	bool m_alwaysDraw = true;
 
 public:
 	TextLabel(
@@ -68,13 +74,21 @@ public:
 	~TextLabel();
 
 	void Render();
+	void Update(float deltaTime, float currentTime);
 	void SetText(std::string _text) { this->m_text = _text; };
 	void SetColor(glm::vec3 _color) { this->m_color = _color; };
 	void SetScale(glm::vec2 _scale) { this->m_scale = _scale; };
 	void SetPosition(glm::vec2 _pos) { this->m_position = _pos; };
 
+	void SetProgram(GLuint _program) { Program_Text = _program; };
+
+	void SetBouncing(bool _doBounce) { m_bounceText = _doBounce; };
+
 	float GetWidth() { return m_width; };
 	float GetHeight() { return m_height; };
+
+	float GetUnscaledWidth() { return m_unscaledWidth; };
+	float GetUnscaledHeight() { return m_unscaledHeight; };
 
 	std::string GetText();
 	glm::vec2 GetPos() { return m_position; };

@@ -2,7 +2,6 @@
 // Media Design School
 // Auckland
 // New Zealand
-// 
 // (c) 2021 Media Design School
 //
 // File Name   : Source.cpp
@@ -64,7 +63,6 @@ GLFWwindow* window = nullptr;
 
 CCamera* camera = new CCamera();
 
-
 //Storing previous time step
 float previousTimeStep = 0;
 
@@ -75,6 +73,8 @@ GLuint Program_Texture;
 GLuint Program_ClipSpace;
 GLuint Program_ClipSpaceFractal;
 GLuint Program_Text;
+GLuint Program_TextScroll;
+
 
 //Move to map/vector later
 GLuint Texture_Rayman;
@@ -88,11 +88,10 @@ TextLabel* Text_Message;
 TextLabel* Text_Message2;
 
 //Make shapes (Add them to vector later)
-CShape* g_Hexagon = new CShape(6, glm::vec3(0.25f, 0.25f, 0.0f), 0.0f, glm::vec3(0.5f, 0.5f, 1.0f), false);
-CShape* g_Rectangle = new CShape(4, glm::vec3(-0.25f, -0.25f, 0.0f), 0.0f, glm::vec3(0.5f, 1.0f, 1.0f), false);
-CShape* g_Fractal = new CShape(40, glm::vec3(0.5f, -0.5f, 0.0f), 0.0f, glm::vec3(0.5f, 0.5f, 1.0f), false);
-
-CShape* g_Cube = new CShape(glm::vec3(0.0f, 0.0f, 0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), false);
+CShape* g_Hexagon;
+CShape* g_Rectangle;
+CShape* g_Fractal;
+CShape* g_Cube;
 
 FMOD::System* AudioSystem;
 FMOD::Sound* FX_Gunshot;
@@ -196,6 +195,68 @@ bool Startup()
 
 void InitialSetup()
 {
+	//Create cube mesh
+	CMesh::NewCMesh(
+		"cube",
+		{
+			// Index        // Position                     //Texture Coords
+						//Front Quad
+			/* 00 */        -0.5f,  0.5f,  0.5f,	-1.0f,  1.0f,  1.0f,         0.0f, 1.0f,     /* 00 */
+			/* 01 */        -0.5f, -0.5f,  0.5f,	-1.0f,  1.0f,  1.0f,         0.0f, 0.0f,     /* 01 */
+			/* 02 */         0.5f, -0.5f,  0.5f,	-1.0f,  1.0f,  1.0f,         1.0f, 0.0f,     /* 02 */
+			/* 03 */         0.5f,  0.5f,  0.5f,	-1.0f,  1.0f,  1.0f,         1.0f, 1.0f,     /* 03 */
+			//Back Quad
+			/* 04 */         0.5f,  0.5f, -0.5f,	-1.0f,  1.0f,  1.0f,         0.0f, 1.0f,     /* 04 */
+			/* 05 */         0.5f, -0.5f, -0.5f,	-1.0f,  1.0f,  1.0f,         0.0f, 0.0f,     /* 05 */
+			/* 06 */        -0.5f, -0.5f, -0.5f,	-1.0f,  1.0f,  1.0f,         1.0f, 0.0f,     /* 06 */
+			/* 07 */        -0.5f,  0.5f, -0.5f,	-1.0f,  1.0f,  1.0f,         1.0f, 1.0f,     /* 07 */
+			//Right
+			/* 08 */         0.5f,  0.5f,  0.5f,	-1.0f,  1.0f,  1.0f,         0.0f, 1.0f,     /* 03 */
+			/* 09 */         0.5f, -0.5f,  0.5f,	-1.0f,  1.0f,  1.0f,         0.0f, 0.0f,     /* 02 */
+			/* 10 */         0.5f, -0.5f, -0.5f,	-1.0f,  1.0f,  1.0f,         1.0f, 0.0f,     /* 05 */
+			/* 11 */         0.5f,  0.5f, -0.5f,	-1.0f,  1.0f,  1.0f,         1.0f, 1.0f,     /* 04 */
+			//Left
+			/* 12 */        -0.5f,  0.5f, -0.5f,	-1.0f,  1.0f,  1.0f,         0.0f, 1.0f,     /* 07 */
+			/* 13 */        -0.5f, -0.5f, -0.5f,	-1.0f,  1.0f,  1.0f,         0.0f, 0.0f,     /* 06 */
+			/* 14 */        -0.5f, -0.5f,  0.5f,	-1.0f,  1.0f,  1.0f,         1.0f, 0.0f,     /* 01 */
+			/* 15 */        -0.5f,  0.5f,  0.5f,	-1.0f,  1.0f,  1.0f,         1.0f, 1.0f,     /* 00 */
+			//Top
+			/* 16 */        -0.5f,  0.5f, -0.5f,	-1.0f,  1.0f,  1.0f,         0.0f, 1.0f,     /* 07 */
+			/* 17 */        -0.5f,  0.5f,  0.5f,	-1.0f,  1.0f,  1.0f,         0.0f, 0.0f,     /* 00 */
+			/* 18 */         0.5f,  0.5f,  0.5f,	-1.0f,  1.0f,  1.0f,         1.0f, 0.0f,     /* 03 */
+			/* 19 */         0.5f,  0.5f, -0.5f,	-1.0f,  1.0f,  1.0f,         1.0f, 1.0f,     /* 04 */
+			//Bottom
+			/* 20 */        -0.5f, -0.5f,  0.5f,	-1.0f,  1.0f,  1.0f,         0.0f, 1.0f,     /* 01 */
+			/* 21 */        -0.5f, -0.5f, -0.5f,	-1.0f,  1.0f,  1.0f,         0.0f, 0.0f,     /* 06 */
+			/* 22 */         0.5f, -0.5f, -0.5f,	-1.0f,  1.0f,  1.0f,         1.0f, 0.0f,     /* 05 */
+			/* 23 */         0.5f, -0.5f,  0.5f,	-1.0f,  1.0f,  1.0f,         1.0f, 1.0f,     /* 02 */
+		},
+		{
+			0, 1, 2, // Front Tri 1
+			0, 2, 3, // Front Tri 2
+
+			4, 5, 6, // Back Tri 1
+			4, 6, 7, // Back Tri 2
+
+			8, 9,  10, // Right Tri 1
+			8, 10, 11, // Right Tri 2
+
+			12, 13, 14, // Left Tri 1
+			12, 14, 15, // Left Tri 2
+
+			16, 17, 18, // Top Tri 1
+			16, 18, 19, // Top Tri 2
+
+			20, 21, 22, // Bottom Tri 1
+			20, 22, 23, // Bottom Tri 2
+		}
+	);
+
+	g_Hexagon = new CShape(6, glm::vec3(0.25f, 0.25f, 0.0f), 0.0f, glm::vec3(0.5f, 0.5f, 1.0f), false);
+	g_Rectangle = new CShape(4, glm::vec3(-0.25f, -0.25f, 0.0f), 0.0f, glm::vec3(0.5f, 1.0f, 1.0f), false);
+	g_Fractal = new CShape(40, glm::vec3(0.5f, -0.5f, 0.0f), 0.0f, glm::vec3(0.5f, 0.5f, 1.0f), false);
+	g_Cube = new CShape("cube", glm::vec3(0.0f, 0.0f, 0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), false);
+
 	//Set the clear colour as blue (used by glClear)
 	glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
 
@@ -207,6 +268,7 @@ void InitialSetup()
 	Program_ClipSpace = ShaderLoader::CreateProgram("Resources/Shaders/ClipSpace.vert", "Resources/Shaders/TextureMix.frag");
 	Program_ClipSpaceFractal = ShaderLoader::CreateProgram("Resources/Shaders/ClipSpace.vert", "Resources/Shaders/Fractal.frag");
 	Program_Text = ShaderLoader::CreateProgram("Resources/Shaders/Text.vert", "Resources/Shaders/Text.frag");
+	Program_TextScroll = ShaderLoader::CreateProgram("Resources/Shaders/TextScroll.vert", "Resources/Shaders/TextScroll.frag");
 
 	glfwSetKeyCallback(window, KeyCallback);
 	glfwSetMouseButtonCallback(window, MouseCallback);
@@ -235,8 +297,10 @@ void InitialSetup()
 	GenTexture(Texture_CapMan, "Resources/Textures/Capguy_Walk.png");
 	GenTexture(Texture_Frac, "Resources/Textures/pal.png");
 
-	Text_Message = new TextLabel("This is some JUICY text!", "Resources/Fonts/ARIAL.ttf", glm::ivec2(0,48), glm::vec2(100.0f, 100.0f));
-	Text_Message2 = new TextLabel("FINGERS", "Resources/Fonts/Roboto.ttf", glm::ivec2(0,48), glm::vec2(100.0f, 300.0f));
+	Text_Message = new TextLabel("Press [ENTER] to edit me!", "Resources/Fonts/ARIAL.ttf", glm::ivec2(0,48), glm::vec2(100.0f, 100.0f));
+	Text_Message->SetProgram(Program_TextScroll);
+	Text_Message2 = new TextLabel("Bounce!", "Resources/Fonts/Roboto.ttf", glm::ivec2(0,48), glm::vec2(100.0f, 700.0f));
+	Text_Message2->SetBouncing(true);
 
 	//Set program and add uniforms to hexagon
 	g_Hexagon->m_program = Program_ClipSpace;
@@ -245,21 +309,16 @@ void InitialSetup()
 	g_Hexagon->AddUniform(new ImageUniform(Texture_Rayman), "ImageTexture");
 	g_Hexagon->AddUniform(new ImageUniform(Texture_Awesome), "ImageTexture1");
 	g_Hexagon->AddUniform(new FloatUniform(g_Hexagon->m_currentTime), "CurrentTime");
-	g_Hexagon->AddUniform(new FloatUniform(0), "offset");
 	g_Hexagon->AddUniform(new Mat4Uniform(g_Hexagon->m_PVMMat), "PVMMat");
-
-	g_Hexagon->GenBindVerts();
-
 
 	//Set program and add uniforms to Rectangle
 	g_Rectangle->m_program = Program_Texture;
 	g_Rectangle->m_camera = camera;
 
 	g_Rectangle->AddUniform(new AnimationUniform(Texture_CapMan, 8, 0.1f, g_Rectangle), "ImageTexture");
+	g_Rectangle->AddUniform(new IntUniform(8), "frameCount");
 	g_Rectangle->AddUniform(new FloatUniform(0), "offset");
 	g_Rectangle->AddUniform(new Mat4Uniform(g_Rectangle->m_PVMMat), "PVMMat");
-
-	g_Rectangle->GenBindVerts();
 
 	//Set program and add uniforms to Rectangle
 	g_Fractal->m_program = Program_ClipSpaceFractal;
@@ -268,8 +327,6 @@ void InitialSetup()
 	g_Fractal->AddUniform(new ImageUniform(Texture_Frac), "ImageTexture");
 	g_Fractal->AddUniform(new FloatUniform(g_Fractal->m_currentTime), "CurrentTime");
 	g_Fractal->AddUniform(new Mat4Uniform(g_Rectangle->m_PVMMat), "PVMMat");
-
-	g_Fractal->GenBindVerts();
 
 	//Set program and add uniforms to Pyramid
 	g_Cube->m_program = Program_ClipSpace;
@@ -280,62 +337,6 @@ void InitialSetup()
 	g_Cube->AddUniform(new FloatUniform(g_Cube->m_currentTime), "CurrentTime");
 	g_Cube->AddUniform(new FloatUniform(0), "offset");
 	g_Cube->AddUniform(new Mat4Uniform(g_Cube->m_PVMMat), "PVMMat");
-
-	g_Cube->m_VertexArray.vertices = {
-		// Index        // Position                     //Texture Coords
-						//Front Quad
-		/* 00 */        -0.5f,  0.5f,  0.5f,	-1.0f,  1.0f,  1.0f,         0.0f, 1.0f,     /* 00 */
-		/* 01 */        -0.5f, -0.5f,  0.5f,	-1.0f,  1.0f,  1.0f,         0.0f, 0.0f,     /* 01 */
-		/* 02 */         0.5f, -0.5f,  0.5f,	-1.0f,  1.0f,  1.0f,         1.0f, 0.0f,     /* 02 */
-		/* 03 */         0.5f,  0.5f,  0.5f,	-1.0f,  1.0f,  1.0f,         1.0f, 1.0f,     /* 03 */
-		//Back Quad
-		/* 04 */         0.5f,  0.5f, -0.5f,	-1.0f,  1.0f,  1.0f,         0.0f, 1.0f,     /* 04 */
-		/* 05 */         0.5f, -0.5f, -0.5f,	-1.0f,  1.0f,  1.0f,         0.0f, 0.0f,     /* 05 */
-		/* 06 */        -0.5f, -0.5f, -0.5f,	-1.0f,  1.0f,  1.0f,         1.0f, 0.0f,     /* 06 */
-		/* 07 */        -0.5f,  0.5f, -0.5f,	-1.0f,  1.0f,  1.0f,         1.0f, 1.0f,     /* 07 */
-		//Right
-		/* 08 */         0.5f,  0.5f,  0.5f,	-1.0f,  1.0f,  1.0f,         0.0f, 1.0f,     /* 03 */
-		/* 09 */         0.5f, -0.5f,  0.5f,	-1.0f,  1.0f,  1.0f,         0.0f, 0.0f,     /* 02 */
-		/* 10 */         0.5f, -0.5f, -0.5f,	-1.0f,  1.0f,  1.0f,         1.0f, 0.0f,     /* 05 */
-		/* 11 */         0.5f,  0.5f, -0.5f,	-1.0f,  1.0f,  1.0f,         1.0f, 1.0f,     /* 04 */
-		//Left
-		/* 12 */        -0.5f,  0.5f, -0.5f,	-1.0f,  1.0f,  1.0f,         0.0f, 1.0f,     /* 07 */
-		/* 13 */        -0.5f, -0.5f, -0.5f,	-1.0f,  1.0f,  1.0f,         0.0f, 0.0f,     /* 06 */
-		/* 14 */        -0.5f, -0.5f,  0.5f,	-1.0f,  1.0f,  1.0f,         1.0f, 0.0f,     /* 01 */
-		/* 15 */        -0.5f,  0.5f,  0.5f,	-1.0f,  1.0f,  1.0f,         1.0f, 1.0f,     /* 00 */
-		//Top
-		/* 16 */        -0.5f,  0.5f, -0.5f,	-1.0f,  1.0f,  1.0f,         0.0f, 1.0f,     /* 07 */
-		/* 17 */        -0.5f,  0.5f,  0.5f,	-1.0f,  1.0f,  1.0f,         0.0f, 0.0f,     /* 00 */
-		/* 18 */         0.5f,  0.5f,  0.5f,	-1.0f,  1.0f,  1.0f,         1.0f, 0.0f,     /* 03 */
-		/* 19 */         0.5f,  0.5f, -0.5f,	-1.0f,  1.0f,  1.0f,         1.0f, 1.0f,     /* 04 */
-		//Bottom
-		/* 20 */        -0.5f, -0.5f,  0.5f,	-1.0f,  1.0f,  1.0f,         0.0f, 1.0f,     /* 01 */
-		/* 21 */        -0.5f, -0.5f, -0.5f,	-1.0f,  1.0f,  1.0f,         0.0f, 0.0f,     /* 06 */
-		/* 22 */         0.5f, -0.5f, -0.5f,	-1.0f,  1.0f,  1.0f,         1.0f, 0.0f,     /* 05 */
-		/* 23 */         0.5f, -0.5f,  0.5f,	-1.0f,  1.0f,  1.0f,         1.0f, 1.0f,     /* 02 */
-	};
-
-	g_Cube->m_VertexArray.indices = {
-		0, 1, 2, // Front Tri 1
-		0, 2, 3, // Front Tri 2
-
-		4, 5, 6, // Back Tri 1
-		4, 6, 7, // Back Tri 2
-
-		8, 9,  10, // Right Tri 1
-		8, 10, 11, // Right Tri 2
-
-		12, 13, 14, // Left Tri 1
-		12, 14, 15, // Left Tri 2
-
-		16, 17, 18, // Top Tri 1
-		16, 18, 19, // Top Tri 2
-
-		20, 21, 22, // Bottom Tri 1
-		20, 22, 23, // Bottom Tri 2
-	};
-
-	g_Cube->GenBindVerts();
 
 	AudioInit();
 }
@@ -497,23 +498,11 @@ void Update()
 	g_Rectangle->Update(DeltaTime, CurrentTime);
 	g_Fractal->Update(DeltaTime, CurrentTime);
 	g_Cube->Update(DeltaTime, CurrentTime);
+	Text_Message->Update(DeltaTime, CurrentTime);
+	Text_Message2->Update(DeltaTime, CurrentTime);
 
-	if (Text_Message2->GetWidth() > 0 && Text_Message2->GetHeight() > 0) {
-		glm::vec2 pos = Text_Message2->GetCopyPos();
-
-		float width = 292;// Text_Message2->GetWidth();
-		float height = 32;  Text_Message2->GetHeight();
-
-		Text_Message2->SetScale((((sin(CurrentTime) + 1) / 2)) * glm::vec2(1, 1));
-		Text_Message2->SetPosition(glm::vec2(pos.x + width  - (float)((((sin(CurrentTime) + 1) / 2)) * width / 2), pos.y + height - (float)((((sin(CurrentTime) + 1) / 2)) * height / 2)));
-	}
-
-	
-	/*Text_Message->SetScale(0.5f*(sin((float)CurrentTime) + 2) * glm::vec2(1,1));
-	Text_Message->SetPosition(glm::vec2(400, 400) - 0.5f * (sin((float)CurrentTime) + 2) * glm::vec2(400, 24));*/
-
-	glUseProgram(Program_Text);
-	glUniform1f(glGetUniformLocation(Program_Text, "CurrentTime"), CurrentTime);
+	glUseProgram(Program_TextScroll);
+	glUniform1f(glGetUniformLocation(Program_TextScroll, "CurrentTime"), CurrentTime);
 	glUseProgram(0);
 
 	//Check for user input at fixed rate

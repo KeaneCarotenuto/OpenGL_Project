@@ -79,9 +79,7 @@ public:
 		frameCount(_count),
 		SPF(_speed)
 	{
-		for (int i = 6; i < (int)_shape->m_VertexArray.vertices.size(); i += 8) {
-			_shape->m_VertexArray.vertices[i] /= frameCount;
-		}
+		
 	}
 
 	GLuint value = NULL;
