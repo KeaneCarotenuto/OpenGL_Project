@@ -12,6 +12,9 @@ public:
 	glm::mat4 ViewMat;
 	glm::mat4 ProjectionMat;
 
+	glm::vec3 GetPos() { return CameraPos; };
+	glm::vec3 GetLookDir() { return CameraLookDir; };
+
 	//void Draw(CShape* _shape);
 };
 

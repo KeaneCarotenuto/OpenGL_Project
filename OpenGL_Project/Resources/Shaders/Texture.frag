@@ -12,5 +12,8 @@ out vec4 FinalColor;
 
 void main() 
 {
-    FinalColor = texture(ImageTexture, vec2(FragTexCoords.x/frameCount + offset, FragTexCoords.y));
+    float frameCountCopy = frameCount;
+    if (frameCountCopy <= 0) frameCountCopy = 1;
+
+    FinalColor = texture(ImageTexture, vec2(FragTexCoords.x/frameCountCopy + offset, FragTexCoords.y));
 }

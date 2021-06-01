@@ -69,7 +69,7 @@ public:
 	/// <summary>
 	/// 
 	/// </summary>
-	/// <param name="_val">Image GLuint</param>
+	/// <param name="_va">Image GLuint</param>
 	/// <param name="_count">Amount of frames in image</param>
 	/// <param name="_speed">Seconds per frame</param>
 	/// <param name="_shape">The shape that is using the image</param>

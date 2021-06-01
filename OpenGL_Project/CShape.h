@@ -43,16 +43,16 @@ class CShape
 private:
 	
 
-	CMesh* m_mesh;
+	CMesh* m_mesh = nullptr;
 
 	GLuint m_program = NULL;
 
-	CCamera* m_camera;
+	CCamera* m_camera = nullptr;
 
 	//List of uniforms
 	std::vector<CUniform*> m_uniforms;
 
-	float m_currentTime;
+	float m_currentTime = 0;
 
 	glm::vec3 m_position = glm::vec3(0.0f, 0.0f, 0.0f);
 	GLfloat m_rotation = 0.0f;

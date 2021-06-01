@@ -1,4 +1,5 @@
 #pragma once
+#include <iostream>
 
 namespace utils {
 	//Width and height of window
@@ -9,3 +10,4 @@ namespace utils {
 
 	static float time = 0.0f;
 }
+

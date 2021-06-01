@@ -3,8 +3,8 @@
 in vec3 FragColor;
 in vec2 FragTexCoords;
 
-uniform sampler2D ImageTexture;
-uniform sampler2D ImageTexture1;
+uniform sampler2D ImageTexture; //Rayman
+uniform sampler2D ImageTexture1; //Awesome_Face
 uniform float CurrentTime;
 
 out vec4 FinalColor;

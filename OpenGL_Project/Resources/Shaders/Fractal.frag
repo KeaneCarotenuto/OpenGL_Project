@@ -20,8 +20,8 @@ uniform vec4 FractalColour;
 out vec4 FinalColor;
 
 //How deep to calcualte for each point
-#define MAX_IT 200
-#define MAX_ZOOM 15
+#define MAX_IT 100
+#define MAX_ZOOM 5
 
 int itterate()
 {

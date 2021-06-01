@@ -115,7 +115,9 @@ void CShape::UpdatePVM()
 	if (m_orthoProject) {
 		m_camera->ProjectionMat = glm::ortho(0.0f, (float)utils::windowWidth, 0.0f, (float)utils::windowHeight, 0.0f, 100.0f);
 
-		UpdateUniform(new Mat4Uniform(m_camera->ProjectionMat * m_modelMat), "ModelMat");
+		m_modelMat = m_camera->ProjectionMat * m_modelMat;
+
+		UpdateUniform(new Mat4Uniform(m_modelMat), "ModelMat");
 		return;
 	}
 	else {
