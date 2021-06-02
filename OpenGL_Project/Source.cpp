@@ -39,6 +39,8 @@
 #include "CShape.h"
 #include "CUniform.h"
 
+#include "CAudioSystem.h"
+
 #include "Utility.h"
 
 
@@ -100,12 +102,6 @@ CShape* g_Cube;
 CShape* g_Cube2;
 CShape* g_Moveable;
 
-FMOD::System* AudioSystem;
-FMOD::Sound* FX_Gunshot;
-FMOD::Sound* FX_Enabled;
-FMOD::Sound* FX_Disabled;
-FMOD::Sound* Track_Dance;
-
 float CurrentTime;
 
 void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -118,7 +114,7 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 	if (key == GLFW_KEY_ENTER && action == GLFW_PRESS) {
 		doInput = !doInput;
 		Print(5,7, "Input is now " + (std::string)(doInput ? "Enabled. " : "Disabled. "), 15);
-		AudioSystem->playSound(doInput ? FX_Enabled : FX_Disabled, 0, false, 0);
+		CAudioSystem::GetInstance().PlaySong(doInput ? "Enabled" : "Disabled");
 		(doInput == true) ? glfwSetCharCallback(window, TextInput) : glfwSetCharCallback(window, 0);
 	}
 
@@ -142,6 +138,7 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 	
 	if (key == GLFW_KEY_KP_MULTIPLY && action == GLFW_PRESS) {
 		if (glm::length(glm::normalize(glm::vec2(camera->CameraLookDir.x, camera->CameraLookDir.z))) > 0) {
+
 			glm::vec3 copyVec = camera->CameraLookDir;
 
 			camera->CameraLookDir = -camera->CameraUpDir;
@@ -160,7 +157,7 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 
 void MouseCallback(GLFWwindow* window, int button, int action, int mods) {
 	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
-		AudioSystem->playSound(FX_Gunshot, 0, false, 0);
+		CAudioSystem::GetInstance().PlaySong("Gunshot");
 	}
 }
 
@@ -191,11 +188,7 @@ int main() {
 		Render();
 	}
 
-	FX_Gunshot->release();
-	FX_Enabled->release();
-	FX_Disabled->release();
-	Track_Dance->release();
-	AudioSystem->release();
+	CAudioSystem::GetInstance().ReleaseAll();
 
 	//Close GLFW correctly
 	glfwTerminate();
@@ -447,33 +440,12 @@ void InitialSetup()
 
 bool AudioInit()
 {
-	if (FMOD::System_Create(&AudioSystem) != FMOD_OK) {
-		std::cout << "FMOD ERROR: Audio System failed to create." << std::endl;
-		return false;
-	}
+	CAudioSystem::GetInstance().AddSong("DanceTrack", "Resources/Audio/DanceTrack.mp3", FMOD_LOOP_NORMAL);
+	CAudioSystem::GetInstance().AddSong("Gunshot", "Resources/Audio/Gunshot.wav", FMOD_DEFAULT);
+	CAudioSystem::GetInstance().AddSong("Enabled", "Resources/Audio/Enabled.wav", FMOD_DEFAULT);
+	CAudioSystem::GetInstance().AddSong("Disabled", "Resources/Audio/Disabled.wav", FMOD_DEFAULT);
 
-	if (AudioSystem->init(100, FMOD_INIT_NORMAL | FMOD_INIT_3D_RIGHTHANDED, 0) != FMOD_OK) {
-		std::cout << "FMOD ERROR: Audio system failed to initialize." << std::endl;
-		return false;
-	}
-
-	if (AudioSystem->createSound("Resources/Audio/Gunshot.wav", FMOD_DEFAULT, 0, &FX_Gunshot) != FMOD_OK) {
-		std::cout << "FMOD ERROR: Failed to load sound using createsound(...)" << std::endl;
-	}
-
-	if (AudioSystem->createSound("Resources/Audio/DanceTrack.mp3", FMOD_LOOP_NORMAL, 0, &Track_Dance) != FMOD_OK) {
-		std::cout << "FMOD ERROR: Failed to load sound using createsound(...)" << std::endl;
-	}
-
-	if (AudioSystem->createSound("Resources/Audio/Enabled.wav", FMOD_DEFAULT, 0, &FX_Enabled) != FMOD_OK) {
-		std::cout << "FMOD ERROR: Failed to load sound using createsound(...)" << std::endl;
-	}
-
-	if (AudioSystem->createSound("Resources/Audio/Disabled.wav", FMOD_DEFAULT, 0, &FX_Disabled) != FMOD_OK) {
-		std::cout << "FMOD ERROR: Failed to load sound using createsound(...)" << std::endl;
-	}
-
-	AudioSystem->playSound(Track_Dance, 0, false, 0);
+	CAudioSystem::GetInstance().PlaySong("DanceTrack");
 
 	return true;
 }
@@ -652,7 +624,7 @@ void Update()
 	}
 
 	//Update the FMOD Audio System
-	AudioSystem->update();
+	CAudioSystem::GetInstance().Update();
 }
 
 /// <summary>
