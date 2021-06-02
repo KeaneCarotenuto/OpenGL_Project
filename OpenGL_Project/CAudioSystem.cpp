@@ -1,5 +1,9 @@
 #include "CAudioSystem.h"
 
+/// <summary>
+/// Initialise the audio system
+/// </summary>
+/// <returns></returns>
 CAudioSystem::CAudioSystem()
 {
 	if (FMOD::System_Create(&m_system) != FMOD_OK) {
@@ -15,6 +19,12 @@ CAudioSystem::~CAudioSystem()
 {
 }
 
+/// <summary>
+/// Add song/audio file to list for future playing
+/// </summary>
+/// <param name="_name">name of song</param>
+/// <param name="_filePath">file path</param>
+/// <param name="_mode">for repeating or not etc</param>
 void CAudioSystem::AddSong(std::string _name, std::string _filePath, FMOD_MODE _mode)
 {
 	FMOD::Sound* tempSound;
@@ -30,6 +40,10 @@ void CAudioSystem::AddSong(std::string _name, std::string _filePath, FMOD_MODE _
 	}
 }
 
+/// <summary>
+/// Play sound
+/// </summary>
+/// <param name="_name"> name of sound</param>
 void CAudioSystem::PlaySong(std::string _name)
 {
 	if (m_sounds[_name]) {
@@ -37,6 +51,9 @@ void CAudioSystem::PlaySong(std::string _name)
 	}
 }
 
+/// <summary>
+/// Release all sounds and audio system, then clears list
+/// </summary>
 void CAudioSystem::ReleaseAll()
 {
 	for (std::map<std::string, FMOD::Sound*>::iterator it = m_sounds.begin(); it != m_sounds.end(); it++)

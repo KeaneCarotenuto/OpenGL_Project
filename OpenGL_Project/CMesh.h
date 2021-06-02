@@ -1,3 +1,14 @@
+// Bachelor of Software Engineering
+// Media Design School
+// Auckland
+// New Zealand
+// (c) 2021 Media Design School
+//
+// File Name   : CMesh.h
+// Description : Mesh class for shape blueprints
+// Author      : Keane Carotenuto
+// Mail        : KeaneCarotenuto@gmail.com
+
 #pragma once
 #include <vector>
 #include <map>

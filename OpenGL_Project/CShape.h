@@ -30,14 +30,6 @@
 
 class CUniform;
 
-//enum class UniformType {
-//	Int,
-//	Float,
-//	Image,
-//	Vec3,
-//	Mat4,
-//};
-
 class CShape
 {
 private:

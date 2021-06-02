@@ -104,6 +104,11 @@ GLuint ShaderLoader::CreateProgram(std::string _name, const char* vertexShaderFi
 	return program;
 }
 
+/// <summary>
+/// Returns program of name
+/// </summary>
+/// <param name="_name"></param>
+/// <returns></returns>
 CProgram* ShaderLoader::GetProgram(std::string _name)
 {
 	std::map<std::string, CProgram*>::iterator it = Globals::programs.find(_name);

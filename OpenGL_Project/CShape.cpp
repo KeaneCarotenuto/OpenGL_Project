@@ -39,6 +39,11 @@ CShape::CShape(std::string _meshName ,glm::vec3 _pos, float _rot, glm::vec3 _sca
 	m_mesh = CMesh::GetMesh(_meshName);
 }
 
+/// <summary>
+/// Add unifrom to shape
+/// </summary>
+/// <param name="_uniform"> type</param>
+/// <param name="_name"> what it is called in shader files</param>
 void CShape::AddUniform(CUniform* _uniform, std::string _name)
 {
 	const char* val = _name.c_str();
@@ -111,7 +116,7 @@ void CShape::UpdatePVM()
 	float halfWindowWidth = (float)utils::windowWidth / 2.0f;
 	float halfWindowHeight = (float)utils::windowHeight / 2.0f;
 
-	//Perspective project
+	//Perspective or ortho project
 	if (m_orthoProject) {
 		m_camera->SetCameraProjectionMat(glm::ortho(0.0f, (float)utils::windowWidth, 0.0f, (float)utils::windowHeight, 0.0f, 100.0f));
 

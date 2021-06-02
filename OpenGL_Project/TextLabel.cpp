@@ -1,5 +1,15 @@
 #include "TextLabel.h"
 
+/// <summary>
+/// Create a new text label to be used
+/// </summary>
+/// <param name="_text"> the actual text to render</param>
+/// <param name="_font"> font to be used</param>
+/// <param name="_pixelSize"> leave x blank to do auto width</param>
+/// <param name="_pos"> position on screen</param>
+/// <param name="_color"></param>
+/// <param name="_scale"></param>
+/// <returns></returns>
 TextLabel::TextLabel(std::string _text, std::string _font, glm::ivec2 _pixelSize, glm::vec2 _pos, glm::vec3 _color, glm::vec2 _scale):
     m_copyPosition(_pos), m_pixelSize(_pixelSize), m_copyScale(_scale)
 {
@@ -8,25 +18,31 @@ TextLabel::TextLabel(std::string _text, std::string _font, glm::ivec2 _pixelSize
     SetScale(_scale);
     SetPosition(_pos);
 
+    //Calc new ortho matrix
     ProjectionMat = glm::ortho(0.0f, (float)utils::windowWidth, 0.0f, (float)utils::windowHeight, 0.0f, 100.0f);
+    //Bind default program
     Program_Text = ShaderLoader::CreateProgram("text", "Resources/Shaders/Text.vert", "Resources/Shaders/Text.frag" );
 
     FT_Library FontLibrary;
     FT_Face FontFace;
 
+    //Init the freetype library
     if (FT_Init_FreeType(&FontLibrary) != 0) {
         std::cout << "FreeType Error: Could not init FreeType Library" << std::endl;
         return;
     }
 
+    //Load font
     if (FT_New_Face(FontLibrary, _font.c_str(), 0, &FontFace) != 0) {
         std::cout << "FreeType Error: Failed to Load Font" << std::endl;
         return;
     }
 
+    //Set pixel size
     FT_Set_Pixel_Sizes(FontFace, _pixelSize.x, _pixelSize.y);
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
+    //Create characters from font and store to map
     for (GLubyte Glyph = 0; Glyph < fontCharacterLimit; Glyph++) {
         if (FT_Load_Char(FontFace, Glyph, FT_LOAD_RENDER)) {
             std::cout << "FreeType Error: Failed to Load Glyph" << (unsigned char)Glyph << std::endl;
@@ -45,6 +61,7 @@ TextLabel::TextLabel(std::string _text, std::string _font, glm::ivec2 _pixelSize
     FT_Done_Face(FontFace);
     FT_Done_FreeType(FontLibrary);
 
+    //gen VAO
     glGenVertexArrays(1, &VAO_Text);
     glBindVertexArray(VAO_Text);
 
@@ -73,38 +90,44 @@ TextLabel::~TextLabel()
 {
 }
 
+/// <summary>
+/// Render the text
+/// </summary>
 void TextLabel::Render()
 {
     if (m_initialized == false) {
         return;
     }
 
-
     //Disable depth test for text
     GLboolean _copyOfDepthTest = glIsEnabled(GL_DEPTH_TEST);
     if (_copyOfDepthTest) glDisable(GL_DEPTH_TEST);
     
-    
-
+    //Set blend mode
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+    //Update uniforms
     glUseProgram(Program_Text);
     glUniform3fv(glGetUniformLocation(Program_Text, "TextColor"), 1, glm::value_ptr(m_color));
     glUniformMatrix4fv(glGetUniformLocation(Program_Text, "ProjectionMat"), 1, GL_FALSE, glm::value_ptr(ProjectionMat));
     glBindVertexArray(VAO_Text);
 
+    //Used for scroling text
     glUniform2fv(glGetUniformLocation(Program_Text, "XCliping"), 1, glm::value_ptr(glm::vec2(0, 800)));
     glUniform2fv(glGetUniformLocation(Program_Text, "CharacterSize"), 1, glm::value_ptr(m_pixelSize));
 
     glm::vec2 CharacterOrigin = m_position;
 
+    //Calc width and max height of text on screen
     m_height = 0.0f;
     m_width = 0.0f;
 
+    //Calc unscaled width and height
     m_unscaledHeight = 0;
     m_unscaledWidth = 0;
 
+    //Used string to render each quad for each character onto screen
     for (std::string::const_iterator TextCharacter = m_text.begin(); TextCharacter != m_text.end(); TextCharacter++) {
         FontChar FontCharacter = CharacterMap[*TextCharacter];
         GLfloat PosX = CharacterOrigin.x + FontCharacter.bearing.x * m_scale.x;
@@ -145,8 +168,14 @@ void TextLabel::Render()
     if (_copyOfDepthTest) glEnable(GL_DEPTH_TEST);
 }
 
+/// <summary>
+/// Update for text class every frame
+/// </summary>
+/// <param name="deltaTime"></param>
+/// <param name="currentTime"></param>
 void TextLabel::Update(float deltaTime, float currentTime)
 {
+    //Scales the text around it's center (even works while scrolling!)
     if (m_bounceText) {
         if (GetUnscaledWidth() > 0 && GetUnscaledHeight() > 0) {
             glm::vec2 pos = GetCopyPos();
@@ -167,6 +196,7 @@ std::string TextLabel::GetText()
     return m_text;
 }
 
+//Create font texture
 GLuint TextLabel::GenerateTexture(FT_Face _face)
 {
     GLuint TextureID;

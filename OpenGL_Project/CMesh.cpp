@@ -9,6 +9,9 @@ CMesh::CMesh(std::vector<float> _vertices, std::vector<int> _indices) {
 	GenBindVerts();
 }
 
+/// <summary>
+/// Bind all verts to buffers
+/// </summary>
 void CMesh::GenBindVerts()
 {
 	glGenVertexArrays(1, &m_VAO);
@@ -36,11 +39,21 @@ void CMesh::GenBindVerts()
 	glEnableVertexAttribArray(2);
 }
 
+/// <summary>
+/// Creates new mesh
+/// </summary>
+/// <param name="_name"> name of mesh</param>
+/// <param name="_vertices"> the list of verts</param>
+/// <param name="_indices"> the list of indicies</param>
 void CMesh::NewCMesh(std::string _name, std::vector<float> _vertices, std::vector<int> _indices)
 {
 	meshMap[_name] = new CMesh(_vertices, _indices);
 }
 
+/// <summary>
+/// Creates a regular polygon based off number of verts
+/// </summary>
+/// <param name="_verts"> how many verts </param>
 void CMesh::NewCMesh(int _verts)
 {
 	float angle = 360.0f / (float)_verts;
@@ -103,6 +116,12 @@ void CMesh::NewCMesh(int _verts)
 	meshMap["poly" + std::to_string(_verts)] = new CMesh(tempVertArray.vertices, tempVertArray.indices);
 }
 
+/// <summary>
+/// Return mesh
+/// </summary>
+/// <param name="_name"> name of mesh to find</param>
+/// <param name="_doesExist"> pass in bool to check if it does exist (or just check for nullptr)</param>
+/// <returns></returns>
 CMesh* CMesh::GetMesh(std::string _name, bool* _doesExist)
 {
 	std::map<std::string, CMesh*>::iterator it = meshMap.find(_name);
@@ -116,6 +135,9 @@ CMesh* CMesh::GetMesh(std::string _name, bool* _doesExist)
 	}
 }
 
+/// <summary>
+/// Render specific mesh
+/// </summary>
 void CMesh::Render()
 {
 	glBindVertexArray(GetVAO());

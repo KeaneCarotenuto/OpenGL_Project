@@ -1,3 +1,14 @@
+// Bachelor of Software Engineering
+// Media Design School
+// Auckland
+// New Zealand
+// (c) 2021 Media Design School
+//
+// File Name   : Camera.h
+// Description : Camera class for getting proj matrix
+// Author      : Keane Carotenuto
+// Mail        : KeaneCarotenuto@gmail.com
+
 #pragma once
 #include <glm.hpp>
 

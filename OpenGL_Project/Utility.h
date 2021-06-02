@@ -8,6 +8,6 @@ namespace utils {
 
 	static glm::vec2 mousePos = glm::vec2();
 
-	static float time = 0.0f;
+	static float currentTime = 0.0f;
 }
 

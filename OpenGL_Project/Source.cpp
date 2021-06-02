@@ -44,7 +44,7 @@
 #include "Utility.h"
 #include "CObjectManager.h"
 
-
+#pragma region Function Headers
 void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
 void MouseCallback(GLFWwindow* window, int button, int action, int mods);
@@ -55,9 +55,7 @@ bool Startup();
 void InitialSetup();
 
 void TextureCreation();
-
 void MeshCreation();
-
 void ObjectCreation();
 
 void ProgramSetup();
@@ -74,53 +72,41 @@ void Print(int x, int y, std::string str, int effect);
 void SlowPrint(int x, int y, std::string _message, int effect, int _wait);
 void GotoXY(int x, int y);
 
-GLFWwindow* window = nullptr;
+#pragma endregion
 
-CCamera* camera = new CCamera();
+//Program render window
+GLFWwindow* g_window = nullptr;
+
+//Main camera
+CCamera* g_camera = new CCamera();
 
 //Storing previous time step
 float previousTimeStep = 0;
 
+//Enable and disable input
 bool doInput = false;
 
-//Move to map/vector later
-GLuint Program_Texture;
-GLuint Program_ClipSpace;
-GLuint Program_ClipSpaceFade;
-GLuint Program_ClipSpaceFractal;
-GLuint Program_Text;
-GLuint Program_TextScroll;
-
-//Move to map/vector later
+//Textures
 GLuint Texture_Rayman;
 GLuint Texture_Awesome;
 GLuint Texture_CapMan;
 GLuint Texture_Frac;
 GLuint Texture_Floor;
 
-std::map<GLuint, std::string> textures;
-
+//Text objects
 TextLabel* Text_Message;
 TextLabel* Text_Message2;
-
-//Make shapes (Add them to vector later)
-//CShape* g_Fractal;
-//CShape* g_Floor;
-//CShape* g_Cube;
-//CShape* g_Cube2;
-//CShape* g_Moveable;
-
-float CurrentTime;
 
 int main() {
 
 	//Setup for use of OpenGL
 	if (!Startup()) return -1;
 
+	//Setup project specific settings
 	InitialSetup();
 
 	//Main Loop
-	while (!glfwWindowShouldClose(window)) {
+	while (!glfwWindowShouldClose(g_window)) {
 		glfwPollEvents();
 
 		//Update all objects and run processes
@@ -130,6 +116,7 @@ int main() {
 		Render();
 	}
 
+	//Release all audio before quitting
 	CAudioSystem::GetInstance().ReleaseAll();
 
 	//Close GLFW correctly
@@ -145,17 +132,18 @@ bool Startup()
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
 
+	//Setting console cursor visibilty
 	HANDLE out = GetStdHandle(STD_OUTPUT_HANDLE);
 	CONSOLE_CURSOR_INFO     cursorInfo;
 	GetConsoleCursorInfo(out, &cursorInfo);
-	cursorInfo.bVisible = false; // set the cursor visibility
+	cursorInfo.bVisible = false;
 	SetConsoleCursorInfo(out, &cursorInfo);
 
 	//Create a GLFW controlled context window
-	window = glfwCreateWindow(utils::windowWidth, utils::windowHeight, "Keane Carotenuto - Summative  1", NULL, NULL);
+	g_window = glfwCreateWindow(utils::windowWidth, utils::windowHeight, "Keane Carotenuto - Summative  1", NULL, NULL);
 
 	//Check for failure
-	if (window == NULL) {
+	if (g_window == NULL) {
 		std::cout << "GLFW failed to init. Exiting" << std::endl;
 		system("pause");
 
@@ -164,7 +152,7 @@ bool Startup()
 	}
 
 	//Set current context to the new window
-	glfwMakeContextCurrent(window);
+	glfwMakeContextCurrent(g_window);
 
 
 	//Init GLEW to propulate OpenGL function pointers
@@ -187,8 +175,8 @@ void InitialSetup()
 	// Maps the range of the window size to NDC (-1 -> 1)
 	glViewport(0, 0, utils::windowWidth, utils::windowHeight);
 
-	glfwSetKeyCallback(window, KeyCallback);
-	glfwSetMouseButtonCallback(window, MouseCallback);
+	glfwSetKeyCallback(g_window, KeyCallback);
+	glfwSetMouseButtonCallback(g_window, MouseCallback);
 
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
@@ -208,14 +196,19 @@ void InitialSetup()
 	//Flip Images
 	stbi_set_flip_vertically_on_load(true);
 
+	//Create textures
 	TextureCreation();
 
+	//Create default meshes
 	MeshCreation();
 
+	//Create objects
 	ObjectCreation();
 
+	//Set up shaders
 	ProgramSetup();
 
+	//Set up Audio files
 	AudioInit();
 
 	system("CLS");
@@ -223,6 +216,9 @@ void InitialSetup()
 
 #pragma region Creation Functions
 
+/// <summary>
+/// Vind all textures used
+/// </summary>
 void TextureCreation()
 {
 	//Create all textures and bind them
@@ -233,6 +229,9 @@ void TextureCreation()
 	GenTexture(Texture_Floor, "Resources/Textures/Floor.jpg");
 }
 
+/// <summary>
+/// Create default meshes to be used by shapes
+/// </summary>
 void MeshCreation()
 {
 	//Create cube mesh
@@ -327,22 +326,25 @@ void MeshCreation()
 		);
 }
 
+/// <summary>
+/// Create all shapes used in program
+/// </summary>
 void ObjectCreation()
 {
 	CObjectManager::AddShape("fractal", new CShape("square", glm::vec3(0.3f, 0.65f, 0.0f), 0.0f, glm::vec3(0.5f, 0.5f, 1.0f), true));
-	CObjectManager::GetShape("fractal")->SetCamera(camera);
+	CObjectManager::GetShape("fractal")->SetCamera(g_camera);
 
 	CObjectManager::AddShape("floor", new CShape("floor-square", glm::vec3(0.0f, -0.5f, 0.0f), 0.0f, glm::vec3(100.0f, 1.0f, 100.0f), false));
-	CObjectManager::GetShape("floor")->SetCamera(camera);
+	CObjectManager::GetShape("floor")->SetCamera(g_camera);
 
 	CObjectManager::AddShape("cube1", new CShape("cube", glm::vec3(5.0f, 0.0f, 0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), false));
-	CObjectManager::GetShape("cube1")->SetCamera(camera);
+	CObjectManager::GetShape("cube1")->SetCamera(g_camera);
 
 	CObjectManager::AddShape("cube2", new CShape("cube", glm::vec3(-5.0f, 0.0f, 0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), false));
-	CObjectManager::GetShape("cube2")->SetCamera(camera);
+	CObjectManager::GetShape("cube2")->SetCamera(g_camera);
 
 	CObjectManager::AddShape("moveable", new CShape("cube", glm::vec3(0.0f, 0.0f, 0.0f), 0.0f, glm::vec3(1.0f, 2.0f, 1.0f), false));
-	CObjectManager::GetShape("moveable")->SetCamera(camera);
+	CObjectManager::GetShape("moveable")->SetCamera(g_camera);
 
 	Text_Message = new TextLabel("Press [ENTER] to edit me!", "Resources/Fonts/ARIAL.ttf", glm::ivec2(0, 48), glm::vec2(100.0f, 100.0f));
 	Text_Message2 = new TextLabel("Bounce!", "Resources/Fonts/Roboto.ttf", glm::ivec2(0, 48), glm::vec2(100.0f, 700.0f));
@@ -351,22 +353,24 @@ void ObjectCreation()
 
 #pragma endregion
 
+/// <summary>
+/// Set up shaders and shader programs
+/// </summary>
 void ProgramSetup()
 {
 	//Create programs
-	Program_Texture = ShaderLoader::CreateProgram("texture", "Resources/Shaders/ClipSpace.vert", "Resources/Shaders/Texture.frag" );
-	Program_ClipSpace = ShaderLoader::CreateProgram("clipSpace", "Resources/Shaders/ClipSpace.vert", "Resources/Shaders/TextureMix.frag" );
-	Program_ClipSpaceFade = ShaderLoader::CreateProgram("clipSpaceFade", "Resources/Shaders/ClipSpace.vert", "Resources/Shaders/VertexColorFade.frag" );
-	Program_ClipSpaceFractal = ShaderLoader::CreateProgram("clipSpaceFractal", "Resources/Shaders/WorldSpace.vert", "Resources/Shaders/Fractal.frag" );
-	Program_Text = ShaderLoader::CreateProgram("text", "Resources/Shaders/Text.vert", "Resources/Shaders/Text.frag" );
-	Program_TextScroll = ShaderLoader::CreateProgram("textScroll", "Resources/Shaders/TextScroll.vert", "Resources/Shaders/TextScroll.frag" );
+	ShaderLoader::CreateProgram("texture", "Resources/Shaders/ClipSpace.vert", "Resources/Shaders/Texture.frag" );
+	ShaderLoader::CreateProgram("clipSpace", "Resources/Shaders/ClipSpace.vert", "Resources/Shaders/TextureMix.frag" );
+	ShaderLoader::CreateProgram("clipSpaceFade", "Resources/Shaders/ClipSpace.vert", "Resources/Shaders/VertexColorFade.frag" );
+	ShaderLoader::CreateProgram("clipSpaceFractal", "Resources/Shaders/WorldSpace.vert", "Resources/Shaders/Fractal.frag" );
+	ShaderLoader::CreateProgram("text", "Resources/Shaders/Text.vert", "Resources/Shaders/Text.frag" );
+	ShaderLoader::CreateProgram("textScroll", "Resources/Shaders/TextScroll.vert", "Resources/Shaders/TextScroll.frag" );
 
 	CShape* _shape = nullptr;
 
 	//Set program and add uniforms to fractal
-	_shape = CObjectManager::GetShape("fractal");
-	if (_shape != nullptr) {
-		_shape->SetProgram(Program_ClipSpaceFractal);
+	if (_shape = CObjectManager::GetShape("fractal")) {
+		_shape->SetProgram(ShaderLoader::GetProgram("clipSpaceFractal")->m_id);
 		_shape->AddUniform(new ImageUniform(Texture_Frac), "ImageTexture");
 		_shape->AddUniform(new FloatUniform(0), "CurrentTime");
 		_shape->AddUniform(new Vec4Uniform(glm::vec4(1, 1, 1, 1)), "FractalColour");
@@ -376,9 +380,8 @@ void ProgramSetup()
 	
 
 	//Set program and add uniforms to Rectangle
-	_shape = CObjectManager::GetShape("floor");
-	if (_shape != nullptr) {
-		_shape->SetProgram(Program_Texture);
+	if (_shape = CObjectManager::GetShape("floor")) {
+		_shape->SetProgram(ShaderLoader::GetProgram("texture")->m_id);
 		_shape->AddUniform(new ImageUniform(Texture_Floor), "ImageTexture");
 		_shape->AddUniform(new FloatUniform(0), "CurrentTime");
 		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM()), "PVMMat");
@@ -386,9 +389,8 @@ void ProgramSetup()
 	
 	
 	//Set program and add uniforms to Cube
-	_shape = CObjectManager::GetShape("cube1");
-	if (_shape != nullptr) {
-		_shape->SetProgram(Program_ClipSpace);
+	if (_shape = CObjectManager::GetShape("cube1")) {
+		_shape->SetProgram(ShaderLoader::GetProgram("clipSpace")->m_id);
 		_shape->AddUniform(new ImageUniform(Texture_Rayman), "ImageTexture");
 		_shape->AddUniform(new ImageUniform(Texture_Awesome), "ImageTexture1");
 		_shape->AddUniform(new FloatUniform(0), "CurrentTime");
@@ -397,9 +399,8 @@ void ProgramSetup()
 	
 	
 	//Set program and add uniforms to Cube
-	_shape = CObjectManager::GetShape("cube2");
-	if (_shape != nullptr) {
-		_shape->SetProgram(Program_ClipSpace);
+	if (_shape = CObjectManager::GetShape("cube2")) {
+		_shape->SetProgram(ShaderLoader::GetProgram("clipSpace")->m_id);
 		_shape->AddUniform(new ImageUniform(Texture_Awesome), "ImageTexture");
 		_shape->AddUniform(new ImageUniform(Texture_Rayman), "ImageTexture1");
 		_shape->AddUniform(new FloatUniform(0), "CurrentTime");
@@ -408,18 +409,19 @@ void ProgramSetup()
 	
 	
 	//Set program and add uniforms to moveable
-	_shape = CObjectManager::GetShape("moveable");
-	if (_shape != nullptr) {
-		_shape->SetProgram(Program_ClipSpaceFade);
+	if (_shape = CObjectManager::GetShape("moveable")) {
+		_shape->SetProgram(ShaderLoader::GetProgram("clipSpaceFade")->m_id);
 		_shape->AddUniform(new FloatUniform(0), "CurrentTime");
 		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM()), "PVMMat");
 	}
 	
-	
-
-	Text_Message->SetProgram(Program_TextScroll);
+	Text_Message->SetProgram(ShaderLoader::GetProgram("textScroll")->m_id);
 }
 
+/// <summary>
+/// Bind audio files
+/// </summary>
+/// <returns></returns>
 bool AudioInit()
 {
 	CAudioSystem::GetInstance().AddSong("DanceTrack", "Resources/Audio/DanceTrack.mp3", FMOD_LOOP_NORMAL);
@@ -434,13 +436,22 @@ bool AudioInit()
 
 #pragma region Callback Functions
 
+/// <summary>
+/// Callback for individual keys
+/// </summary>
+/// <param name="window">window to check on</param>
+/// <param name="key">key pressed</param>
+/// <param name="scancode"></param>
+/// <param name="action">how is the key being used</param>
+/// <param name="mods"></param>
 void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-	//Quit if esc key pressed
+	//Quit if ESC key pressed
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
 		glfwSetWindowShouldClose(window, GL_TRUE);
 	}
 
+	//Enable text input if ENTER is pressed
 	if (key == GLFW_KEY_ENTER && action == GLFW_PRESS) {
 		doInput = !doInput;
 		Print(5, 7, "Input is now " + (std::string)(doInput ? "Enabled. " : "Disabled. "), 15);
@@ -448,10 +459,12 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 		(doInput == true) ? glfwSetCharCallback(window, TextInput) : glfwSetCharCallback(window, 0);
 	}
 
+	//If input is enabled, delete the last character with BACKPSACE
 	if (doInput && key == GLFW_KEY_BACKSPACE && (action == GLFW_REPEAT || action == GLFW_PRESS)) {
 		Text_Message->SetText(Text_Message->GetText().substr(0, Text_Message->GetText().size() - 1));
 	}
 
+	//Change line mode (fill or line) with F
 	if (key == GLFW_KEY_F && action == GLFW_PRESS) {
 		GLint polygonMode[2];
 		glGetIntegerv(GL_POLYGON_MODE, polygonMode);
@@ -459,38 +472,51 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 		glPolygonMode(GL_FRONT_AND_BACK, (polygonMode[0] == GL_FILL ? GL_LINE : GL_FILL));
 	}
 
+	//Hide or show cursor
 	if (key == GLFW_KEY_TAB && action == GLFW_PRESS) {
 		GLuint mode = glfwGetInputMode(window, GLFW_CURSOR);
 
 		glfwSetInputMode(window, GLFW_CURSOR, (mode == GLFW_CURSOR_NORMAL ? GLFW_CURSOR_HIDDEN : GLFW_CURSOR_NORMAL));
 	}
 
-
+	//Switch between topdown and front facing camera with TAB
 	if (key == GLFW_KEY_KP_MULTIPLY && action == GLFW_PRESS) {
-		if (glm::length(glm::normalize(glm::vec2(camera->GetCameraLookDir().x, camera->GetCameraLookDir().z))) > 0) {
+		if (glm::length(glm::normalize(glm::vec2(g_camera->GetCameraLookDir().x, g_camera->GetCameraLookDir().z))) > 0) {
 
-			glm::vec3 copyVec = camera->GetCameraLookDir();
+			glm::vec3 copyVec = g_camera->GetCameraLookDir();
 
-			camera->SetCameraLookDir(-camera->GetCameraUpDir());
-			camera->SetCameraUpDir(copyVec);
+			g_camera->SetCameraLookDir(-g_camera->GetCameraUpDir());
+			g_camera->SetCameraUpDir(copyVec);
 		}
 		else {
-			glm::vec3 copyVec = camera->GetCameraUpDir();
+			glm::vec3 copyVec = g_camera->GetCameraUpDir();
 
-			camera->SetCameraUpDir(-camera->GetCameraLookDir());
-			camera->SetCameraLookDir(copyVec);
+			g_camera->SetCameraUpDir(-g_camera->GetCameraLookDir());
+			g_camera->SetCameraLookDir(copyVec);
 		}
 
 
 	}
 }
 
+/// <summary>
+/// Mouse click callback
+/// </summary>
+/// <param name="window">window to check on</param>
+/// <param name="button">button pressed</param>
+/// <param name="action">action performed</param>
+/// <param name="mods"></param>
 void MouseCallback(GLFWwindow* window, int button, int action, int mods) {
 	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
 		CAudioSystem::GetInstance().PlaySong("Gunshot");
 	}
 }
 
+/// <summary>
+/// Callback for any characters pressed
+/// </summary>
+/// <param name="window">window to check on</param>
+/// <param name="codePoint">"character" pressed</param>
 void TextInput(GLFWwindow* window, unsigned int codePoint) {
 	unsigned char uc = (unsigned char)codePoint;
 	std::string s(1, static_cast<char>(uc));
@@ -500,75 +526,85 @@ void TextInput(GLFWwindow* window, unsigned int codePoint) {
 	Text_Message->SetText(Text_Message->GetText() + s);
 }
 
+/// <summary>
+/// Check keys pressed for input during game during/after update call
+/// </summary>
+/// <param name="_deltaTime"></param>
+/// <param name="_currentTime"></param>
 void CheckInput(float _deltaTime, float _currentTime)
 {
+	//Print mouse pos to console
 	double xPos;
 	double yPos;
-	glfwGetCursorPos(window, &xPos, &yPos);
+	glfwGetCursorPos(g_window, &xPos, &yPos);
 	utils::mousePos = glm::vec2(xPos, utils::windowHeight - yPos);
-
 	Print(5,5,"Mouse Position (x: " + std::to_string((int)utils::mousePos.x) + " y:" + std::to_string((int)utils::mousePos.y) + ")", 15);
+
+	//Camera movement below :
 
 	glm::vec3 camMovement = glm::vec3(0, 0, 0);
 	float camSpeed = 5.0f;
 
 	//Move camera SWAD
-	if (glfwGetKey(window, GLFW_KEY_LEFT))
+	if (glfwGetKey(g_window, GLFW_KEY_LEFT))
 	{
-		camMovement += glm::normalize(glm::rotate(camera->GetCameraLookDir(), glm::radians(90.0f), camera->GetCameraUpDir()));
+		camMovement += glm::normalize(glm::rotate(g_camera->GetCameraLookDir(), glm::radians(90.0f), g_camera->GetCameraUpDir()));
 	}
-	if (glfwGetKey(window, GLFW_KEY_RIGHT))
+	if (glfwGetKey(g_window, GLFW_KEY_RIGHT))
 	{
-		camMovement -= glm::normalize(glm::rotate(camera->GetCameraLookDir(), glm::radians(90.0f), camera->GetCameraUpDir()));
+		camMovement -= glm::normalize(glm::rotate(g_camera->GetCameraLookDir(), glm::radians(90.0f), g_camera->GetCameraUpDir()));
 	}
-	if (glfwGetKey(window, GLFW_KEY_UP))
+	if (glfwGetKey(g_window, GLFW_KEY_UP))
 	{
-		camMovement += glm::normalize(camera->GetCameraLookDir());
+		camMovement += glm::normalize(g_camera->GetCameraLookDir());
 	}
-	if (glfwGetKey(window, GLFW_KEY_DOWN))
+	if (glfwGetKey(g_window, GLFW_KEY_DOWN))
 	{
-		camMovement -= glm::normalize(camera->GetCameraLookDir());
+		camMovement -= glm::normalize(g_camera->GetCameraLookDir());
 	}
-	if (glfwGetKey(window, GLFW_KEY_KP_ADD))
+	if (glfwGetKey(g_window, GLFW_KEY_KP_ADD))
 	{
-		camMovement += glm::normalize(camera->GetCameraUpDir());
+		camMovement += glm::normalize(g_camera->GetCameraUpDir());
 	}
-	if (glfwGetKey(window, GLFW_KEY_KP_SUBTRACT))
+	if (glfwGetKey(g_window, GLFW_KEY_KP_SUBTRACT))
 	{
-		camMovement -= glm::normalize(camera->GetCameraUpDir());
+		camMovement -= glm::normalize(g_camera->GetCameraUpDir());
 	}
 	if (glm::length(camMovement) >= 0.01f) {
 		camMovement = glm::normalize(camMovement) * camSpeed * _deltaTime;
-		camera->SetCameraPos(camera->GetCameraPos() + camMovement);
+		g_camera->SetCameraPos(g_camera->GetCameraPos() + camMovement);
 	}
 
+
+
+	//Object movement below:
 
 	glm::vec3 objMovement = glm::vec3(0,0,0);
 	float objSpeed = 5.0f;
 
 	//Move camera SWAD
-	if (glfwGetKey(window, GLFW_KEY_S))
+	if (glfwGetKey(g_window, GLFW_KEY_S))
 	{
 		objMovement += glm::vec3(0, 0, 1);
 	}
-	if (glfwGetKey(window, GLFW_KEY_W))
+	if (glfwGetKey(g_window, GLFW_KEY_W))
 	{
 		objMovement += glm::vec3(0, 0, -1);
 	}
-	if (glfwGetKey(window, GLFW_KEY_A))
+	if (glfwGetKey(g_window, GLFW_KEY_A))
 	{
 		objMovement += glm::vec3(-1, 0, 0);
 	}
-	if (glfwGetKey(window, GLFW_KEY_D))
+	if (glfwGetKey(g_window, GLFW_KEY_D))
 	{
 		objMovement += glm::vec3(1, 0, 0);
 	}
 	//Rotate Triangle QE
-	if (glfwGetKey(window, GLFW_KEY_Q))
+	if (glfwGetKey(g_window, GLFW_KEY_Q))
 	{
 		objMovement += glm::vec3(0, -1, 0);
 	}
-	if (glfwGetKey(window, GLFW_KEY_E))
+	if (glfwGetKey(g_window, GLFW_KEY_E))
 	{
 		objMovement += glm::vec3(0, 1, 0);
 	}
@@ -613,19 +649,18 @@ void GenTexture(GLuint& texture, const char* texPath)
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-float accum = 0;
-//Called each frame
+
+/// <summary>
+/// Called every frame
+/// </summary>
 void Update()
 {
 	//Get current time and calc delta time
-	CurrentTime = (float)glfwGetTime();
-	utils::time = CurrentTime;
-	float DeltaTime = CurrentTime - previousTimeStep;
-	previousTimeStep = CurrentTime;
+	utils::currentTime = (float)glfwGetTime();
+	float DeltaTime = utils::currentTime - previousTimeStep;
+	previousTimeStep = utils::currentTime;
 
-	//Weird average radius distance stuff vvv (for circles?)
-	//glm::distance(utils::mousePos, glm::vec2(g_Fractal->GetPosition().x * utils::windowWidth/2.0f, g_Fractal->GetPosition().y * utils::windowHeight / 2.0f)) < (g_Fractal->GetScale().x + g_Fractal->GetScale().y)/2.0f * utils::windowHeight / 2.0f
-
+	//Check mouse overlap with fractal shape, and change colour depending on distance
 	CShape* _fractal = CObjectManager::GetShape("fractal");
 	if	(_fractal != nullptr &&
 		utils::mousePos.x > (_fractal->GetPosition().x - _fractal->GetScale().x / 2) * (utils::windowWidth / 2.0f)
@@ -641,26 +676,32 @@ void Update()
 		_fractal->UpdateUniform(new Vec4Uniform(glm::vec4(0, 1, 1, 1)), "FractalColour");
 	}
 
-	CObjectManager::GetShape("cube1")->SetPosition(glm::vec3(sin(CurrentTime + glm::pi<float>())*2, 0, cos(CurrentTime + glm::pi<float>())*2));
-	CObjectManager::GetShape("cube2")->SetPosition(glm::vec3(sin(CurrentTime)*2, 0, cos(CurrentTime)*2));
+	//Move shapes around world origin in circle
+	CObjectManager::GetShape("cube1")->SetPosition(glm::vec3(sin(utils::currentTime + glm::pi<float>())*2, 0, cos(utils::currentTime + glm::pi<float>())*2));
+	CObjectManager::GetShape("cube2")->SetPosition(glm::vec3(sin(utils::currentTime)*2, 0, cos(utils::currentTime)*2));
 
-	CObjectManager::UpdateAll(DeltaTime, CurrentTime);
+	//Update all shapes
+	CObjectManager::UpdateAll(DeltaTime, utils::currentTime);
 
-	Text_Message->Update(DeltaTime, CurrentTime);
-	Text_Message2->Update(DeltaTime, CurrentTime);
+	//Update text
+	Text_Message->Update(DeltaTime, utils::currentTime);
+	Text_Message2->Update(DeltaTime, utils::currentTime);
 
-	glUseProgram(Program_TextScroll);
-	glUniform1f(glGetUniformLocation(Program_TextScroll, "CurrentTime"), CurrentTime);
+	//Update scrolling text program uniform
+	glUseProgram(ShaderLoader::GetProgram("textScroll")->m_id);
+	glUniform1f(glGetUniformLocation(ShaderLoader::GetProgram("textScroll")->m_id, "CurrentTime"), utils::currentTime);
 	glUseProgram(0);
 
-	CheckInput(DeltaTime, CurrentTime);
+
+	//Check for input
+	CheckInput(DeltaTime, utils::currentTime);
 
 	//Update the FMOD Audio System
 	CAudioSystem::GetInstance().Update();
 }
 
 /// <summary>
-/// Renders objects in order
+/// Calls render function for objects
 /// </summary>
 void Render()
 {
@@ -672,11 +713,17 @@ void Render()
 	Text_Message->Render();
 	Text_Message2->Render();
 	
-	glfwSwapBuffers(window);
+	glfwSwapBuffers(g_window);
 }
 
 #pragma region "Printing Functions"
-//Used to print out text at the specified coordinate, with the specified effect.
+/// <summary>
+/// Prints out text at position with colour
+/// </summary>
+/// <param name="x"> pos</param>
+/// <param name="y"> pos</param>
+/// <param name="str"> string to print</param>
+/// <param name="effect"> colour to print with</param>
 void Print(int x, int y, std::string str, int effect) {
 	GotoXY(x, y);
 	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), effect);
@@ -684,7 +731,14 @@ void Print(int x, int y, std::string str, int effect) {
 	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 15);
 };
 
-//Prints text at coord with colour one letter at a time
+/// <summary>
+/// Slowly prints out text at pos with colour 
+/// </summary>
+/// <param name="x">pos</param>
+/// <param name="y">pos</param>
+/// <param name="_message">string to pring</param>
+/// <param name="effect">colour to print with</param>
+/// <param name="_wait">deltay after each character</param>
 void SlowPrint(int x, int y, std::string _message, int effect, int _wait) {
 	GotoXY(x, y);
 	for (wchar_t _char : _message) {
@@ -695,7 +749,11 @@ void SlowPrint(int x, int y, std::string _message, int effect, int _wait) {
 	}
 }
 
-//Used to move the Console Cursor to a point on the screen for more accurate text management.
+/// <summary>
+/// Moves console cursor to specific position
+/// </summary>
+/// <param name="x"></param>
+/// <param name="y"></param>
 void GotoXY(int x, int y) {
 	COORD point = { x,y };
 	SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), point);

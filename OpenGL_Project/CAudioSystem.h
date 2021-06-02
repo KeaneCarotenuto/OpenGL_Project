@@ -1,3 +1,14 @@
+// Bachelor of Software Engineering
+// Media Design School
+// Auckland
+// New Zealand
+// (c) 2021 Media Design School
+//
+// File Name   : CAudioSystem.h
+// Description : Audio management 
+// Author      : Keane Carotenuto
+// Mail        : KeaneCarotenuto@gmail.com
+
 #pragma once
 #include <map>
 #include <string>
@@ -15,7 +26,7 @@ private:
 
 public:
 	
-
+	//Singleton class
 	static CAudioSystem& GetInstance() {
 		static CAudioSystem m_instance;
 

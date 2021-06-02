@@ -95,8 +95,8 @@ public:
 		glUniform1i(location, value);
 
 		//Increment the current frame based on speed defined
-		if (utils::time >= lastFrameTime + SPF) {
-			lastFrameTime = utils::time;
+		if (utils::currentTime >= lastFrameTime + SPF) {
+			lastFrameTime = utils::currentTime;
 			currentFrame++;
 
 			if (currentFrame >= frameCount) currentFrame = 0;
