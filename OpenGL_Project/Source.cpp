@@ -34,8 +34,6 @@
 #include "TextLabel.h"
 #include "CCamera.h"
 
-#include "Sphere.h"
-
 #include "CShape.h"
 #include "CUniform.h"
 
@@ -755,7 +753,7 @@ void SlowPrint(int x, int y, std::string _message, int effect, int _wait) {
 /// <param name="x"></param>
 /// <param name="y"></param>
 void GotoXY(int x, int y) {
-	COORD point = { x,y };
+	COORD point = { (short)x,(short)y };
 	SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), point);
 };
 #pragma endregion
