@@ -4,7 +4,7 @@
 
 //#include <stb_image.h>
 
-CShape::CShape(int _verts, glm::vec3 _pos, float _rot, glm::vec3 _scale, bool _screenScale)
+CShape::CShape(int _verts, glm::vec3 _pos, float _rot, glm::vec3 _scale, bool _screenScale, int _renderPri)
 {
 	m_position = _pos;
 	m_rotation = _rot;
@@ -29,7 +29,7 @@ CShape::CShape(int _verts, glm::vec3 _pos, float _rot, glm::vec3 _scale, bool _s
 	
 }
 
-CShape::CShape(std::string _meshName ,glm::vec3 _pos, float _rot, glm::vec3 _scale, bool _screenScale)
+CShape::CShape(std::string _meshName ,glm::vec3 _pos, float _rot, glm::vec3 _scale, bool _screenScale, int _renderPri)
 {
 	m_position = _pos;
 	m_rotation = _rot;
@@ -113,23 +113,23 @@ void CShape::UpdatePVM()
 
 	//Perspective project
 	if (m_orthoProject) {
-		m_camera->ProjectionMat = glm::ortho(0.0f, (float)utils::windowWidth, 0.0f, (float)utils::windowHeight, 0.0f, 100.0f);
+		m_camera->SetCameraProjectionMat(glm::ortho(0.0f, (float)utils::windowWidth, 0.0f, (float)utils::windowHeight, 0.0f, 100.0f));
 
-		m_modelMat = m_camera->ProjectionMat * m_modelMat;
+		m_modelMat = m_camera->GetCameraProjectionMat() * m_modelMat;
 
 		UpdateUniform(new Mat4Uniform(m_modelMat), "ModelMat");
 		return;
 	}
 	else {
-		m_camera->ProjectionMat = glm::perspective(glm::radians(45.0f), (float)utils::windowWidth / (float)utils::windowHeight, 0.1f, 100.0f);
+		m_camera->SetCameraProjectionMat(glm::perspective(glm::radians(45.0f), (float)utils::windowWidth / (float)utils::windowHeight, 0.1f, 100.0f));
 	}
 	
 
 	//Calculate the new View matrix using all camera vars
-	m_camera->ViewMat = glm::lookAt(m_camera->CameraPos, m_camera->CameraPos + m_camera->CameraLookDir, m_camera->CameraUpDir);
+	m_camera->SetCameraViewMat(glm::lookAt(m_camera->GetCameraPos(), m_camera->GetCameraPos() + m_camera->GetCameraLookDir(), m_camera->GetCameraUpDir()));
 
 	//Calculate the PVM mat for the shape using camera view mat
-	m_PVMMat = m_camera->ProjectionMat * m_camera->ViewMat * m_modelMat;
+	m_PVMMat = m_camera->GetCameraProjectionMat() * m_camera->GetCameraViewMat() * m_modelMat;
 
 	UpdateUniform(new Mat4Uniform(m_PVMMat), "PVMMat");
 }

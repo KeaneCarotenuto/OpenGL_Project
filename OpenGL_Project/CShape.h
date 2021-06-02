@@ -41,7 +41,6 @@ class CUniform;
 class CShape
 {
 private:
-	
 
 	CMesh* m_mesh = nullptr;
 
@@ -70,8 +69,8 @@ private:
 public:
 	bool m_orthoProject = false;
 
-	CShape(int _verts, glm::vec3 _pos, float _rot, glm::vec3 _scale, bool _screenScale);
-	CShape(std::string _meshName, glm::vec3 _pos, float _rot, glm::vec3 _scale, bool _screenScale);
+	CShape(int _verts, glm::vec3 _pos, float _rot, glm::vec3 _scale, bool _screenScale, int _renderPri = -1);
+	CShape(std::string _meshName, glm::vec3 _pos, float _rot, glm::vec3 _scale, bool _screenScale, int _renderPri = -1);
 
 	void SetProgram(GLuint _program) { m_program = _program; };
 	void SetCamera(CCamera* _camera) { m_camera = _camera; };

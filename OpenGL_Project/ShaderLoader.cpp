@@ -4,7 +4,7 @@ ShaderLoader::ShaderLoader(void){}
 ShaderLoader::~ShaderLoader(void){}
 
 std::vector<CShader*> Globals::shaders;
-std::vector<CProgram*> Globals::programs;
+std::map<std::string, CProgram*> Globals::programs;
 
 /// <summary>
 /// Create program with a Vertex Shader, and a Fragment Shader
@@ -12,7 +12,7 @@ std::vector<CProgram*> Globals::programs;
 /// <param name="vertexShaderFilename"></param>
 /// <param name="fragmentShaderFilename"></param>
 /// <returns></returns>
-GLuint ShaderLoader::CreateProgram(const char* vertexShaderFilename, const char* fragmentShaderFilename)
+GLuint ShaderLoader::CreateProgram(std::string _name, const char* vertexShaderFilename, const char* fragmentShaderFilename)
 {
 	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 15);
 	std::cout << "Start Program Creation:" << std::endl;
@@ -24,13 +24,13 @@ GLuint ShaderLoader::CreateProgram(const char* vertexShaderFilename, const char*
 	CShader* fShader = nullptr;
 
 	//Check if program/shaders exists already, if so, use them
-	for (CProgram* _prog : Globals::programs)
+	for (auto it = Globals::programs.begin(); it != Globals::programs.end(); ++it)
 	{
-		if (_prog) {
+		if (it->second) {
 			GLuint TEMP_vert_shader = NULL;
 			GLuint TEMP_frag_shader = NULL;
 
-			for (CShader* _shader : _prog->m_shaders)
+			for (CShader* _shader : it->second->m_shaders)
 			{
 				//if vert shader exists
 				if (_shader) {
@@ -57,7 +57,7 @@ GLuint ShaderLoader::CreateProgram(const char* vertexShaderFilename, const char*
 				std::cout << "-Program already exists, using existing." << std::endl;
 				SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 15);
 				std::cout << "End Program Creation." << std::endl << std::endl;
-				return _prog->m_id;
+				return it->second->m_id;
 			}
 		}
 	}
@@ -95,13 +95,25 @@ GLuint ShaderLoader::CreateProgram(const char* vertexShaderFilename, const char*
 		return 0;
 	}
 
-	Globals::programs.push_back(new CProgram(program, std::vector<CShader*>{vShader, fShader}));
+	Globals::programs[_name] = (new CProgram(program, std::vector<CShader*>{vShader, fShader}));
 
 	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 10);
 	std::cout << "--Program Created" << std::endl;
 	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 15);
 	std::cout << "End Program Creation." << std::endl << std::endl;
 	return program;
+}
+
+CProgram* ShaderLoader::GetProgram(std::string _name)
+{
+	std::map<std::string, CProgram*>::iterator it = Globals::programs.find(_name);
+	if (it != Globals::programs.end()) {
+		return it->second;
+	}
+	{
+		std::cout << "ERROR: Failed to get program named " << _name << "." << std::endl;
+		return nullptr;
+	}
 }
 
 /// <summary>

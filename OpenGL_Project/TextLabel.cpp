@@ -9,7 +9,7 @@ TextLabel::TextLabel(std::string _text, std::string _font, glm::ivec2 _pixelSize
     SetPosition(_pos);
 
     ProjectionMat = glm::ortho(0.0f, (float)utils::windowWidth, 0.0f, (float)utils::windowHeight, 0.0f, 100.0f);
-    Program_Text = ShaderLoader::CreateProgram("Resources/Shaders/Text.vert", "Resources/Shaders/Text.frag");
+    Program_Text = ShaderLoader::CreateProgram("text", "Resources/Shaders/Text.vert", "Resources/Shaders/Text.frag" );
 
     FT_Library FontLibrary;
     FT_Face FontFace;

@@ -42,6 +42,7 @@
 #include "CAudioSystem.h"
 
 #include "Utility.h"
+#include "CObjectManager.h"
 
 
 void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
@@ -52,6 +53,14 @@ void TextInput(GLFWwindow* window, unsigned int codePoint);
 
 bool Startup();
 void InitialSetup();
+
+void TextureCreation();
+
+void MeshCreation();
+
+void ObjectCreation();
+
+void ProgramSetup();
 
 bool AudioInit();
 
@@ -82,7 +91,6 @@ GLuint Program_ClipSpaceFractal;
 GLuint Program_Text;
 GLuint Program_TextScroll;
 
-
 //Move to map/vector later
 GLuint Texture_Rayman;
 GLuint Texture_Awesome;
@@ -96,79 +104,13 @@ TextLabel* Text_Message;
 TextLabel* Text_Message2;
 
 //Make shapes (Add them to vector later)
-CShape* g_Fractal;
-CShape* g_Floor;
-CShape* g_Cube;
-CShape* g_Cube2;
-CShape* g_Moveable;
+//CShape* g_Fractal;
+//CShape* g_Floor;
+//CShape* g_Cube;
+//CShape* g_Cube2;
+//CShape* g_Moveable;
 
 float CurrentTime;
-
-void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
-{
-	//Quit if esc key pressed
-	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
-		glfwSetWindowShouldClose(window, GL_TRUE);
-	}
-
-	if (key == GLFW_KEY_ENTER && action == GLFW_PRESS) {
-		doInput = !doInput;
-		Print(5,7, "Input is now " + (std::string)(doInput ? "Enabled. " : "Disabled. "), 15);
-		CAudioSystem::GetInstance().PlaySong(doInput ? "Enabled" : "Disabled");
-		(doInput == true) ? glfwSetCharCallback(window, TextInput) : glfwSetCharCallback(window, 0);
-	}
-
-	if (doInput && key == GLFW_KEY_BACKSPACE && (action == GLFW_REPEAT || action == GLFW_PRESS)) {
-		Text_Message->SetText( Text_Message->GetText().substr(0, Text_Message->GetText().size()-1) );
-	}
-	
-	if (key == GLFW_KEY_F && action == GLFW_PRESS) {
-		GLint polygonMode[2];
-		glGetIntegerv(GL_POLYGON_MODE, polygonMode);
-
-		glPolygonMode(GL_FRONT_AND_BACK, (polygonMode[0] == GL_FILL ? GL_LINE : GL_FILL));
-	}
-
-	if (key == GLFW_KEY_TAB && action == GLFW_PRESS) {
-		GLuint mode = glfwGetInputMode(window, GLFW_CURSOR);
-
-		glfwSetInputMode(window, GLFW_CURSOR, (mode == GLFW_CURSOR_NORMAL ? GLFW_CURSOR_HIDDEN : GLFW_CURSOR_NORMAL));
-	}
-	
-	
-	if (key == GLFW_KEY_KP_MULTIPLY && action == GLFW_PRESS) {
-		if (glm::length(glm::normalize(glm::vec2(camera->CameraLookDir.x, camera->CameraLookDir.z))) > 0) {
-
-			glm::vec3 copyVec = camera->CameraLookDir;
-
-			camera->CameraLookDir = -camera->CameraUpDir;
-			camera->CameraUpDir = copyVec;
-		}
-		else {
-			glm::vec3 copyVec = camera->CameraUpDir;
-
-			camera->CameraUpDir = -camera->CameraLookDir;
-			camera->CameraLookDir = copyVec;
-		}
-
-		
-	}
-}
-
-void MouseCallback(GLFWwindow* window, int button, int action, int mods) {
-	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
-		CAudioSystem::GetInstance().PlaySong("Gunshot");
-	}
-}
-
-void TextInput(GLFWwindow* window, unsigned int codePoint) {
-	unsigned char uc = (unsigned char)codePoint;
-	std::string s(1, static_cast<char>(uc));
-	
-	Print(5, 8, "Text input detected: " + s, 15);
-	
-	Text_Message->SetText(Text_Message->GetText() + s);
-}
 
 int main() {
 
@@ -239,12 +181,66 @@ bool Startup()
 
 void InitialSetup()
 {
+	//Set the clear colour as blue (used by glClear)
+	glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
+
+	// Maps the range of the window size to NDC (-1 -> 1)
+	glViewport(0, 0, utils::windowWidth, utils::windowHeight);
+
+	glfwSetKeyCallback(window, KeyCallback);
+	glfwSetMouseButtonCallback(window, MouseCallback);
+
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+	//Cull polygons not facing
+	glCullFace(GL_BACK);
+
+	//Set winding order of verticies (for front and back facing)
+	glFrontFace(GL_CCW);
+
+	//Enable Culling
+	glEnable(GL_CULL_FACE);
+	//glDisable(GL_CULL_FACE);
+
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LESS);
+
+	//Flip Images
+	stbi_set_flip_vertically_on_load(true);
+
+	TextureCreation();
+
+	MeshCreation();
+
+	ObjectCreation();
+
+	ProgramSetup();
+
+	AudioInit();
+
+	system("CLS");
+}
+
+#pragma region Creation Functions
+
+void TextureCreation()
+{
+	//Create all textures and bind them
+	GenTexture(Texture_Rayman, "Resources/Textures/Rayman.jpg");
+	GenTexture(Texture_Awesome, "Resources/Textures/AwesomeFace.png");
+	GenTexture(Texture_CapMan, "Resources/Textures/Capguy_Walk.png");
+	GenTexture(Texture_Frac, "Resources/Textures/pal.png");
+	GenTexture(Texture_Floor, "Resources/Textures/Floor.jpg");
+}
+
+void MeshCreation()
+{
 	//Create cube mesh
 	CMesh::NewCMesh(
 		"cube",
 		{
 			// Index        // Position                     //Texture Coords
-						//Front Quad
+			//Front Quad
 			/* 00 */        -0.5f,  0.5f,  0.5f,	1.0f,  1.0f,  1.0f,         0.0f, 1.0f,     /* 00 */
 			/* 01 */        -0.5f, -0.5f,  0.5f,	1.0f,  1.0f,  1.0f,         0.0f, 0.0f,     /* 01 */
 			/* 02 */         0.5f, -0.5f,  0.5f,	1.0f,  1.0f,  1.0f,         1.0f, 0.0f,     /* 02 */
@@ -294,14 +290,14 @@ void InitialSetup()
 			20, 21, 22, // Bottom Tri 1
 			20, 22, 23, // Bottom Tri 2
 		}
-	);
+		);
 
 	//Create cube mesh
 	CMesh::NewCMesh(
 		"square",
 		{
 			// Index        // Position                     //Texture Coords
-						//Front Quad
+			//Front Quad
 			/* 00 */        -0.5f,  0.5f,  0.0f,	-1.0f,  1.0f,  1.0f,         0.0f, 1.0f,     /* 00 */
 			/* 01 */        -0.5f, -0.5f,  0.0f,	-1.0f,  1.0f,  1.0f,         0.0f, 0.0f,     /* 01 */
 			/* 02 */         0.5f, -0.5f,  0.0f,	-1.0f,  1.0f,  1.0f,         1.0f, 0.0f,     /* 02 */
@@ -318,7 +314,7 @@ void InitialSetup()
 		"floor-square",
 		{
 			// Index        // Position                     //Texture Coords
-						//Front Quad
+			//Front Quad
 			/* 00 */        -0.5f,  0.0f,  0.5f,	-1.0f,  1.0f,  1.0f,         0.0f, 50.0f,     /* 00 */
 			/* 01 */        -0.5f,  0.0f, -0.5f,	-1.0f,  1.0f,  1.0f,         0.0f, 0.0f,     /* 01 */
 			/* 02 */         0.5f,  0.0f, -0.5f,	-1.0f,  1.0f,  1.0f,         50.0f, 0.0f,     /* 02 */
@@ -329,113 +325,99 @@ void InitialSetup()
 			0, 3, 2, // Front Tri 2
 		}
 		);
+}
 
-	
+void ObjectCreation()
+{
+	CObjectManager::AddShape("fractal", new CShape("square", glm::vec3(0.3f, 0.65f, 0.0f), 0.0f, glm::vec3(0.5f, 0.5f, 1.0f), true));
+	CObjectManager::GetShape("fractal")->SetCamera(camera);
 
+	CObjectManager::AddShape("floor", new CShape("floor-square", glm::vec3(0.0f, -0.5f, 0.0f), 0.0f, glm::vec3(100.0f, 1.0f, 100.0f), false));
+	CObjectManager::GetShape("floor")->SetCamera(camera);
 
+	CObjectManager::AddShape("cube1", new CShape("cube", glm::vec3(5.0f, 0.0f, 0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), false));
+	CObjectManager::GetShape("cube1")->SetCamera(camera);
 
-	//Set the clear colour as blue (used by glClear)
-	glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
+	CObjectManager::AddShape("cube2", new CShape("cube", glm::vec3(-5.0f, 0.0f, 0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), false));
+	CObjectManager::GetShape("cube2")->SetCamera(camera);
 
-	// Maps the range of the window size to NDC (-1 -> 1)
-	glViewport(0, 0, utils::windowWidth, utils::windowHeight);
-
-	//Create programs
-	Program_Texture = ShaderLoader::CreateProgram("Resources/Shaders/ClipSpace.vert", "Resources/Shaders/Texture.frag");
-	Program_ClipSpace = ShaderLoader::CreateProgram("Resources/Shaders/ClipSpace.vert", "Resources/Shaders/TextureMix.frag");
-	Program_ClipSpaceFade = ShaderLoader::CreateProgram("Resources/Shaders/ClipSpace.vert", "Resources/Shaders/VertexColorFade.frag");
-	Program_ClipSpaceFractal = ShaderLoader::CreateProgram("Resources/Shaders/WorldSpace.vert", "Resources/Shaders/Fractal.frag");
-	Program_Text = ShaderLoader::CreateProgram("Resources/Shaders/Text.vert", "Resources/Shaders/Text.frag");
-	Program_TextScroll = ShaderLoader::CreateProgram("Resources/Shaders/TextScroll.vert", "Resources/Shaders/TextScroll.frag");
-
-	glfwSetKeyCallback(window, KeyCallback);
-	glfwSetMouseButtonCallback(window, MouseCallback);
-
-	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
-	//Cull polygons not facing
-	glCullFace(GL_BACK);
-
-	//Set winding order of verticies (for front and back facing)
-	glFrontFace(GL_CCW);
-
-	//Enable Culling
-	glEnable(GL_CULL_FACE);
-	//glDisable(GL_CULL_FACE);
-
-	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LESS);
-
-	//Flip Images
-	stbi_set_flip_vertically_on_load(true);
-
-	//Create all textures and bind them
-	GenTexture(Texture_Rayman, "Resources/Textures/Rayman.jpg");
-	GenTexture(Texture_Awesome, "Resources/Textures/AwesomeFace.png");
-	GenTexture(Texture_CapMan, "Resources/Textures/Capguy_Walk.png");
-	GenTexture(Texture_Frac, "Resources/Textures/pal.png");
-	GenTexture(Texture_Floor, "Resources/Textures/Floor.jpg");
-
-	g_Fractal = new CShape("square", glm::vec3(0.3f, 0.65f, 0.0f), 0.0f, glm::vec3(0.5f, 0.5f, 1.0f), true);
-
-	g_Floor = new CShape("floor-square", glm::vec3(0.0f, -0.5f, 0.0f), 0.0f, glm::vec3(100.0f, 1.0f, 100.0f), false);
-
-	g_Cube = new CShape("cube", glm::vec3(5.0f, 0.0f, 0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), false);
-	g_Cube2 = new CShape("cube", glm::vec3(-5.0f, 0.0f, 0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), false);
-
-	g_Moveable = new CShape("cube", glm::vec3(0.0f, 0.0f, 0.0f), 0.0f, glm::vec3(1.0f, 2.0f, 1.0f), false);
+	CObjectManager::AddShape("moveable", new CShape("cube", glm::vec3(0.0f, 0.0f, 0.0f), 0.0f, glm::vec3(1.0f, 2.0f, 1.0f), false));
+	CObjectManager::GetShape("moveable")->SetCamera(camera);
 
 	Text_Message = new TextLabel("Press [ENTER] to edit me!", "Resources/Fonts/ARIAL.ttf", glm::ivec2(0, 48), glm::vec2(100.0f, 100.0f));
-	Text_Message->SetProgram(Program_TextScroll);
 	Text_Message2 = new TextLabel("Bounce!", "Resources/Fonts/Roboto.ttf", glm::ivec2(0, 48), glm::vec2(100.0f, 700.0f));
 	Text_Message2->SetBouncing(true);
+}
+
+#pragma endregion
+
+void ProgramSetup()
+{
+	//Create programs
+	Program_Texture = ShaderLoader::CreateProgram("texture", "Resources/Shaders/ClipSpace.vert", "Resources/Shaders/Texture.frag" );
+	Program_ClipSpace = ShaderLoader::CreateProgram("clipSpace", "Resources/Shaders/ClipSpace.vert", "Resources/Shaders/TextureMix.frag" );
+	Program_ClipSpaceFade = ShaderLoader::CreateProgram("clipSpaceFade", "Resources/Shaders/ClipSpace.vert", "Resources/Shaders/VertexColorFade.frag" );
+	Program_ClipSpaceFractal = ShaderLoader::CreateProgram("clipSpaceFractal", "Resources/Shaders/WorldSpace.vert", "Resources/Shaders/Fractal.frag" );
+	Program_Text = ShaderLoader::CreateProgram("text", "Resources/Shaders/Text.vert", "Resources/Shaders/Text.frag" );
+	Program_TextScroll = ShaderLoader::CreateProgram("textScroll", "Resources/Shaders/TextScroll.vert", "Resources/Shaders/TextScroll.frag" );
+
+	CShape* _shape = nullptr;
+
+	//Set program and add uniforms to fractal
+	_shape = CObjectManager::GetShape("fractal");
+	if (_shape != nullptr) {
+		_shape->SetProgram(Program_ClipSpaceFractal);
+		_shape->AddUniform(new ImageUniform(Texture_Frac), "ImageTexture");
+		_shape->AddUniform(new FloatUniform(0), "CurrentTime");
+		_shape->AddUniform(new Vec4Uniform(glm::vec4(1, 1, 1, 1)), "FractalColour");
+		_shape->AddUniform(new Mat4Uniform(glm::mat4()), "ModelMat");
+		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM()), "PVMMat");
+	}
+	
 
 	//Set program and add uniforms to Rectangle
-	g_Fractal->SetProgram(Program_ClipSpaceFractal);
-	g_Fractal->SetCamera(camera);
-
-	g_Fractal->AddUniform(new ImageUniform(Texture_Frac), "ImageTexture");
-	g_Fractal->AddUniform(new FloatUniform(0), "CurrentTime");
-	g_Fractal->AddUniform(new Vec4Uniform(glm::vec4(1,1,1,1)), "FractalColour");
-	g_Fractal->AddUniform(new Mat4Uniform(glm::mat4()), "ModelMat");
-	g_Fractal->AddUniform(new Mat4Uniform(g_Fractal->GetPVM()), "PVMMat");
-
-	//Set program and add uniforms to Rectangle
-	g_Floor->SetProgram(Program_Texture);
-	g_Floor->SetCamera(camera);
-
-	g_Floor->AddUniform(new ImageUniform(Texture_Floor), "ImageTexture");
-	g_Floor->AddUniform(new FloatUniform(0), "CurrentTime");
-	g_Floor->AddUniform(new Mat4Uniform(g_Floor->GetPVM()), "PVMMat");
-
+	_shape = CObjectManager::GetShape("floor");
+	if (_shape != nullptr) {
+		_shape->SetProgram(Program_Texture);
+		_shape->AddUniform(new ImageUniform(Texture_Floor), "ImageTexture");
+		_shape->AddUniform(new FloatUniform(0), "CurrentTime");
+		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM()), "PVMMat");
+	}
+	
+	
 	//Set program and add uniforms to Cube
-	g_Cube->SetProgram(Program_ClipSpace);
-	g_Cube->SetCamera(camera);
-
-	g_Cube->AddUniform(new ImageUniform(Texture_Rayman), "ImageTexture");
-	g_Cube->AddUniform(new ImageUniform(Texture_Awesome), "ImageTexture1");
-	g_Cube->AddUniform(new FloatUniform(0), "CurrentTime");
-	g_Cube->AddUniform(new Mat4Uniform(g_Cube->GetPVM()), "PVMMat");
-
+	_shape = CObjectManager::GetShape("cube1");
+	if (_shape != nullptr) {
+		_shape->SetProgram(Program_ClipSpace);
+		_shape->AddUniform(new ImageUniform(Texture_Rayman), "ImageTexture");
+		_shape->AddUniform(new ImageUniform(Texture_Awesome), "ImageTexture1");
+		_shape->AddUniform(new FloatUniform(0), "CurrentTime");
+		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM()), "PVMMat");
+	}
+	
+	
 	//Set program and add uniforms to Cube
-	g_Cube2->SetProgram(Program_ClipSpace);
-	g_Cube2->SetCamera(camera);
+	_shape = CObjectManager::GetShape("cube2");
+	if (_shape != nullptr) {
+		_shape->SetProgram(Program_ClipSpace);
+		_shape->AddUniform(new ImageUniform(Texture_Awesome), "ImageTexture");
+		_shape->AddUniform(new ImageUniform(Texture_Rayman), "ImageTexture1");
+		_shape->AddUniform(new FloatUniform(0), "CurrentTime");
+		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM()), "PVMMat");
+	}
+	
+	
+	//Set program and add uniforms to moveable
+	_shape = CObjectManager::GetShape("moveable");
+	if (_shape != nullptr) {
+		_shape->SetProgram(Program_ClipSpaceFade);
+		_shape->AddUniform(new FloatUniform(0), "CurrentTime");
+		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM()), "PVMMat");
+	}
+	
+	
 
-	g_Cube2->AddUniform(new ImageUniform(Texture_Awesome), "ImageTexture");
-	g_Cube2->AddUniform(new ImageUniform(Texture_Rayman), "ImageTexture1");
-	g_Cube2->AddUniform(new FloatUniform(0), "CurrentTime");
-	g_Cube2->AddUniform(new Mat4Uniform(g_Cube2->GetPVM()), "PVMMat");
-
-	//Set program and add uniforms to Cube
-	g_Moveable->SetProgram(Program_ClipSpaceFade);
-	g_Moveable->SetCamera(camera);
-
-	g_Moveable->AddUniform(new FloatUniform(0), "CurrentTime");
-	g_Moveable->AddUniform(new Mat4Uniform(g_Moveable->GetPVM()), "PVMMat");
-
-	AudioInit();
-
-	system("CLS");
+	Text_Message->SetProgram(Program_TextScroll);
 }
 
 bool AudioInit()
@@ -450,10 +432,76 @@ bool AudioInit()
 	return true;
 }
 
+#pragma region Callback Functions
+
+void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+	//Quit if esc key pressed
+	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+		glfwSetWindowShouldClose(window, GL_TRUE);
+	}
+
+	if (key == GLFW_KEY_ENTER && action == GLFW_PRESS) {
+		doInput = !doInput;
+		Print(5, 7, "Input is now " + (std::string)(doInput ? "Enabled. " : "Disabled. "), 15);
+		CAudioSystem::GetInstance().PlaySong(doInput ? "Enabled" : "Disabled");
+		(doInput == true) ? glfwSetCharCallback(window, TextInput) : glfwSetCharCallback(window, 0);
+	}
+
+	if (doInput && key == GLFW_KEY_BACKSPACE && (action == GLFW_REPEAT || action == GLFW_PRESS)) {
+		Text_Message->SetText(Text_Message->GetText().substr(0, Text_Message->GetText().size() - 1));
+	}
+
+	if (key == GLFW_KEY_F && action == GLFW_PRESS) {
+		GLint polygonMode[2];
+		glGetIntegerv(GL_POLYGON_MODE, polygonMode);
+
+		glPolygonMode(GL_FRONT_AND_BACK, (polygonMode[0] == GL_FILL ? GL_LINE : GL_FILL));
+	}
+
+	if (key == GLFW_KEY_TAB && action == GLFW_PRESS) {
+		GLuint mode = glfwGetInputMode(window, GLFW_CURSOR);
+
+		glfwSetInputMode(window, GLFW_CURSOR, (mode == GLFW_CURSOR_NORMAL ? GLFW_CURSOR_HIDDEN : GLFW_CURSOR_NORMAL));
+	}
+
+
+	if (key == GLFW_KEY_KP_MULTIPLY && action == GLFW_PRESS) {
+		if (glm::length(glm::normalize(glm::vec2(camera->GetCameraLookDir().x, camera->GetCameraLookDir().z))) > 0) {
+
+			glm::vec3 copyVec = camera->GetCameraLookDir();
+
+			camera->SetCameraLookDir(-camera->GetCameraUpDir());
+			camera->SetCameraUpDir(copyVec);
+		}
+		else {
+			glm::vec3 copyVec = camera->GetCameraUpDir();
+
+			camera->SetCameraUpDir(-camera->GetCameraLookDir());
+			camera->SetCameraLookDir(copyVec);
+		}
+
+
+	}
+}
+
+void MouseCallback(GLFWwindow* window, int button, int action, int mods) {
+	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+		CAudioSystem::GetInstance().PlaySong("Gunshot");
+	}
+}
+
+void TextInput(GLFWwindow* window, unsigned int codePoint) {
+	unsigned char uc = (unsigned char)codePoint;
+	std::string s(1, static_cast<char>(uc));
+
+	Print(5, 8, "Text input detected: " + s, 15);
+
+	Text_Message->SetText(Text_Message->GetText() + s);
+}
+
 void CheckInput(float _deltaTime, float _currentTime)
 {
-	//bool updated = false;
-
 	double xPos;
 	double yPos;
 	glfwGetCursorPos(window, &xPos, &yPos);
@@ -461,76 +509,77 @@ void CheckInput(float _deltaTime, float _currentTime)
 
 	Print(5,5,"Mouse Position (x: " + std::to_string((int)utils::mousePos.x) + " y:" + std::to_string((int)utils::mousePos.y) + ")", 15);
 
+	glm::vec3 camMovement = glm::vec3(0, 0, 0);
+	float camSpeed = 5.0f;
+
 	//Move camera SWAD
 	if (glfwGetKey(window, GLFW_KEY_LEFT))
 	{
-		camera->CameraPos += glm::normalize(glm::rotate(camera->CameraLookDir, glm::radians(90.0f), camera->CameraUpDir)) * 0.05f;
+		camMovement += glm::normalize(glm::rotate(camera->GetCameraLookDir(), glm::radians(90.0f), camera->GetCameraUpDir()));
 	}
 	if (glfwGetKey(window, GLFW_KEY_RIGHT))
 	{
-		camera->CameraPos -= glm::normalize(glm::rotate(camera->CameraLookDir, glm::radians(90.0f), camera->CameraUpDir)) * 0.05f;
+		camMovement -= glm::normalize(glm::rotate(camera->GetCameraLookDir(), glm::radians(90.0f), camera->GetCameraUpDir()));
 	}
 	if (glfwGetKey(window, GLFW_KEY_UP))
 	{
-		camera->CameraPos += glm::normalize(camera->CameraLookDir) * 0.05f;
+		camMovement += glm::normalize(camera->GetCameraLookDir());
 	}
 	if (glfwGetKey(window, GLFW_KEY_DOWN))
 	{
-		camera->CameraPos -= glm::normalize(camera->CameraLookDir) * 0.05f;
+		camMovement -= glm::normalize(camera->GetCameraLookDir());
 	}
-
 	if (glfwGetKey(window, GLFW_KEY_KP_ADD))
 	{
-		camera->CameraPos += glm::normalize(camera->CameraUpDir) * 0.05f;
+		camMovement += glm::normalize(camera->GetCameraUpDir());
 	}
-
 	if (glfwGetKey(window, GLFW_KEY_KP_SUBTRACT))
 	{
-		camera->CameraPos -= glm::normalize(camera->CameraUpDir) * 0.05f;
+		camMovement -= glm::normalize(camera->GetCameraUpDir());
+	}
+	if (glm::length(camMovement) >= 0.01f) {
+		camMovement = glm::normalize(camMovement) * camSpeed * _deltaTime;
+		camera->SetCameraPos(camera->GetCameraPos() + camMovement);
 	}
 
 
-	glm::vec3 movement = glm::vec3(0,0,0);
-	float speed = 20.0f;
+	glm::vec3 objMovement = glm::vec3(0,0,0);
+	float objSpeed = 5.0f;
 
 	//Move camera SWAD
 	if (glfwGetKey(window, GLFW_KEY_S))
 	{
-		movement += glm::vec3(0, 0, 1);
+		objMovement += glm::vec3(0, 0, 1);
 	}
 	if (glfwGetKey(window, GLFW_KEY_W))
 	{
-		movement += glm::vec3(0, 0, -1);
+		objMovement += glm::vec3(0, 0, -1);
 	}
 	if (glfwGetKey(window, GLFW_KEY_A))
 	{
-		movement += glm::vec3(-1, 0, 0);
+		objMovement += glm::vec3(-1, 0, 0);
 	}
 	if (glfwGetKey(window, GLFW_KEY_D))
 	{
-		movement += glm::vec3(1, 0, 0);
+		objMovement += glm::vec3(1, 0, 0);
 	}
-
 	//Rotate Triangle QE
 	if (glfwGetKey(window, GLFW_KEY_Q))
 	{
-		movement += glm::vec3(0, -1, 0);
+		objMovement += glm::vec3(0, -1, 0);
 	}
 	if (glfwGetKey(window, GLFW_KEY_E))
 	{
-		movement += glm::vec3(0, 1, 0);
+		objMovement += glm::vec3(0, 1, 0);
 	}
-
-	if (glm::length(movement) >= 0.01f) {
-		movement = glm::normalize(movement) * speed * _deltaTime;
-		g_Moveable->SetPosition(g_Moveable->GetPosition() + movement);
+	if (glm::length(objMovement) >= 0.01f) {
+		objMovement = glm::normalize(objMovement) * objSpeed * _deltaTime;
+		CShape* _moveable = CObjectManager::GetShape("moveable");
+		if (_moveable != nullptr) _moveable->SetPosition(_moveable->GetPosition() + objMovement);
 	}
-	
-
-	
-
-	
 }
+
+#pragma endregion
 
 /// <summary>
 /// Generates a texture and binds it to a GLuint
@@ -574,38 +623,28 @@ void Update()
 	float DeltaTime = CurrentTime - previousTimeStep;
 	previousTimeStep = CurrentTime;
 
-	//Add up accumulator
-	accum += DeltaTime;
-
-	//Call update func for shapes (make into vector)
-	g_Fractal->Update(DeltaTime, CurrentTime);
-	g_Floor->Update(DeltaTime, CurrentTime);
-
 	//Weird average radius distance stuff vvv (for circles?)
 	//glm::distance(utils::mousePos, glm::vec2(g_Fractal->GetPosition().x * utils::windowWidth/2.0f, g_Fractal->GetPosition().y * utils::windowHeight / 2.0f)) < (g_Fractal->GetScale().x + g_Fractal->GetScale().y)/2.0f * utils::windowHeight / 2.0f
 
-	if	(	utils::mousePos.x > (g_Fractal->GetPosition().x - g_Fractal->GetScale().x / 2) * (utils::windowWidth / 2.0f)
-		&&  utils::mousePos.x < (g_Fractal->GetPosition().x + g_Fractal->GetScale().x / 2) * (utils::windowWidth / 2.0f)
-		&&  utils::mousePos.y > (g_Fractal->GetPosition().y - g_Fractal->GetScale().y / 2) * (utils::windowHeight / 2.0f)
-		&&  utils::mousePos.y < (g_Fractal->GetPosition().y + g_Fractal->GetScale().y / 2) * (utils::windowHeight / 2.0f)
+	CShape* _fractal = CObjectManager::GetShape("fractal");
+	if	(_fractal != nullptr &&
+		utils::mousePos.x > (_fractal->GetPosition().x - _fractal->GetScale().x / 2) * (utils::windowWidth / 2.0f)
+		&&  utils::mousePos.x < (_fractal->GetPosition().x + _fractal->GetScale().x / 2) * (utils::windowWidth / 2.0f)
+		&&  utils::mousePos.y > (_fractal->GetPosition().y - _fractal->GetScale().y / 2) * (utils::windowHeight / 2.0f)
+		&&  utils::mousePos.y < (_fractal->GetPosition().y + _fractal->GetScale().y / 2) * (utils::windowHeight / 2.0f)
 		) 
 	{
-		float dist = glm::distance(utils::mousePos, (glm::vec2)g_Fractal->GetPosition() * (utils::windowWidth / 2.0f)) / ((utils::windowHeight / 2.0f) * (g_Fractal->GetScale().x / 2));
-		g_Fractal->UpdateUniform(new Vec4Uniform(glm::vec4(1, 1 - dist, dist, 1)), "FractalColour");
+		float dist = glm::distance(utils::mousePos, (glm::vec2)_fractal->GetPosition() * (utils::windowWidth / 2.0f)) / ((utils::windowHeight / 2.0f) * (_fractal->GetScale().x / 2));
+		_fractal->UpdateUniform(new Vec4Uniform(glm::vec4(1, 1 - dist, dist, 1)), "FractalColour");
 	}
 	else {
-		g_Fractal->UpdateUniform(new Vec4Uniform(glm::vec4(0, 1, 1, 1)), "FractalColour");
+		_fractal->UpdateUniform(new Vec4Uniform(glm::vec4(0, 1, 1, 1)), "FractalColour");
 	}
 
-	g_Cube->Update(DeltaTime, CurrentTime);
-	g_Cube2->Update(DeltaTime, CurrentTime);
+	CObjectManager::GetShape("cube1")->SetPosition(glm::vec3(sin(CurrentTime + glm::pi<float>())*2, 0, cos(CurrentTime + glm::pi<float>())*2));
+	CObjectManager::GetShape("cube2")->SetPosition(glm::vec3(sin(CurrentTime)*2, 0, cos(CurrentTime)*2));
 
-	g_Cube->SetPosition(glm::vec3(sin(CurrentTime + glm::pi<float>())*2, 0, cos(CurrentTime + glm::pi<float>())*2));
-	g_Cube2->SetPosition(glm::vec3(sin(CurrentTime)*2, 0, cos(CurrentTime)*2));
-
-	g_Moveable->Update(DeltaTime, CurrentTime);
-
-	//g_Moveable->SetPosition(glm::vec3(camera->GetPos().x + camera->GetLookDir().x, g_Moveable->GetPosition().y, camera->GetPos().z + camera->GetLookDir().z));
+	CObjectManager::UpdateAll(DeltaTime, CurrentTime);
 
 	Text_Message->Update(DeltaTime, CurrentTime);
 	Text_Message2->Update(DeltaTime, CurrentTime);
@@ -614,14 +653,7 @@ void Update()
 	glUniform1f(glGetUniformLocation(Program_TextScroll, "CurrentTime"), CurrentTime);
 	glUseProgram(0);
 
-	//Check for user input at fixed rate
-	if (accum >= 0.01) {
-		//Reset accumulator
-		accum = 0;
-		
-		//Check for input
-		CheckInput(DeltaTime, CurrentTime);
-	}
+	CheckInput(DeltaTime, CurrentTime);
 
 	//Update the FMOD Audio System
 	CAudioSystem::GetInstance().Update();
@@ -635,18 +667,10 @@ void Render()
 	//Clear Screen
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	g_Cube->Render();
-	g_Cube2->Render();
-	g_Moveable->Render();
-
-	//Draw fractal
-	g_Fractal->Render();
-	g_Floor->Render();
-
+	CObjectManager::RenderAll();
 
 	Text_Message->Render();
 	Text_Message2->Render();
-	
 	
 	glfwSwapBuffers(window);
 }

@@ -20,6 +20,7 @@
 #include <fstream>
 #include <vector>
 #include <string>
+#include <map>
 
 /// <summary>
 /// Shader class to store info about shader
@@ -49,15 +50,16 @@ public:
 };
 
 struct Globals {
-	static std::vector<CShader*> shaders;
-	static std::vector<CProgram*> programs;
+	static std::vector<CShader* > shaders;
+	static std::map<std::string, CProgram*> programs;
 };
 
 class ShaderLoader
 {
 	
 public:	
-	static GLuint CreateProgram(const char* VertexShaderFilename, const char* FragmentShaderFilename);
+	static GLuint CreateProgram(std::string _name, const char* VertexShaderFilename, const char* FragmentShaderFilename);
+	CProgram* GetProgram(std::string _name);
 
 private:
 	ShaderLoader(void);
