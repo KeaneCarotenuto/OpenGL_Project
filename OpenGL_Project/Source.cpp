@@ -340,8 +340,8 @@ void ObjectCreation()
 	CObjectManager::AddShape("floor", new CShape("floor-square", glm::vec3(0.0f, -0.5f, 0.0f), 0.0f, glm::vec3(100.0f, 1.0f, 100.0f), false));
 	CObjectManager::GetShape("floor")->SetCamera(g_camera);
 
-	CObjectManager::AddShape("cube1", new CShape("sphere", glm::vec3(5.0f, 0.0f, 0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), false));
-	CObjectManager::GetShape("cube1")->SetCamera(g_camera);
+	CObjectManager::AddShape("sphere1", new CShape("sphere", glm::vec3(5.0f, 0.0f, 0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), false));
+	CObjectManager::GetShape("sphere1")->SetCamera(g_camera);
 
 	CObjectManager::AddShape("cube2", new CShape("cube", glm::vec3(-5.0f, 0.0f, 0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), false));
 	CObjectManager::GetShape("cube2")->SetCamera(g_camera);
@@ -393,7 +393,7 @@ void ProgramSetup()
 	
 	
 	//Set program and add uniforms to Cube
-	if (_shape = CObjectManager::GetShape("cube1")) {
+	if (_shape = CObjectManager::GetShape("sphere1")) {
 		_shape->SetProgram(ShaderLoader::GetProgram("3DLight")->m_id);
 		_shape->AddUniform(new ImageUniform(Texture_Rayman), "ImageTexture");
 		_shape->AddUniform(new FloatUniform(0), "CurrentTime");
@@ -681,7 +681,7 @@ void Update()
 	}
 
 	//Move shapes around world origin in circle
-	CObjectManager::GetShape("cube1")->SetPosition(glm::vec3(sin(utils::currentTime + glm::pi<float>())*2, 0, cos(utils::currentTime + glm::pi<float>())*2));
+	//CObjectManager::GetShape("sphere1")->SetPosition(glm::vec3(sin(utils::currentTime + glm::pi<float>())*2, 0, cos(utils::currentTime + glm::pi<float>())*2));
 	CObjectManager::GetShape("cube2")->SetPosition(glm::vec3(sin(utils::currentTime)*2, 0, cos(utils::currentTime)*2));
 
 	//Update all shapes
@@ -698,6 +698,9 @@ void Update()
 
 	glUseProgram(ShaderLoader::GetProgram("3DLight")->m_id);
 	glUniform3fv(glGetUniformLocation(ShaderLoader::GetProgram("3DLight")->m_id, "CameraPos"), 1, glm::value_ptr(g_camera->GetCameraPos()));
+	glUniform3fv(glGetUniformLocation(ShaderLoader::GetProgram("3DLight")->m_id, "ObjectPos"), 1, glm::value_ptr(CObjectManager::GetShape("sphere1")->GetPosition()));
+	glUniform2fv(glGetUniformLocation(ShaderLoader::GetProgram("3DLight")->m_id, "mousePos"), 1, glm::value_ptr(utils::mousePos));
+	glUniform1f(glGetUniformLocation(ShaderLoader::GetProgram("3DLight")->m_id, "mousePos"), utils::currentTime);
 	glUseProgram(0);
 
 
@@ -715,9 +718,6 @@ void Render()
 {
 	//Clear Screen
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	glm::vec3 start = glm::vec3();
-	glm::vec3 end = glm::vec3();
 
 	CObjectManager::RenderAll();
 

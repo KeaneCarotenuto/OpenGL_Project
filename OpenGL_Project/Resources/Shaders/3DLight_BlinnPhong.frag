@@ -6,6 +6,7 @@ in vec3 FragPos;
 
 uniform sampler2D ImageTexture;
 uniform vec3 CameraPos;
+uniform vec3 ObjectPos;
 uniform float AmbientStrength = 0.05f;
 uniform vec3 AmbientColour = vec3(1.0f, 1.0f, 1.0f);
 uniform vec3 LightColour = vec3(1.0f, 1.0f, 1.0f);
@@ -19,6 +20,8 @@ uniform vec2 mousePos;
 uniform float CurrentTime;
 
 out vec4 FinalColor;
+
+#define PI 3.1415926538
 
 void main() 
 {
@@ -40,7 +43,21 @@ void main()
 	rimFactor = pow(rimFactor, RimExponent);
 	vec3 rim = rimFactor * RimColour * LightColour;
 
-	vec4 light = vec4(ambient + diffuse + specular + rim, 1.0f);
+	float clip = dot(vec2(0,1), normalize(vec2(CameraPos.xz - FragPos.xz)));
+	float minDot = cos(radians(45));
+	float maxDot = 1.0f;
+	float dotDiff = maxDot - minDot;
+	float mouseXrat = (1 - (abs(mousePos.x - 400) / 400));
+	mouseXrat = sin(mouseXrat * PI/2);
+	if (clip > minDot + dotDiff * mouseXrat) clip = 1;
+	else clip = 0;
+
+	//Highlights the verts (multiply this with light to show)
+//	float dist = 0.45;
+//
+//	float rad = (distance(ObjectPos, FragPos) - dist) * 0.5f/(0.5f - dist) * 2;
+
+	vec4 light = vec4(ambient + diffuse + specular + rim, 1.0f) * clip;
 
 	FinalColor = light * texture(ImageTexture, FragTexCoords);
 }
