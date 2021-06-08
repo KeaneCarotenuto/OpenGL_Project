@@ -24,7 +24,7 @@ class CMesh
 {
 private:
 
-	CMesh(std::vector<float> _vertices, std::vector<int> _indices);
+	CMesh(std::vector<float> _vertices, std::vector<int> _indices, bool defaultBind);
 
 	static std::map<std::string, CMesh*> meshMap;
 
@@ -39,6 +39,7 @@ private:
 public:
 	static void NewCMesh(std::string _name, std::vector<float> _vertices, std::vector<int> _indices);
 	static void NewCMesh(int _verts);
+	static void NewCMesh(std::string _name, float _radius, int _fidelity);
 
 	static CMesh* GetMesh(std::string _name, bool* _doesExist = nullptr);
 

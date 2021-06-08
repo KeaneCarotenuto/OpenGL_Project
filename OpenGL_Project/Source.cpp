@@ -36,6 +36,7 @@
 
 #include "CShape.h"
 #include "CUniform.h"
+#include "Sphere.h"
 
 #include "CAudioSystem.h"
 
@@ -77,6 +78,8 @@ GLFWwindow* g_window = nullptr;
 
 //Main camera
 CCamera* g_camera = new CCamera();
+
+Sphere* g_sphere = nullptr;
 
 //Storing previous time step
 float previousTimeStep = 0;
@@ -322,6 +325,8 @@ void MeshCreation()
 			0, 3, 2, // Front Tri 2
 		}
 		);
+
+	CMesh::NewCMesh("sphere", 0.5f, 10);
 }
 
 /// <summary>
@@ -335,7 +340,7 @@ void ObjectCreation()
 	CObjectManager::AddShape("floor", new CShape("floor-square", glm::vec3(0.0f, -0.5f, 0.0f), 0.0f, glm::vec3(100.0f, 1.0f, 100.0f), false));
 	CObjectManager::GetShape("floor")->SetCamera(g_camera);
 
-	CObjectManager::AddShape("cube1", new CShape("cube", glm::vec3(5.0f, 0.0f, 0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), false));
+	CObjectManager::AddShape("cube1", new CShape("sphere", glm::vec3(5.0f, 0.0f, 0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), false));
 	CObjectManager::GetShape("cube1")->SetCamera(g_camera);
 
 	CObjectManager::AddShape("cube2", new CShape("cube", glm::vec3(-5.0f, 0.0f, 0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), false));
@@ -363,6 +368,7 @@ void ProgramSetup()
 	ShaderLoader::CreateProgram("clipSpaceFractal", "Resources/Shaders/WorldSpace.vert", "Resources/Shaders/Fractal.frag" );
 	ShaderLoader::CreateProgram("text", "Resources/Shaders/Text.vert", "Resources/Shaders/Text.frag" );
 	ShaderLoader::CreateProgram("textScroll", "Resources/Shaders/TextScroll.vert", "Resources/Shaders/TextScroll.frag" );
+	ShaderLoader::CreateProgram("3DLight", "Resources/Shaders/3D_Normals.vert", "Resources/Shaders/3DLight_BlinnPhong.frag" );
 
 	CShape* _shape = nullptr;
 
@@ -388,11 +394,11 @@ void ProgramSetup()
 	
 	//Set program and add uniforms to Cube
 	if (_shape = CObjectManager::GetShape("cube1")) {
-		_shape->SetProgram(ShaderLoader::GetProgram("clipSpace")->m_id);
+		_shape->SetProgram(ShaderLoader::GetProgram("3DLight")->m_id);
 		_shape->AddUniform(new ImageUniform(Texture_Rayman), "ImageTexture");
-		_shape->AddUniform(new ImageUniform(Texture_Awesome), "ImageTexture1");
 		_shape->AddUniform(new FloatUniform(0), "CurrentTime");
 		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM()), "PVMMat");
+		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM()), "Model");
 	}
 	
 	
@@ -690,6 +696,10 @@ void Update()
 	glUniform1f(glGetUniformLocation(ShaderLoader::GetProgram("textScroll")->m_id, "CurrentTime"), utils::currentTime);
 	glUseProgram(0);
 
+	glUseProgram(ShaderLoader::GetProgram("3DLight")->m_id);
+	glUniform3fv(glGetUniformLocation(ShaderLoader::GetProgram("3DLight")->m_id, "CameraPos"), 1, glm::value_ptr(g_camera->GetCameraPos()));
+	glUseProgram(0);
+
 
 	//Check for input
 	CheckInput(DeltaTime, utils::currentTime);
@@ -705,6 +715,9 @@ void Render()
 {
 	//Clear Screen
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	glm::vec3 start = glm::vec3();
+	glm::vec3 end = glm::vec3();
 
 	CObjectManager::RenderAll();
 

@@ -54,6 +54,9 @@
     <ClCompile Include="CObjectManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Sphere.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source.h">
@@ -87,6 +90,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="CObjectManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Sphere.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -133,6 +139,15 @@
       <Filter>Resource Files\Shaders\vert</Filter>
     </None>
     <None Include="Resources\Shaders\TextScroll.frag">
+      <Filter>Resource Files\Shaders\frag</Filter>
+    </None>
+    <None Include="Resources\Shaders\3D_Normals.vert">
+      <Filter>Resource Files\Shaders\vert</Filter>
+    </None>
+    <None Include="Resources\Shaders\3DLight_Phong.frag">
+      <Filter>Resource Files\Shaders\frag</Filter>
+    </None>
+    <None Include="Resources\Shaders\3DLight_BlinnPhong.frag">
       <Filter>Resource Files\Shaders\frag</Filter>
     </None>
   </ItemGroup>
