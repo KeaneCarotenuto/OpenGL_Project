@@ -42,6 +42,7 @@
 
 #include "Utility.h"
 #include "CObjectManager.h"
+#include "CLightManager.h"
 
 #pragma region Function Headers
 void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
@@ -209,6 +210,11 @@ void InitialSetup()
 	//Set up shaders
 	ProgramSetup();
 
+	CLightManager::AddLight(glm::vec3(-5.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), 0.05f, 1.0f);
+	CLightManager::AddLight(glm::vec3(5.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), 0.05f, 1.0f);
+	CLightManager::AddLight(glm::vec3(0.0f, 5.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), 0.05f, 1.0f);
+	CLightManager::UpdateUniforms(ShaderLoader::GetProgram("3DLight")->m_id);
+
 	//Set up Audio files
 	AudioInit();
 
@@ -238,6 +244,7 @@ void MeshCreation()
 	//Create cube mesh
 	CMesh::NewCMesh(
 		"cube",
+		VertType::Pos_Col_Tex,
 		{
 			// Index        // Position                     //Texture Coords
 			//Front Quad
@@ -292,9 +299,67 @@ void MeshCreation()
 		}
 		);
 
+	CMesh::NewCMesh(
+		"cubeNorm",
+		VertType::Pos_Tex_Norm,
+		{
+			// Index        // Position					//Texture Coords	//Normal
+			//Front Quad
+			/* 00 */        -0.5f,  0.5f,  0.5f,		0.0f, 1.0f,			0.0f,  0.0f,  1.0f,   /* 00 */
+			/* 02 */        -0.5f, -0.5f,  0.5f,		0.0f, 0.0f,			0.0f,  0.0f,  1.0f,   /* 02 */
+			/* 03 */         0.5f, -0.5f,  0.5f,		1.0f, 0.0f,			0.0f,  0.0f,  1.0f,   /* 03 */
+			/* 01 */         0.5f,  0.5f,  0.5f,		1.0f, 1.0f,			0.0f,  0.0f,  1.0f,   /* 01 */
+			//Back Quad
+			/* 04 */         0.5f,  0.5f, -0.5f,		0.0f, 1.0f,			0.0f,  0.0f,  -1.0f,   /* 04 */
+			/* 05 */         0.5f, -0.5f, -0.5f,		0.0f, 0.0f,			0.0f,  0.0f,  -1.0f,   /* 05 */
+			/* 06 */        -0.5f, -0.5f, -0.5f,		1.0f, 0.0f,			0.0f,  0.0f,  -1.0f,   /* 06 */
+			/* 07 */        -0.5f,  0.5f, -0.5f,		1.0f, 1.0f,			0.0f,  0.0f,  -1.0f,   /* 07 */
+			//Right
+			/* 08 */         0.5f,  0.5f,  0.5f,		0.0f, 1.0f,			1.0f,  0.0f,  0.0f,   /* 03 */
+			/* 09 */         0.5f, -0.5f,  0.5f,		0.0f, 0.0f,			1.0f,  0.0f,  0.0f,   /* 02 */
+			/* 10 */         0.5f, -0.5f, -0.5f,		1.0f, 0.0f,			1.0f,  0.0f,  0.0f,   /* 05 */
+			/* 11 */         0.5f,  0.5f, -0.5f,		1.0f, 1.0f,			1.0f,  0.0f,  0.0f,   /* 04 */
+			//Left
+			/* 12 */        -0.5f,  0.5f, -0.5f,		0.0f, 1.0f,			-1.0f,  0.0f,  0.0f,   /* 07 */
+			/* 13 */        -0.5f, -0.5f, -0.5f,		0.0f, 0.0f,			-1.0f,  0.0f,  0.0f,   /* 06 */
+			/* 14 */        -0.5f, -0.5f,  0.5f,		1.0f, 0.0f,			-1.0f,  0.0f,  0.0f,   /* 01 */
+			/* 15 */        -0.5f,  0.5f,  0.5f,		1.0f, 1.0f,			-1.0f,  0.0f,  0.0f,   /* 00 */
+			//Top
+			/* 16 */        -0.5f,  0.5f, -0.5f,		0.0f, 1.0f,			0.0f,  1.0f,  0.0f,   /* 07 */
+			/* 17 */        -0.5f,  0.5f,  0.5f,		0.0f, 0.0f,			0.0f,  1.0f,  0.0f,   /* 00 */
+			/* 18 */         0.5f,  0.5f,  0.5f,		1.0f, 0.0f,			0.0f,  1.0f,  0.0f,   /* 03 */
+			/* 19 */         0.5f,  0.5f, -0.5f,		1.0f, 1.0f,			0.0f,  1.0f,  0.0f,   /* 04 */
+			//Bottom
+			/* 20 */        -0.5f, -0.5f,  0.5f,		0.0f, 1.0f,			0.0f,  -1.0f,  0.0f,   /* 01 */
+			/* 21 */        -0.5f, -0.5f, -0.5f,		0.0f, 0.0f,			0.0f,  -1.0f,  0.0f,   /* 06 */
+			/* 22 */         0.5f, -0.5f, -0.5f,		1.0f, 0.0f,			0.0f,  -1.0f,  0.0f,   /* 05 */
+			/* 23 */         0.5f, -0.5f,  0.5f,		1.0f, 1.0f,			0.0f,  -1.0f,  0.0f,   /* 02 */
+		},
+		{
+			0, 1, 2, // Front Tri 1
+			0, 2, 3, // Front Tri 2
+
+			4, 5, 6, // Back Tri 1
+			4, 6, 7, // Back Tri 2
+
+			8, 9,  10, // Right Tri 1
+			8, 10, 11, // Right Tri 2
+
+			12, 13, 14, // Left Tri 1
+			12, 14, 15, // Left Tri 2
+
+			16, 17, 18, // Top Tri 1
+			16, 18, 19, // Top Tri 2
+
+			20, 21, 22, // Bottom Tri 1
+			20, 22, 23, // Bottom Tri 2
+		}
+	);
+
 	//Create cube mesh
 	CMesh::NewCMesh(
 		"square",
+		VertType::Pos_Col_Tex,
 		{
 			// Index        // Position                     //Texture Coords
 			//Front Quad
@@ -312,6 +377,7 @@ void MeshCreation()
 	//Create cube mesh
 	CMesh::NewCMesh(
 		"floor-square",
+		VertType::Pos_Col_Tex,
 		{
 			// Index        // Position                     //Texture Coords
 			//Front Quad
@@ -326,7 +392,7 @@ void MeshCreation()
 		}
 		);
 
-	CMesh::NewCMesh("sphere", 0.5f, 10);
+	CMesh::NewCMesh("sphere", 0.5f, 15);
 }
 
 /// <summary>
@@ -343,7 +409,7 @@ void ObjectCreation()
 	CObjectManager::AddShape("sphere1", new CShape("sphere", glm::vec3(5.0f, 0.0f, 0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), false));
 	CObjectManager::GetShape("sphere1")->SetCamera(g_camera);
 
-	CObjectManager::AddShape("cube2", new CShape("cube", glm::vec3(-5.0f, 0.0f, 0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), false));
+	CObjectManager::AddShape("cube2", new CShape("cubeNorm", glm::vec3(-5.0f, 0.0f, 0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), false));
 	CObjectManager::GetShape("cube2")->SetCamera(g_camera);
 
 	CObjectManager::AddShape("moveable", new CShape("cube", glm::vec3(0.0f, 0.0f, 0.0f), 0.0f, glm::vec3(1.0f, 2.0f, 1.0f), false));
@@ -404,11 +470,11 @@ void ProgramSetup()
 	
 	//Set program and add uniforms to Cube
 	if (_shape = CObjectManager::GetShape("cube2")) {
-		_shape->SetProgram(ShaderLoader::GetProgram("clipSpace")->m_id);
+		_shape->SetProgram(ShaderLoader::GetProgram("3DLight")->m_id);
 		_shape->AddUniform(new ImageUniform(Texture_Awesome), "ImageTexture");
-		_shape->AddUniform(new ImageUniform(Texture_Rayman), "ImageTexture1");
 		_shape->AddUniform(new FloatUniform(0), "CurrentTime");
 		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM()), "PVMMat");
+		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM()), "Model");
 	}
 	
 	
@@ -480,7 +546,7 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 	if (key == GLFW_KEY_TAB && action == GLFW_PRESS) {
 		GLuint mode = glfwGetInputMode(window, GLFW_CURSOR);
 
-		glfwSetInputMode(window, GLFW_CURSOR, (mode == GLFW_CURSOR_NORMAL ? GLFW_CURSOR_HIDDEN : GLFW_CURSOR_NORMAL));
+		glfwSetInputMode(window,  GLFW_CURSOR, (mode == GLFW_CURSOR_NORMAL ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL));
 	}
 
 	//Switch between topdown and front facing camera with TAB
@@ -537,12 +603,23 @@ void TextInput(GLFWwindow* window, unsigned int codePoint) {
 /// <param name="_currentTime"></param>
 void CheckInput(float _deltaTime, float _currentTime)
 {
-	//Print mouse pos to console
+	//Update mouse data
+	glm::vec2 oldMouse = utils::mousePos;
+
 	double xPos;
 	double yPos;
 	glfwGetCursorPos(g_window, &xPos, &yPos);
 	utils::mousePos = glm::vec2(xPos, utils::windowHeight - yPos);
+	if (oldMouse == glm::vec2()) oldMouse = utils::mousePos;
 	Print(5,5,"Mouse Position (x: " + std::to_string((int)utils::mousePos.x) + " y:" + std::to_string((int)utils::mousePos.y) + ")", 15);
+
+
+	//Update camera rotation with mouse movement
+	g_camera->SetYaw(g_camera->GetYaw() - g_camera->GetSpeed() * (utils::mousePos.x - oldMouse.x) * _deltaTime);
+	g_camera->SetPitch(g_camera->GetPitch() - g_camera->GetSpeed() * (utils::mousePos.y - oldMouse.y) * _deltaTime);
+	Print(10, 10, "Mouse rotation (yaw: " + std::to_string((int)glm::degrees(g_camera->GetYaw())) + " pitch:" + std::to_string((int)glm::degrees(g_camera->GetPitch())) + ")", 15);
+
+	g_camera->UpdateRotation();
 
 	//Camera movement below :
 
@@ -550,72 +627,33 @@ void CheckInput(float _deltaTime, float _currentTime)
 	float camSpeed = 5.0f;
 
 	//Move camera SWAD
-	if (glfwGetKey(g_window, GLFW_KEY_LEFT))
+	if (glfwGetKey(g_window, GLFW_KEY_A))
 	{
-		camMovement += glm::normalize(glm::rotate(g_camera->GetCameraLookDir(), glm::radians(90.0f), g_camera->GetCameraUpDir()));
+		camMovement += glm::normalize(g_camera->GetCameraRightDir());
 	}
-	if (glfwGetKey(g_window, GLFW_KEY_RIGHT))
+	if (glfwGetKey(g_window, GLFW_KEY_D))
 	{
-		camMovement -= glm::normalize(glm::rotate(g_camera->GetCameraLookDir(), glm::radians(90.0f), g_camera->GetCameraUpDir()));
+		camMovement -= glm::normalize(g_camera->GetCameraRightDir());
 	}
-	if (glfwGetKey(g_window, GLFW_KEY_UP))
+	if (glfwGetKey(g_window, GLFW_KEY_W))
 	{
 		camMovement += glm::normalize(g_camera->GetCameraLookDir());
 	}
-	if (glfwGetKey(g_window, GLFW_KEY_DOWN))
+	if (glfwGetKey(g_window, GLFW_KEY_S))
 	{
 		camMovement -= glm::normalize(g_camera->GetCameraLookDir());
 	}
-	if (glfwGetKey(g_window, GLFW_KEY_KP_ADD))
+	if (glfwGetKey(g_window, GLFW_KEY_LEFT_SHIFT))
 	{
 		camMovement += glm::normalize(g_camera->GetCameraUpDir());
 	}
-	if (glfwGetKey(g_window, GLFW_KEY_KP_SUBTRACT))
+	if (glfwGetKey(g_window, GLFW_KEY_LEFT_CONTROL))
 	{
 		camMovement -= glm::normalize(g_camera->GetCameraUpDir());
 	}
 	if (glm::length(camMovement) >= 0.01f) {
 		camMovement = glm::normalize(camMovement) * camSpeed * _deltaTime;
 		g_camera->SetCameraPos(g_camera->GetCameraPos() + camMovement);
-	}
-
-
-
-	//Object movement below:
-
-	glm::vec3 objMovement = glm::vec3(0,0,0);
-	float objSpeed = 5.0f;
-
-	//Move camera SWAD
-	if (glfwGetKey(g_window, GLFW_KEY_S))
-	{
-		objMovement += glm::vec3(0, 0, 1);
-	}
-	if (glfwGetKey(g_window, GLFW_KEY_W))
-	{
-		objMovement += glm::vec3(0, 0, -1);
-	}
-	if (glfwGetKey(g_window, GLFW_KEY_A))
-	{
-		objMovement += glm::vec3(-1, 0, 0);
-	}
-	if (glfwGetKey(g_window, GLFW_KEY_D))
-	{
-		objMovement += glm::vec3(1, 0, 0);
-	}
-	//Rotate Triangle QE
-	if (glfwGetKey(g_window, GLFW_KEY_Q))
-	{
-		objMovement += glm::vec3(0, -1, 0);
-	}
-	if (glfwGetKey(g_window, GLFW_KEY_E))
-	{
-		objMovement += glm::vec3(0, 1, 0);
-	}
-	if (glm::length(objMovement) >= 0.01f) {
-		objMovement = glm::normalize(objMovement) * objSpeed * _deltaTime;
-		CShape* _moveable = CObjectManager::GetShape("moveable");
-		if (_moveable != nullptr) _moveable->SetPosition(_moveable->GetPosition() + objMovement);
 	}
 }
 
@@ -681,7 +719,7 @@ void Update()
 	}
 
 	//Move shapes around world origin in circle
-	//CObjectManager::GetShape("sphere1")->SetPosition(glm::vec3(sin(utils::currentTime + glm::pi<float>())*2, 0, cos(utils::currentTime + glm::pi<float>())*2));
+	CObjectManager::GetShape("sphere1")->SetPosition(glm::vec3(sin(utils::currentTime + glm::pi<float>())*2, 0, cos(utils::currentTime + glm::pi<float>())*2));
 	CObjectManager::GetShape("cube2")->SetPosition(glm::vec3(sin(utils::currentTime)*2, 0, cos(utils::currentTime)*2));
 
 	//Update all shapes

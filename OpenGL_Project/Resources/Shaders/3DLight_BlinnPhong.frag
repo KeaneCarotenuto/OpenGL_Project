@@ -1,5 +1,14 @@
 #version 460 core
 
+struct PointLight {
+	vec3 Position;
+	vec3 Colour;
+	float AmbientStrength;
+	float SpecularStrength;
+};
+
+#define MAX_POINT_LIGHTS 4
+
 in vec2 FragTexCoords;
 in vec3 FragNormal;
 in vec3 FragPos;
@@ -7,12 +16,15 @@ in vec3 FragPos;
 uniform sampler2D ImageTexture;
 uniform vec3 CameraPos;
 uniform vec3 ObjectPos;
-uniform float AmbientStrength = 0.05f;
-uniform vec3 AmbientColour = vec3(1.0f, 1.0f, 1.0f);
-uniform vec3 LightColour = vec3(1.0f, 1.0f, 1.0f);
-uniform vec3 LightPos = vec3(-2.0f, 6.0f, 3.0f);
-uniform float LightSpecularStrength = 1.0f;
 uniform float Shininess = 64.0f;
+uniform PointLight PointLights[MAX_POINT_LIGHTS];
+
+//uniform float AmbientStrength = 0.05f;
+//uniform vec3 AmbientColour = vec3(1.0f, 1.0f, 1.0f);
+//uniform vec3 LightColour = vec3(1.0f, 1.0f, 1.0f);
+//uniform vec3 LightPos = vec3(-2.0f, 6.0f, 3.0f);
+//uniform float LightSpecularStrength = 1.0f;
+
 uniform float RimExponent = 4.0f;
 uniform vec3 RimColour = vec3(1.0f, 0.0f, 0.0f);
 
@@ -23,41 +35,52 @@ out vec4 FinalColor;
 
 #define PI 3.1415926538
 
-void main() 
-{
+vec3 CalcPointLight(PointLight _pLight) {
+	
 	vec3 normal = normalize(FragNormal);
-	vec3 lightDir = normalize(FragPos - LightPos);
+	vec3 lightDir = normalize(FragPos - _pLight.Position);
 
-	vec3 ambient = AmbientStrength * AmbientColour;
+	vec3 ambient = _pLight.AmbientStrength * _pLight.Colour;
 
 	float diffuseStrength = max(dot(normal, -lightDir), 0.0f);
-	vec3 diffuse = diffuseStrength * LightColour;
+	vec3 diffuse = diffuseStrength * _pLight.Colour;
 
 	vec3 reverseViewDir = normalize(CameraPos - FragPos);
 	vec3 halfWayVector = normalize(-lightDir + reverseViewDir);
 	float specularReflecitivity = pow(max(dot(normal, halfWayVector), 0.0f), Shininess);
-	vec3 specular = LightSpecularStrength * specularReflecitivity * LightColour;
+	vec3 specular = _pLight.SpecularStrength * specularReflecitivity * _pLight.Colour;
 
 	float rimFactor = 1.0f - dot(normal, reverseViewDir);
 	rimFactor = smoothstep(0.0f, 1.0f, rimFactor);
 	rimFactor = pow(rimFactor, RimExponent);
-	vec3 rim = rimFactor * RimColour * LightColour;
+	vec3 rim = rimFactor * RimColour * _pLight.Colour;
+	vec4 lightOutput = vec4(ambient + diffuse + specular , 1.0f);
 
-	float clip = dot(vec2(0,1), normalize(vec2(CameraPos.xz - FragPos.xz)));
-	float minDot = cos(radians(45));
-	float maxDot = 1.0f;
-	float dotDiff = maxDot - minDot;
-	float mouseXrat = (1 - (abs(mousePos.x - 400) / 400));
-	mouseXrat = sin(mouseXrat * PI/2);
-	if (clip > minDot + dotDiff * mouseXrat) clip = 1;
-	else clip = 0;
 
-	//Highlights the verts (multiply this with light to show)
+	return lightOutput.xyz;
+}
+
+void main() 
+{
+//	//Clips the colour to black based on mouse position relative to fragment (multiply this with light to show)
+//	float clip = dot(vec2(0,1), normalize(vec2(CameraPos.xz - FragPos.xz)));
+//	float minDot = cos(radians(45));
+//	float maxDot = 1.0f;
+//	float dotDiff = maxDot - minDot;
+//	float mouseXrat = (1 - (abs(mousePos.x - 400) / 400));
+//	mouseXrat = sin(mouseXrat * PI/2);
+//	if (clip > minDot + dotDiff * mouseXrat) clip = 1;
+//	else clip = 0;
+
+//	//Highlights the verts (multiply this with light to show)
 //	float dist = 0.45;
 //
 //	float rad = (distance(ObjectPos, FragPos) - dist) * 0.5f/(0.5f - dist) * 2;
 
-	vec4 light = vec4(ambient + diffuse + specular + rim, 1.0f) * clip;
+	vec3 LightOutpt = vec3(0.0f, 0.0f, 0.0f);
+	for (int i = 0; i < MAX_POINT_LIGHTS; i++){
+		LightOutpt += CalcPointLight(PointLights[i]);
+	}
 
-	FinalColor = light * texture(ImageTexture, FragTexCoords);
+	FinalColor = vec4(LightOutpt, 1.0f) * texture(ImageTexture, FragTexCoords);
 }

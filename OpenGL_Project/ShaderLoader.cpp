@@ -86,7 +86,9 @@ GLuint ShaderLoader::CreateProgram(std::string _name, const char* vertexShaderFi
 	glGetProgramiv(program, GL_LINK_STATUS, &link_result);
 	if (link_result == GL_FALSE)
 	{
-		std::string programName = vertexShaderFilename + *fragmentShaderFilename;
+		std::string programName(vertexShaderFilename);
+		programName.append(", ");
+		programName.append(fragmentShaderFilename);
 		PrintErrorDetails(false, program, programName.c_str());
 		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 12);
 		std::cout << "End Program Creation." << std::endl << std::endl;

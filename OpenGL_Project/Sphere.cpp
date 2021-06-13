@@ -84,7 +84,7 @@ Sphere::Sphere(float Radius, int Fidelity)
 		inds.push_back(Indices[i]);
 	}
 
-	CMesh::NewCMesh("sphere", verts, inds);
+	CMesh::NewCMesh("sphere", VertType::Pos_Tex_Norm, verts, inds);
 
 	//// Create the Vertex Array and associated buffers
 	//GLuint VBO, EBO;

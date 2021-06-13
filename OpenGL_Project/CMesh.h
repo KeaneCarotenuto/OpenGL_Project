@@ -20,11 +20,17 @@
 
 #include "CVertexArray.h"
 
+enum class VertType
+{
+	Pos_Col_Tex,
+	Pos_Tex_Norm
+};
+
 class CMesh
 {
 private:
 
-	CMesh(std::vector<float> _vertices, std::vector<int> _indices, bool defaultBind);
+	CMesh(VertType _type, std::vector<float> _vertices, std::vector<int> _indices, bool defaultBind);
 
 	static std::map<std::string, CMesh*> meshMap;
 
@@ -36,8 +42,11 @@ private:
 	GLuint m_VAO = NULL;
 	GLuint m_EBO = NULL;
 
+	VertType type;
+
 public:
-	static void NewCMesh(std::string _name, std::vector<float> _vertices, std::vector<int> _indices);
+
+	static void NewCMesh(std::string _name, VertType _type, std::vector<float> _vertices, std::vector<int> _indices);
 	static void NewCMesh(int _verts);
 	static void NewCMesh(std::string _name, float _radius, int _fidelity);
 

@@ -2,13 +2,12 @@
 
 std::map<std::string, CMesh*> CMesh::meshMap;
 
-CMesh::CMesh(std::vector<float> _vertices, std::vector<int> _indices, bool defaultBind = true) {
+CMesh::CMesh(VertType _type, std::vector<float> _vertices, std::vector<int> _indices, bool defaultBind = true) {
+	type = _type;
 	m_VertexArray.vertices = _vertices;
 	m_VertexArray.indices = _indices;
 
-	if (defaultBind) {
-		GenBindVerts();
-	}
+	GenBindVerts();
 }
 
 /// <summary>
@@ -33,12 +32,31 @@ void CMesh::GenBindVerts()
 	glBufferData(GL_ARRAY_BUFFER, m_VertexArray.vertices.size() * sizeof(float), verts, GL_DYNAMIC_DRAW);
 
 	//Set the vertex attributes pointers (How to interperet Vertex Data)
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)0);
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(6 * sizeof(GLfloat)));
-	glEnableVertexAttribArray(2);
+	switch (type)
+	{
+	case VertType::Pos_Col_Tex:
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)0);
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
+		glEnableVertexAttribArray(1);
+		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(6 * sizeof(GLfloat)));
+		glEnableVertexAttribArray(2);
+		break;
+
+	case VertType::Pos_Tex_Norm:
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)0);
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
+		glEnableVertexAttribArray(1);
+		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(5 * sizeof(GLfloat)));
+		glEnableVertexAttribArray(2);
+		break;
+
+	default:
+		break;
+	}
+
+	
 }
 
 /// <summary>
@@ -47,9 +65,9 @@ void CMesh::GenBindVerts()
 /// <param name="_name"> name of mesh</param>
 /// <param name="_vertices"> the list of verts</param>
 /// <param name="_indices"> the list of indicies</param>
-void CMesh::NewCMesh(std::string _name, std::vector<float> _vertices, std::vector<int> _indices)
+void CMesh::NewCMesh(std::string _name, VertType _type, std::vector<float> _vertices, std::vector<int> _indices)
 {
-	meshMap[_name] = new CMesh(_vertices, _indices);
+	meshMap[_name] = new CMesh(_type, _vertices, _indices);
 }
 
 /// <summary>
@@ -115,7 +133,7 @@ void CMesh::NewCMesh(int _verts)
 		tempVertArray.indices.push_back((i + 1 > _verts ? 1 : i + 1));
 	}
 
-	meshMap["poly" + std::to_string(_verts)] = new CMesh(tempVertArray.vertices, tempVertArray.indices);
+	meshMap["poly" + std::to_string(_verts)] = new CMesh(VertType::Pos_Col_Tex ,tempVertArray.vertices, tempVertArray.indices);
 }
 
 void CMesh::NewCMesh(std::string _name, float _radius, int _fidelity)
@@ -201,29 +219,29 @@ void CMesh::NewCMesh(std::string _name, float _radius, int _fidelity)
 		inds.push_back(Indices[i]);
 	}
 
-	CMesh* tempPointer = new CMesh(verts, inds, false);
+	CMesh* tempPointer = new CMesh(VertType::Pos_Tex_Norm ,verts, inds);
 	std::string tempName = (_name == "" ? "sphere-" + std::to_string(_radius) + "-" + std::to_string(_fidelity) : _name);
 	CMesh::meshMap[tempName] = tempPointer;
 
 	//CMesh::NewCMesh("sphere", verts, inds);
 
-	// Create the Vertex Array and associated buffers
-	glGenVertexArrays(1, &tempPointer->m_VAO);
-	glBindVertexArray(tempPointer->m_VAO);
-	glGenBuffers(1, &tempPointer->m_VBO);
-	glBindBuffer(GL_ARRAY_BUFFER, tempPointer->m_VBO);
-	glBufferData(GL_ARRAY_BUFFER,  VertexCount * sizeof(GLfloat), Vertices, GL_STATIC_DRAW);
-	glGenBuffers(1, &tempPointer->m_EBO);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, tempPointer->m_EBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER,  IndexCount * sizeof(GLuint), Indices, GL_STATIC_DRAW);
+	//// Create the Vertex Array and associated buffers
+	//glGenVertexArrays(1, &tempPointer->m_VAO);
+	//glBindVertexArray(tempPointer->m_VAO);
+	//glGenBuffers(1, &tempPointer->m_VBO);
+	//glBindBuffer(GL_ARRAY_BUFFER, tempPointer->m_VBO);
+	//glBufferData(GL_ARRAY_BUFFER,  VertexCount * sizeof(GLfloat), Vertices, GL_STATIC_DRAW);
+	//glGenBuffers(1, &tempPointer->m_EBO);
+	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, tempPointer->m_EBO);
+	//glBufferData(GL_ELEMENT_ARRAY_BUFFER,  IndexCount * sizeof(GLuint), Indices, GL_STATIC_DRAW);
 
-	// Vertex Information (Position, Texture Coords and Normals)
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)0);
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(5 * sizeof(GLfloat)));
-	glEnableVertexAttribArray(2);
+	//// Vertex Information (Position, Texture Coords and Normals)
+	//glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)0);
+	//glEnableVertexAttribArray(0);
+	//glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
+	//glEnableVertexAttribArray(1);
+	//glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(5 * sizeof(GLfloat)));
+	//glEnableVertexAttribArray(2);
 
 	//DrawType = GL_TRIANGLES;
 
