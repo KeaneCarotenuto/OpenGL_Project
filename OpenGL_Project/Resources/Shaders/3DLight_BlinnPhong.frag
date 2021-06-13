@@ -5,6 +5,10 @@ struct PointLight {
 	vec3 Colour;
 	float AmbientStrength;
 	float SpecularStrength;
+
+	float AttenuationConstant;
+	float AttenuationLinear;
+	float AttenuationExponent;
 };
 
 #define MAX_POINT_LIGHTS 4
@@ -54,10 +58,17 @@ vec3 CalcPointLight(PointLight _pLight) {
 	rimFactor = smoothstep(0.0f, 1.0f, rimFactor);
 	rimFactor = pow(rimFactor, RimExponent);
 	vec3 rim = rimFactor * RimColour * _pLight.Colour;
-	vec4 lightOutput = vec4(ambient + diffuse + specular , 1.0f);
 
+	float Distance = length(_pLight.Position - FragPos);
+	float Attenuation =  _pLight.AttenuationConstant + (_pLight.AttenuationLinear * Distance) + (_pLight.AttenuationExponent * pow(Distance, 2));
 
-	return lightOutput.xyz;
+	vec3 lightOutput = (ambient +  diffuse + specular) / Attenuation;
+
+	if (Attenuation < 1f) {
+		lightOutput = vec3(0,0,0);
+	}
+
+	return lightOutput;
 }
 
 void main() 

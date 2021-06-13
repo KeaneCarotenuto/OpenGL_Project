@@ -210,9 +210,9 @@ void InitialSetup()
 	//Set up shaders
 	ProgramSetup();
 
-	CLightManager::AddLight(glm::vec3(-5.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), 0.05f, 1.0f);
-	CLightManager::AddLight(glm::vec3(5.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), 0.05f, 1.0f);
-	CLightManager::AddLight(glm::vec3(0.0f, 5.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), 0.05f, 1.0f);
+	CLightManager::AddLight(glm::vec3(3.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), 0.05f, 1.0f, 100);
+	CLightManager::AddLight(glm::vec3(-3.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), 0.05f, 1.0f, 100);
+	CLightManager::AddLight(glm::vec3(0.0f, 0.0f, 3.0f), glm::vec3(0.0f, 1.0f, 0.0f), 0.05f, 1.0f, 100);
 	CLightManager::UpdateUniforms(ShaderLoader::GetProgram("3DLight")->m_id);
 
 	//Set up Audio files
@@ -392,6 +392,24 @@ void MeshCreation()
 		}
 		);
 
+	//Create cube mesh
+	CMesh::NewCMesh(
+		"floor-squareNorm",
+		VertType::Pos_Tex_Norm,
+		{
+			// Index        // Position				//Texture Coords
+			//Front Quad
+			/* 00 */        -0.5f,  0.0f,  0.5f,	0.0f, 50.0f,			0.0f,  1.0f,  0.0f,             /* 00 */
+			/* 01 */        -0.5f,  0.0f, -0.5f,	0.0f, 0.0f,				0.0f,  1.0f,  0.0f,            /* 01 */
+			/* 02 */         0.5f,  0.0f, -0.5f,	50.0f, 0.0f,			0.0f,  1.0f,  0.0f,             /* 02 */
+			/* 03 */         0.5f,  0.0f,  0.5f,	50.0f, 50.0f,			0.0f,  1.0f,  0.0f,              /* 03 */
+		},
+		{
+			0, 2, 1, // Front Tri 1
+			0, 3, 2, // Front Tri 2
+		}
+		);
+
 	CMesh::NewCMesh("sphere", 0.5f, 15);
 }
 
@@ -403,7 +421,7 @@ void ObjectCreation()
 	CObjectManager::AddShape("fractal", new CShape("square", glm::vec3(0.3f, 0.65f, 0.0f), 0.0f, glm::vec3(0.5f, 0.5f, 1.0f), true));
 	CObjectManager::GetShape("fractal")->SetCamera(g_camera);
 
-	CObjectManager::AddShape("floor", new CShape("floor-square", glm::vec3(0.0f, -0.5f, 0.0f), 0.0f, glm::vec3(100.0f, 1.0f, 100.0f), false));
+	CObjectManager::AddShape("floor", new CShape("floor-squareNorm", glm::vec3(0.0f, -0.5f, 0.0f), 0.0f, glm::vec3(100.0f, 1.0f, 100.0f), false));
 	CObjectManager::GetShape("floor")->SetCamera(g_camera);
 
 	CObjectManager::AddShape("sphere1", new CShape("sphere", glm::vec3(5.0f, 0.0f, 0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), false));
@@ -451,10 +469,11 @@ void ProgramSetup()
 
 	//Set program and add uniforms to Rectangle
 	if (_shape = CObjectManager::GetShape("floor")) {
-		_shape->SetProgram(ShaderLoader::GetProgram("texture")->m_id);
+		_shape->SetProgram(ShaderLoader::GetProgram("3DLight")->m_id);
 		_shape->AddUniform(new ImageUniform(Texture_Floor), "ImageTexture");
 		_shape->AddUniform(new FloatUniform(0), "CurrentTime");
 		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM()), "PVMMat");
+		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM()), "Model");
 	}
 	
 	

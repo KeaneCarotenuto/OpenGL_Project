@@ -13,6 +13,10 @@ struct PointLight
 	glm::vec3 Colour;
 	float AmbientStrength;
 	float SpecularStrength;
+
+	float AttenuationConstant;
+	float AttenuationLinear;
+	float AttenuationExponent;
 };
 
 class CLightManager
@@ -25,7 +29,7 @@ private:
 	static int currentLightNum;
 
 public:
-	static void AddLight(glm::vec3 _pos, glm::vec3 _col, float _ambientStrength, float _specularStrength);
+	static void AddLight(glm::vec3 _pos, glm::vec3 _col, float _ambientStrength, float _specularStrength, float _attenDist);
 	static void UpdateUniforms(GLuint _program);
 };
 
