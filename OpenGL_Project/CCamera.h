@@ -18,7 +18,7 @@ class CCamera
 private:
 	// Camera Variables 
 	glm::vec3 CameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
-	glm::vec3 CameraLookDir = glm::vec3(0.0f, 0.0f, -1.0f);
+	glm::vec3 CameraForwardDir = glm::vec3(0.0f, 0.0f, -1.0f);
 	glm::vec3 CameraTargetPos = glm::vec3(0.0f, 0.0f, 0.0f);
 	glm::vec3 CameraUpDir = glm::vec3(0.0f, 1.0f, 0.0f);
 	glm::vec3 CameraRightDir = glm::vec3(1.0f, 0.0f, 0.0f);
@@ -35,8 +35,8 @@ public:
 	void SetCameraPos(glm::vec3 _pos) { CameraPos = _pos; };
 	glm::vec3 GetCameraPos() { return CameraPos; };
 
-	void SetCameraLookDir(glm::vec3 _dir) { CameraLookDir = _dir; };
-	glm::vec3 GetCameraLookDir() { return CameraLookDir; };
+	void SetCameraForwardDir(glm::vec3 _dir) { CameraForwardDir = _dir; };
+	glm::vec3 GetCameraLookDir() { return CameraForwardDir; };
 
 	void SetCameraTargetPos(glm::vec3 _targetPos) { CameraTargetPos = _targetPos; };
 	glm::vec3 GetCameraTargetPos() { return CameraTargetPos; };

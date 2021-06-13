@@ -14,25 +14,25 @@ void CCamera::UpdateRotation()
 		SetPitch(-glm::half_pi<float>() + 0.0001f);
 	}
 
-	//Update the look direction
-	SetCameraLookDir(glm::vec3(
+	//Update the look direction based on new yaw and pitch
+	SetCameraForwardDir(glm::vec3(
 		-sin(GetYaw()) * cos(GetPitch()),
 		-sin(GetPitch()),
 		-cos(GetYaw()) * cos(GetPitch())
 	));
 
-	//Update the right direction
+	//Update the right direction based on new yaw and pitch
 	SetCameraRightDir(glm::vec3(
 		-cos(GetYaw()),
 		0.0,
 		sin(GetYaw())
 	));
 
-	//Update the up direction
+	//Update the up direction using cross product of up and right dir
 	SetCameraUpDir(glm::cross(GetCameraLookDir(), GetCameraRightDir()));
 
 	//Normalise all directions
-	SetCameraLookDir(glm::normalize(GetCameraLookDir()));
+	SetCameraForwardDir(glm::normalize(GetCameraLookDir()));
 	SetCameraRightDir(glm::normalize(GetCameraRightDir()));
 	SetCameraUpDir(glm::normalize(GetCameraUpDir()));
 }

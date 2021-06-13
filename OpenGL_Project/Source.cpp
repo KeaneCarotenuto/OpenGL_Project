@@ -211,8 +211,8 @@ void InitialSetup()
 	ProgramSetup();
 
 	CLightManager::AddLight(glm::vec3(3.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), 0.05f, 1.0f, 100);
-	CLightManager::AddLight(glm::vec3(-3.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), 0.05f, 1.0f, 100);
-	CLightManager::AddLight(glm::vec3(0.0f, 0.0f, 3.0f), glm::vec3(0.0f, 1.0f, 0.0f), 0.05f, 1.0f, 100);
+	CLightManager::AddLight(glm::vec3(0.0f, 0.0f, 3.0f), glm::vec3(0.0f, 0.0f, 1.0f), 0.05f, 1.0f, 100);
+	CLightManager::AddLight(glm::vec3(-3.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), 0.05f, 1.0f, 100);
 	CLightManager::UpdateUniforms(ShaderLoader::GetProgram("3DLight")->m_id);
 
 	//Set up Audio files
@@ -566,25 +566,6 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 		GLuint mode = glfwGetInputMode(window, GLFW_CURSOR);
 
 		glfwSetInputMode(window,  GLFW_CURSOR, (mode == GLFW_CURSOR_NORMAL ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL));
-	}
-
-	//Switch between topdown and front facing camera with TAB
-	if (key == GLFW_KEY_KP_MULTIPLY && action == GLFW_PRESS) {
-		if (glm::length(glm::normalize(glm::vec2(g_camera->GetCameraLookDir().x, g_camera->GetCameraLookDir().z))) > 0) {
-
-			glm::vec3 copyVec = g_camera->GetCameraLookDir();
-
-			g_camera->SetCameraLookDir(-g_camera->GetCameraUpDir());
-			g_camera->SetCameraUpDir(copyVec);
-		}
-		else {
-			glm::vec3 copyVec = g_camera->GetCameraUpDir();
-
-			g_camera->SetCameraUpDir(-g_camera->GetCameraLookDir());
-			g_camera->SetCameraLookDir(copyVec);
-		}
-
-
 	}
 }
 

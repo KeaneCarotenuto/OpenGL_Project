@@ -62,7 +62,7 @@ vec3 CalcPointLight(PointLight _pLight) {
 	float Distance = length(_pLight.Position - FragPos);
 	float Attenuation =  _pLight.AttenuationConstant + (_pLight.AttenuationLinear * Distance) + (_pLight.AttenuationExponent * pow(Distance, 2));
 
-	vec3 lightOutput = (ambient +  diffuse + specular) / Attenuation;
+	vec3 lightOutput = (ambient +  diffuse + specular + rim) / Attenuation;
 
 	if (Attenuation < 1f) {
 		lightOutput = vec3(0,0,0);
