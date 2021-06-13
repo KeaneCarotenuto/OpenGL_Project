@@ -88,6 +88,8 @@ float previousTimeStep = 0;
 //Enable and disable input
 bool doInput = false;
 
+bool cursorLocked = false;
+
 //Textures
 GLuint Texture_Rayman;
 GLuint Texture_Awesome;
@@ -565,6 +567,8 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 	if (key == GLFW_KEY_TAB && action == GLFW_PRESS) {
 		GLuint mode = glfwGetInputMode(window, GLFW_CURSOR);
 
+		cursorLocked = (mode == GLFW_CURSOR_DISABLED ? false : true);
+
 		glfwSetInputMode(window,  GLFW_CURSOR, (mode == GLFW_CURSOR_NORMAL ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL));
 	}
 }
@@ -594,67 +598,6 @@ void TextInput(GLFWwindow* window, unsigned int codePoint) {
 	Print(5, 8, "Text input detected: " + s, 15);
 
 	Text_Message->SetText(Text_Message->GetText() + s);
-}
-
-/// <summary>
-/// Check keys pressed for input during game during/after update call
-/// </summary>
-/// <param name="_deltaTime"></param>
-/// <param name="_currentTime"></param>
-void CheckInput(float _deltaTime, float _currentTime)
-{
-	//Update mouse data
-	glm::vec2 oldMouse = utils::mousePos;
-
-	double xPos;
-	double yPos;
-	glfwGetCursorPos(g_window, &xPos, &yPos);
-	utils::mousePos = glm::vec2(xPos, utils::windowHeight - yPos);
-	if (oldMouse == glm::vec2()) oldMouse = utils::mousePos;
-	Print(5,5,"Mouse Position (x: " + std::to_string((int)utils::mousePos.x) + " y:" + std::to_string((int)utils::mousePos.y) + ")", 15);
-
-
-	//Update camera rotation with mouse movement
-	g_camera->SetYaw(g_camera->GetYaw() - g_camera->GetSpeed() * (utils::mousePos.x - oldMouse.x) * _deltaTime);
-	g_camera->SetPitch(g_camera->GetPitch() - g_camera->GetSpeed() * (utils::mousePos.y - oldMouse.y) * _deltaTime);
-	Print(10, 10, "Mouse rotation (yaw: " + std::to_string((int)glm::degrees(g_camera->GetYaw())) + " pitch:" + std::to_string((int)glm::degrees(g_camera->GetPitch())) + ")", 15);
-
-	g_camera->UpdateRotation();
-
-	//Camera movement below :
-
-	glm::vec3 camMovement = glm::vec3(0, 0, 0);
-	float camSpeed = 5.0f;
-
-	//Move camera SWAD
-	if (glfwGetKey(g_window, GLFW_KEY_A))
-	{
-		camMovement += glm::normalize(g_camera->GetCameraRightDir());
-	}
-	if (glfwGetKey(g_window, GLFW_KEY_D))
-	{
-		camMovement -= glm::normalize(g_camera->GetCameraRightDir());
-	}
-	if (glfwGetKey(g_window, GLFW_KEY_W))
-	{
-		camMovement += glm::normalize(g_camera->GetCameraForwardDir());
-	}
-	if (glfwGetKey(g_window, GLFW_KEY_S))
-	{
-		camMovement -= glm::normalize(g_camera->GetCameraForwardDir());
-	}
-	if (glfwGetKey(g_window, GLFW_KEY_LEFT_SHIFT))
-	{
-		camMovement += glm::normalize(g_camera->GetCameraUpDir());
-	}
-	if (glfwGetKey(g_window, GLFW_KEY_LEFT_CONTROL))
-	{
-		camMovement -= glm::normalize(g_camera->GetCameraUpDir());
-	}
-	if (glm::length(camMovement) >= 0.01f) {
-		camMovement = glm::normalize(camMovement) * camSpeed * _deltaTime;
-		g_camera->SetCameraPos(g_camera->GetCameraPos() + camMovement);
-	}
 }
 
 #pragma endregion
@@ -747,6 +690,68 @@ void Update()
 
 	//Update the FMOD Audio System
 	CAudioSystem::GetInstance().Update();
+}
+
+/// <summary>
+/// Check keys pressed for input during game during/after update call
+/// </summary>
+/// <param name="_deltaTime"></param>
+/// <param name="_currentTime"></param>
+void CheckInput(float _deltaTime, float _currentTime)
+{
+	//Update mouse data
+	glm::vec2 oldMouse = utils::mousePos;
+
+	double xPos;
+	double yPos;
+	glfwGetCursorPos(g_window, &xPos, &yPos);
+	utils::mousePos = glm::vec2(xPos, utils::windowHeight - yPos);
+	if (oldMouse == glm::vec2()) oldMouse = utils::mousePos;
+	Print(5, 5, "Mouse Position (x: " + std::to_string((int)utils::mousePos.x) + " y:" + std::to_string((int)utils::mousePos.y) + ")", 15);
+
+	if (cursorLocked) {
+		//Update camera rotation with mouse movement
+		g_camera->SetYaw(g_camera->GetYaw() - g_camera->GetSpeed() * (utils::mousePos.x - oldMouse.x) * _deltaTime);
+		g_camera->SetPitch(g_camera->GetPitch() - g_camera->GetSpeed() * (utils::mousePos.y - oldMouse.y) * _deltaTime);
+		Print(10, 10, "Mouse rotation (yaw: " + std::to_string((int)glm::degrees(g_camera->GetYaw())) + " pitch:" + std::to_string((int)glm::degrees(g_camera->GetPitch())) + ")", 15);
+
+		g_camera->UpdateRotation();
+	}
+
+	//Camera movement below
+
+	glm::vec3 camMovement = glm::vec3(0, 0, 0);
+	float camSpeed = 5.0f;
+
+	//Move camera SWAD
+	if (glfwGetKey(g_window, GLFW_KEY_A))
+	{
+		camMovement += glm::normalize(g_camera->GetCameraRightDir());
+	}
+	if (glfwGetKey(g_window, GLFW_KEY_D))
+	{
+		camMovement -= glm::normalize(g_camera->GetCameraRightDir());
+	}
+	if (glfwGetKey(g_window, GLFW_KEY_W))
+	{
+		camMovement += glm::normalize(g_camera->GetCameraForwardDir());
+	}
+	if (glfwGetKey(g_window, GLFW_KEY_S))
+	{
+		camMovement -= glm::normalize(g_camera->GetCameraForwardDir());
+	}
+	if (glfwGetKey(g_window, GLFW_KEY_LEFT_SHIFT))
+	{
+		camMovement += glm::normalize(g_camera->GetCameraUpDir());
+	}
+	if (glfwGetKey(g_window, GLFW_KEY_LEFT_CONTROL))
+	{
+		camMovement -= glm::normalize(g_camera->GetCameraUpDir());
+	}
+	if (glm::length(camMovement) >= 0.01f) {
+		camMovement = glm::normalize(camMovement) * camSpeed * _deltaTime;
+		g_camera->SetCameraPos(g_camera->GetCameraPos() + camMovement);
+	}
 }
 
 /// <summary>
