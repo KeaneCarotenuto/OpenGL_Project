@@ -2,9 +2,14 @@
 
 const int CLightManager::MAX_POINT_LIGHTS;
 PointLight CLightManager::PointLights[MAX_POINT_LIGHTS];
+DirectionalLight CLightManager::directionalLight = {
+	glm::vec3(1,-1,1),
+	glm::vec3(1,1,1),
+	0.05f,
+	0.5f
+};
 
 int CLightManager::currentLightNum = 0;
-
 
 void CLightManager::AddLight(glm::vec3 _pos, glm::vec3 _col, float _ambientStrength, float _specularStrength, float _attenDist)
 {
@@ -40,6 +45,11 @@ void CLightManager::UpdateUniforms(GLuint _program)
 		glUniform1f(glGetUniformLocation(_program, ((std::string)("PointLights[" + std::to_string(i) + "].AttenuationConstant")).c_str()), PointLights[i].AttenuationConstant);
 		glUniform1f(glGetUniformLocation(_program, ((std::string)("PointLights[" + std::to_string(i) + "].AttenuationLinear")).c_str()), PointLights[i].AttenuationLinear);
 		glUniform1f(glGetUniformLocation(_program, ((std::string)("PointLights[" + std::to_string(i) + "].AttenuationExponent")).c_str()), PointLights[i].AttenuationExponent);
+
+		glUniform3fv(glGetUniformLocation(_program, "DirLight.Direction"), 1, glm::value_ptr(directionalLight.Direction));
+		glUniform3fv(glGetUniformLocation(_program, "DirLight.Colour"), 1, glm::value_ptr(directionalLight.Colour));
+		glUniform1f(glGetUniformLocation(_program, "DirLight.AmbientStrength"), directionalLight.AmbientStrength);
+		glUniform1f(glGetUniformLocation(_program, "DirLight.SpecularStrength"), directionalLight.SpecularStrength);
 	}
 	glUseProgram(0);
 }

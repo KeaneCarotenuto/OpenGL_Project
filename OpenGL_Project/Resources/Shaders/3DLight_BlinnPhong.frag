@@ -11,6 +11,13 @@ struct PointLight {
 	float AttenuationExponent;
 };
 
+struct DirectionalLight {
+	vec3 Direction;
+	vec3 Colour;
+	float AmbientStrength;
+	float SpecularStrength;
+};
+
 #define MAX_POINT_LIGHTS 4
 
 in vec2 FragTexCoords;
@@ -22,6 +29,7 @@ uniform vec3 CameraPos;
 uniform vec3 ObjectPos;
 uniform float Shininess = 64.0f;
 uniform PointLight PointLights[MAX_POINT_LIGHTS];
+uniform DirectionalLight DirLight;
 
 //uniform float AmbientStrength = 0.05f;
 //uniform vec3 AmbientColour = vec3(1.0f, 1.0f, 1.0f);
@@ -71,6 +79,26 @@ vec3 CalcPointLight(PointLight _pLight) {
 	return lightOutput;
 }
 
+vec3 CalcDirLight(DirectionalLight _dLight) {
+	
+	vec3 normal = normalize(FragNormal);
+	vec3 lightDir = normalize(_dLight.Direction);
+
+	vec3 ambient = _dLight.AmbientStrength * _dLight.Colour;
+
+	float diffuseStrength = max(dot(normal, -lightDir), 0.0f);
+	vec3 diffuse = diffuseStrength * _dLight.Colour;
+
+	vec3 reverseViewDir = normalize(CameraPos - FragPos);
+	vec3 halfWayVector = normalize(-lightDir + reverseViewDir);
+	float specularReflecitivity = pow(max(dot(normal, halfWayVector), 0.0f), Shininess);
+	vec3 specular = _dLight.SpecularStrength * specularReflecitivity * _dLight.Colour;
+
+	vec3 lightOutput = (ambient +  diffuse + specular);
+
+	return lightOutput;
+}
+
 void main() 
 {
 //	//Clips the colour to black based on mouse position relative to fragment (multiply this with light to show)
@@ -92,6 +120,8 @@ void main()
 	for (int i = 0; i < MAX_POINT_LIGHTS; i++){
 		LightOutpt += CalcPointLight(PointLights[i]);
 	}
+
+	LightOutpt += CalcDirLight(DirLight);
 
 	FinalColor = vec4(LightOutpt, 1.0f) * texture(ImageTexture, FragTexCoords);
 }

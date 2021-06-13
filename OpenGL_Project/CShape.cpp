@@ -131,7 +131,7 @@ void CShape::UpdatePVM()
 	
 
 	//Calculate the new View matrix using all camera vars
-	m_camera->SetCameraViewMat(glm::lookAt(m_camera->GetCameraPos(), m_camera->GetCameraPos() + m_camera->GetCameraLookDir(), m_camera->GetCameraUpDir()));
+	m_camera->SetCameraViewMat(glm::lookAt(m_camera->GetCameraPos(), m_camera->GetCameraPos() + m_camera->GetCameraForwardDir(), m_camera->GetCameraUpDir()));
 
 	//Calculate the PVM mat for the shape using camera view mat
 	m_PVMMat = m_camera->GetCameraProjectionMat() * m_camera->GetCameraViewMat() * m_modelMat;

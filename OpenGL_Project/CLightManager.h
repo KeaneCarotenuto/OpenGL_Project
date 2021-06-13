@@ -19,12 +19,21 @@ struct PointLight
 	float AttenuationExponent;
 };
 
+struct DirectionalLight {
+	glm::vec3 Direction;
+	glm::vec3 Colour;
+	float AmbientStrength;
+	float SpecularStrength;
+};
+
 class CLightManager
 {
 private:
 	static const int MAX_POINT_LIGHTS = 4;
 
 	static PointLight PointLights[MAX_POINT_LIGHTS];
+
+	static DirectionalLight directionalLight;
 
 	static int currentLightNum;
 

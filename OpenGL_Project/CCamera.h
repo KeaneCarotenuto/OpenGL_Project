@@ -36,7 +36,7 @@ public:
 	glm::vec3 GetCameraPos() { return CameraPos; };
 
 	void SetCameraForwardDir(glm::vec3 _dir) { CameraForwardDir = _dir; };
-	glm::vec3 GetCameraLookDir() { return CameraForwardDir; };
+	glm::vec3 GetCameraForwardDir() { return CameraForwardDir; };
 
 	void SetCameraTargetPos(glm::vec3 _targetPos) { CameraTargetPos = _targetPos; };
 	glm::vec3 GetCameraTargetPos() { return CameraTargetPos; };

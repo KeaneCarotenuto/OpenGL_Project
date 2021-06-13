@@ -29,10 +29,10 @@ void CCamera::UpdateRotation()
 	));
 
 	//Update the up direction using cross product of up and right dir
-	SetCameraUpDir(glm::cross(GetCameraLookDir(), GetCameraRightDir()));
+	SetCameraUpDir(glm::cross(GetCameraForwardDir(), GetCameraRightDir()));
 
 	//Normalise all directions
-	SetCameraForwardDir(glm::normalize(GetCameraLookDir()));
+	SetCameraForwardDir(glm::normalize(GetCameraForwardDir()));
 	SetCameraRightDir(glm::normalize(GetCameraRightDir()));
 	SetCameraUpDir(glm::normalize(GetCameraUpDir()));
 }

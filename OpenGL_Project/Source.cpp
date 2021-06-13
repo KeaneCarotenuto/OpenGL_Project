@@ -637,11 +637,11 @@ void CheckInput(float _deltaTime, float _currentTime)
 	}
 	if (glfwGetKey(g_window, GLFW_KEY_W))
 	{
-		camMovement += glm::normalize(g_camera->GetCameraLookDir());
+		camMovement += glm::normalize(g_camera->GetCameraForwardDir());
 	}
 	if (glfwGetKey(g_window, GLFW_KEY_S))
 	{
-		camMovement -= glm::normalize(g_camera->GetCameraLookDir());
+		camMovement -= glm::normalize(g_camera->GetCameraForwardDir());
 	}
 	if (glfwGetKey(g_window, GLFW_KEY_LEFT_SHIFT))
 	{
