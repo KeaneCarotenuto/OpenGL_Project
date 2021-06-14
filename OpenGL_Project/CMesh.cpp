@@ -52,6 +52,11 @@ void CMesh::GenBindVerts()
 		glEnableVertexAttribArray(2);
 		break;
 
+	case VertType::Pos:
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (void*)0);
+		glEnableVertexAttribArray(0);
+		break;
+
 	default:
 		break;
 	}
@@ -222,28 +227,6 @@ void CMesh::NewCMesh(std::string _name, float _radius, int _fidelity)
 	CMesh* tempPointer = new CMesh(VertType::Pos_Tex_Norm ,verts, inds);
 	std::string tempName = (_name == "" ? "sphere-" + std::to_string(_radius) + "-" + std::to_string(_fidelity) : _name);
 	CMesh::meshMap[tempName] = tempPointer;
-
-	//CMesh::NewCMesh("sphere", verts, inds);
-
-	//// Create the Vertex Array and associated buffers
-	//glGenVertexArrays(1, &tempPointer->m_VAO);
-	//glBindVertexArray(tempPointer->m_VAO);
-	//glGenBuffers(1, &tempPointer->m_VBO);
-	//glBindBuffer(GL_ARRAY_BUFFER, tempPointer->m_VBO);
-	//glBufferData(GL_ARRAY_BUFFER,  VertexCount * sizeof(GLfloat), Vertices, GL_STATIC_DRAW);
-	//glGenBuffers(1, &tempPointer->m_EBO);
-	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, tempPointer->m_EBO);
-	//glBufferData(GL_ELEMENT_ARRAY_BUFFER,  IndexCount * sizeof(GLuint), Indices, GL_STATIC_DRAW);
-
-	//// Vertex Information (Position, Texture Coords and Normals)
-	//glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)0);
-	//glEnableVertexAttribArray(0);
-	//glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
-	//glEnableVertexAttribArray(1);
-	//glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(5 * sizeof(GLfloat)));
-	//glEnableVertexAttribArray(2);
-
-	//DrawType = GL_TRIANGLES;
 
 	// Clean up the used memory
 	delete[] Vertices;

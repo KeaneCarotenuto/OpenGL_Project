@@ -23,7 +23,8 @@
 enum class VertType
 {
 	Pos_Col_Tex,
-	Pos_Tex_Norm
+	Pos_Tex_Norm,
+	Pos
 };
 
 class CMesh

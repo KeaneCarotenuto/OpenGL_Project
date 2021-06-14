@@ -45,6 +45,28 @@ public:
 };
 
 /// <summary>
+/// Uniform for "static" images
+/// </summary>
+class CubemapUniform : public CUniform {
+public:
+	CubemapUniform(GLuint _val) :
+		value(_val)
+	{
+
+	}
+
+	GLuint value = NULL;
+	void Send(CShape* _shape) {
+		glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+
+		//Activate and bind texture
+		glActiveTexture(GL_TEXTURE0 + value);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, value);
+		glUniform1i(location, value);
+	}
+};
+
+/// <summary>
 /// uniform for floats
 /// </summary>
 class FloatUniform : public CUniform {

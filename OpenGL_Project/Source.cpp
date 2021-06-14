@@ -28,6 +28,7 @@
 #include <math.h>
 
 #include <map>
+#include <string>
 
 #include "Source.h"
 #include "ShaderLoader.h"
@@ -63,6 +64,7 @@ void ProgramSetup();
 bool AudioInit();
 
 void GenTexture(GLuint& texture, const char* texPath);
+void GenCubemap(GLuint& texture, std::string texPath[6]);
 
 void Update();
 void CheckInput(float _deltaTime, float _currentTime);
@@ -96,6 +98,8 @@ GLuint Texture_Awesome;
 GLuint Texture_CapMan;
 GLuint Texture_Frac;
 GLuint Texture_Floor;
+
+GLuint Texture_Cubemap;
 
 //Text objects
 TextLabel* Text_Message;
@@ -197,9 +201,6 @@ void InitialSetup()
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
 
-	//Flip Images
-	stbi_set_flip_vertically_on_load(true);
-
 	//Create textures
 	TextureCreation();
 
@@ -236,6 +237,16 @@ void TextureCreation()
 	GenTexture(Texture_CapMan, "Resources/Textures/Capguy_Walk.png");
 	GenTexture(Texture_Frac, "Resources/Textures/pal.png");
 	GenTexture(Texture_Floor, "Resources/Textures/Floor.jpg");
+
+	std::string cubemapPaths[6] = {
+		"MountainOutpost/Right.jpg",
+		"MountainOutpost/Left.jpg",
+		"MountainOutpost/Top.jpg",
+		"MountainOutpost/Bottom.jpg",
+		"MountainOutpost/Back.jpg",
+		"MountainOutpost/Front.jpg",
+	};
+	GenCubemap(Texture_Cubemap, cubemapPaths);
 }
 
 /// <summary>
@@ -358,6 +369,63 @@ void MeshCreation()
 		}
 	);
 
+	CMesh::NewCMesh(
+		"skybox",
+		VertType::Pos,
+		{
+			// Index        // Position			
+			//Front 
+			/* 00 */        -0.5f,  0.5f,  0.5f,
+			/* 02 */        -0.5f, -0.5f,  0.5f,
+			/* 03 */         0.5f, -0.5f,  0.5f,
+			/* 01 */         0.5f,  0.5f,  0.5f,
+			//Back 
+			/* 04 */         0.5f,  0.5f, -0.5f,
+			/* 05 */         0.5f, -0.5f, -0.5f,
+			/* 06 */        -0.5f, -0.5f, -0.5f,
+			/* 07 */        -0.5f,  0.5f, -0.5f,
+			//
+			/* 08 */         0.5f,  0.5f,  0.5f,
+			/* 09 */         0.5f, -0.5f,  0.5f,
+			/* 10 */         0.5f, -0.5f, -0.5f,
+			/* 11 */         0.5f,  0.5f, -0.5f,
+			//
+			/* 12 */        -0.5f,  0.5f, -0.5f,
+			/* 13 */        -0.5f, -0.5f, -0.5f,
+			/* 14 */        -0.5f, -0.5f,  0.5f,
+			/* 15 */        -0.5f,  0.5f,  0.5f,
+			//
+			/* 16 */        -0.5f,  0.5f, -0.5f,
+			/* 17 */        -0.5f,  0.5f,  0.5f,
+			/* 18 */         0.5f,  0.5f,  0.5f,
+			/* 19 */         0.5f,  0.5f, -0.5f,
+			//
+			/* 20 */        -0.5f, -0.5f,  0.5f,
+			/* 21 */        -0.5f, -0.5f, -0.5f,
+			/* 22 */         0.5f, -0.5f, -0.5f,
+			/* 23 */         0.5f, -0.5f,  0.5f,
+		},
+		{
+			0,	2,	1,	// Front Tri 1
+			0,	3,	2,	// Front Tri 2
+
+			4,	6,	5,	// Back Tri 1
+			4,	7,	6,	// Back Tri 2
+
+			8,	10,	9,   // Right Tri 1
+			8,	11,	10,  // Right Tri 2
+
+			12,	14,	13,  // Left Tri 1
+			12, 15,	14,  // Left Tri 2
+
+			16, 18,	17,  // Top Tri 1
+			16, 19,	18,  // Top Tri 2
+
+			20, 22,	21,  // Bottom Tri 1
+			20, 23,	22,  // Bottom Tri 2
+		}
+		);
+
 	//Create cube mesh
 	CMesh::NewCMesh(
 		"square",
@@ -432,8 +500,8 @@ void ObjectCreation()
 	CObjectManager::AddShape("cube2", new CShape("cubeNorm", glm::vec3(-5.0f, 0.0f, 0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), false));
 	CObjectManager::GetShape("cube2")->SetCamera(g_camera);
 
-	CObjectManager::AddShape("moveable", new CShape("cube", glm::vec3(0.0f, 0.0f, 0.0f), 0.0f, glm::vec3(1.0f, 2.0f, 1.0f), false));
-	CObjectManager::GetShape("moveable")->SetCamera(g_camera);
+	CObjectManager::AddShape("skybox", new CShape("skybox", glm::vec3(0.0f, 0.0f, 0.0f), 0.0f, glm::vec3(2000.0f, 2000.0f, 2000.0f), false));
+	CObjectManager::GetShape("skybox")->SetCamera(g_camera);
 
 	Text_Message = new TextLabel("Press [ENTER] to edit me!", "Resources/Fonts/ARIAL.ttf", glm::ivec2(0, 48), glm::vec2(100.0f, 100.0f));
 	Text_Message2 = new TextLabel("Bounce!", "Resources/Fonts/Roboto.ttf", glm::ivec2(0, 48), glm::vec2(100.0f, 700.0f));
@@ -455,6 +523,7 @@ void ProgramSetup()
 	ShaderLoader::CreateProgram("text", "Resources/Shaders/Text.vert", "Resources/Shaders/Text.frag" );
 	ShaderLoader::CreateProgram("textScroll", "Resources/Shaders/TextScroll.vert", "Resources/Shaders/TextScroll.frag" );
 	ShaderLoader::CreateProgram("3DLight", "Resources/Shaders/3D_Normals.vert", "Resources/Shaders/3DLight_BlinnPhong.frag" );
+	ShaderLoader::CreateProgram("Skybox", "Resources/Shaders/Skybox.vert", "Resources/Shaders/Skybox.frag" );
 
 	CShape* _shape = nullptr;
 
@@ -499,9 +568,10 @@ void ProgramSetup()
 	}
 	
 	
-	//Set program and add uniforms to moveable
-	if (_shape = CObjectManager::GetShape("moveable")) {
-		_shape->SetProgram(ShaderLoader::GetProgram("clipSpaceFade")->m_id);
+	//Set program and add uniforms to skybox
+	if (_shape = CObjectManager::GetShape("skybox")) {
+		_shape->SetProgram(ShaderLoader::GetProgram("Skybox")->m_id);
+		_shape->AddUniform(new CubemapUniform(Texture_Cubemap), "ImageTexture");
 		_shape->AddUniform(new FloatUniform(0), "CurrentTime");
 		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM()), "PVMMat");
 	}
@@ -609,6 +679,8 @@ void TextInput(GLFWwindow* window, unsigned int codePoint) {
 /// <param name="texPath">the folder pathing + name of file</param>
 void GenTexture(GLuint& texture, const char* texPath)
 {
+	stbi_set_flip_vertically_on_load(true);
+
 	//Load the image data
 	int ImageWidth;
 	int ImageHeight;
@@ -632,6 +704,51 @@ void GenTexture(GLuint& texture, const char* texPath)
 	//Unbind and free texture and image
 	stbi_image_free(ImageData);
 	glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+/// <summary>
+/// Generates a cubemap texture and binds it to a GLuint
+/// </summary>
+/// <param name="texture">the GLuint to bind</param>
+/// <param name="texPath">(name of folder +) name of cubemap file</param>
+void GenCubemap(GLuint& texture, std::string texPath[6])
+{
+	stbi_set_flip_vertically_on_load(false);
+
+	//Load the image data
+	int ImageWidth;
+	int ImageHeight;
+	int ImageComponents;
+
+	//Gen and bind texture
+	glGenTextures(1, &texture);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, texture);
+
+	for (int i = 0; i < 6; i++) {
+		std::string fullFilePath = "Resources/Textures/Cubemaps/" + texPath[i];
+		unsigned char* ImageData = stbi_load(fullFilePath.c_str(), &ImageWidth, &ImageHeight, &ImageComponents, 0);
+
+		//Check how many components in image (RGBA or RGB)
+		GLint LoadedComponents = ((ImageComponents == 4) ? GL_RGBA : GL_RGB);
+
+		//Populate the texture with the image data
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, LoadedComponents, ImageWidth, ImageHeight, 0, LoadedComponents, GL_UNSIGNED_BYTE, ImageData);
+
+		//Unbind and free texture and image
+		stbi_image_free(ImageData);
+	}
+
+	//Clamp to edge to make sure no seams appear
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	//Generating the mipmaps, free the memory and unbind the texture
+	glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
+
+	glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 }
 
 
@@ -707,13 +824,13 @@ void CheckInput(float _deltaTime, float _currentTime)
 	glfwGetCursorPos(g_window, &xPos, &yPos);
 	utils::mousePos = glm::vec2(xPos, utils::windowHeight - yPos);
 	if (oldMouse == glm::vec2()) oldMouse = utils::mousePos;
-	Print(5, 5, "Mouse Position (x: " + std::to_string((int)utils::mousePos.x) + " y:" + std::to_string((int)utils::mousePos.y) + ")", 15);
+	Print(5, 5, "Mouse Position (x: " + std::to_string((int)utils::mousePos.x) + " y:" + std::to_string((int)utils::mousePos.y) + ")    ", 15);
 
 	if (cursorLocked) {
 		//Update camera rotation with mouse movement
 		g_camera->SetYaw(g_camera->GetYaw() - g_camera->GetSpeed() * (utils::mousePos.x - oldMouse.x) * _deltaTime);
 		g_camera->SetPitch(g_camera->GetPitch() - g_camera->GetSpeed() * (utils::mousePos.y - oldMouse.y) * _deltaTime);
-		Print(10, 10, "Mouse rotation (yaw: " + std::to_string((int)glm::degrees(g_camera->GetYaw())) + " pitch:" + std::to_string((int)glm::degrees(g_camera->GetPitch())) + ")", 15);
+		Print(5, 10, "Mouse rotation (yaw: " + std::to_string((int)glm::degrees(g_camera->GetYaw())) + " pitch:" + std::to_string((int)glm::degrees(g_camera->GetPitch())) + ")    ", 15);
 
 		g_camera->UpdateRotation();
 	}

@@ -176,6 +176,8 @@
     <None Include="Resources\Shaders\Gouraud.vert" />
     <None Include="Resources\Shaders\NDC_Texture.vert" />
     <None Include="Resources\Shaders\Quad.vert" />
+    <None Include="Resources\Shaders\Skybox.frag" />
+    <None Include="Resources\Shaders\Skybox.vert" />
     <None Include="Resources\Shaders\Text.frag" />
     <None Include="Resources\Shaders\Text.vert" />
     <None Include="Resources\Shaders\TextScroll.frag" />

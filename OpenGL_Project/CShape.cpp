@@ -126,7 +126,7 @@ void CShape::UpdatePVM()
 		return;
 	}
 	else {
-		m_camera->SetCameraProjectionMat(glm::perspective(glm::radians(90.0f), (float)utils::windowWidth / (float)utils::windowHeight, 0.1f, 100.0f));
+		m_camera->SetCameraProjectionMat(glm::perspective(glm::radians(90.0f), (float)utils::windowWidth / (float)utils::windowHeight, 0.1f, 4000.0f));
 	}
 	
 
