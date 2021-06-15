@@ -177,7 +177,7 @@ public:
 
 	glm::vec3 value;
 	void Send(CShape * _shape) {
-		//glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(value));
+		glUniform3fv(location, 1, glm::value_ptr(value));
 	}
 };
 

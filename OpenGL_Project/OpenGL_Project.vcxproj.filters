@@ -168,5 +168,11 @@
     <None Include="Resources\Shaders\Skybox.frag">
       <Filter>Resource Files\Shaders\frag</Filter>
     </None>
+    <None Include="Resources\Shaders\PositionOnly.vert">
+      <Filter>Resource Files\Shaders\vert</Filter>
+    </None>
+    <None Include="Resources\Shaders\ColourOnly.frag">
+      <Filter>Resource Files\Shaders\frag</Filter>
+    </None>
   </ItemGroup>
 </Project>

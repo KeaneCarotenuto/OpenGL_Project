@@ -98,8 +98,11 @@ GLuint Texture_Awesome;
 GLuint Texture_CapMan;
 GLuint Texture_Frac;
 GLuint Texture_Floor;
+GLuint Texture_Crate;
 
 GLuint Texture_Cubemap;
+
+GLuint Texture_CrateReflectionMap;
 
 //Text objects
 TextLabel* Text_Message;
@@ -139,6 +142,7 @@ bool Startup()
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+	glfwWindowHint(GLFW_SAMPLES, 4);
 
 	//Setting console cursor visibilty
 	HANDLE out = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -186,7 +190,11 @@ void InitialSetup()
 	glfwSetKeyCallback(g_window, KeyCallback);
 	glfwSetMouseButtonCallback(g_window, MouseCallback);
 
+	//Fill polygons
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+	//Multi sampling
+	glEnable(GL_MULTISAMPLE);
 
 	//Cull polygons not facing
 	glCullFace(GL_BACK);
@@ -218,6 +226,24 @@ void InitialSetup()
 	CLightManager::AddLight(glm::vec3(-3.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), 0.05f, 1.0f, 100);
 	CLightManager::UpdateUniforms(ShaderLoader::GetProgram("3DLight")->m_id);
 
+	CShape* _shape = nullptr;
+
+	for (int i = 0; i < CLightManager::GetMaxPointLights(); i++) {
+
+		if (CLightManager::GetPointLight(i).Colour == glm::vec3(0,0,0)) continue;
+
+		std::string name = "lSphere" + std::to_string(i);
+		CObjectManager::AddShape(name, new CShape("sphere", CLightManager::GetPointLight(i).Position, 0.0f, glm::vec3(0.2f, 0.2f, 0.2f), false));
+		CObjectManager::GetShape(name)->SetCamera(g_camera);
+
+		//Set program and add uniforms to Cube
+		if (_shape = CObjectManager::GetShape(name)) {
+			_shape->SetProgram(ShaderLoader::GetProgram("solidColour")->m_id);
+			_shape->AddUniform(new Vec3Uniform(CLightManager::GetPointLight(i).Colour), "Colour");
+			_shape->AddUniform(new Mat4Uniform(_shape->GetPVM()), "PVMMat");
+		}
+	}
+
 	//Set up Audio files
 	AudioInit();
 
@@ -237,6 +263,8 @@ void TextureCreation()
 	GenTexture(Texture_CapMan, "Resources/Textures/Capguy_Walk.png");
 	GenTexture(Texture_Frac, "Resources/Textures/pal.png");
 	GenTexture(Texture_Floor, "Resources/Textures/Floor.jpg");
+	GenTexture(Texture_Crate, "Resources/Textures/Crate.jpg");
+	GenTexture(Texture_CrateReflectionMap, "Resources/Textures/Crate-Reflection.png");
 
 	std::string cubemapPaths[6] = {
 		"MountainOutpost/Right.jpg",
@@ -523,7 +551,8 @@ void ProgramSetup()
 	ShaderLoader::CreateProgram("text", "Resources/Shaders/Text.vert", "Resources/Shaders/Text.frag" );
 	ShaderLoader::CreateProgram("textScroll", "Resources/Shaders/TextScroll.vert", "Resources/Shaders/TextScroll.frag" );
 	ShaderLoader::CreateProgram("3DLight", "Resources/Shaders/3D_Normals.vert", "Resources/Shaders/3DLight_BlinnPhong.frag" );
-	ShaderLoader::CreateProgram("Skybox", "Resources/Shaders/Skybox.vert", "Resources/Shaders/Skybox.frag" );
+	ShaderLoader::CreateProgram("skybox", "Resources/Shaders/Skybox.vert", "Resources/Shaders/Skybox.frag" );
+	ShaderLoader::CreateProgram("solidColour", "Resources/Shaders/PositionOnly.vert", "Resources/Shaders/ColourOnly.frag");
 
 	CShape* _shape = nullptr;
 
@@ -542,6 +571,8 @@ void ProgramSetup()
 	if (_shape = CObjectManager::GetShape("floor")) {
 		_shape->SetProgram(ShaderLoader::GetProgram("3DLight")->m_id);
 		_shape->AddUniform(new ImageUniform(Texture_Floor), "ImageTexture");
+		_shape->AddUniform(new CubemapUniform(Texture_Cubemap), "Skybox");
+		_shape->AddUniform(new FloatUniform(0.05f), "Reflectivity");
 		_shape->AddUniform(new FloatUniform(0), "CurrentTime");
 		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM()), "PVMMat");
 		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM()), "Model");
@@ -552,6 +583,8 @@ void ProgramSetup()
 	if (_shape = CObjectManager::GetShape("sphere1")) {
 		_shape->SetProgram(ShaderLoader::GetProgram("3DLight")->m_id);
 		_shape->AddUniform(new ImageUniform(Texture_Rayman), "ImageTexture");
+		_shape->AddUniform(new CubemapUniform(Texture_Cubemap), "Skybox");
+		_shape->AddUniform(new FloatUniform(0.5f), "Reflectivity");
 		_shape->AddUniform(new FloatUniform(0), "CurrentTime");
 		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM()), "PVMMat");
 		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM()), "Model");
@@ -561,22 +594,26 @@ void ProgramSetup()
 	//Set program and add uniforms to Cube
 	if (_shape = CObjectManager::GetShape("cube2")) {
 		_shape->SetProgram(ShaderLoader::GetProgram("3DLight")->m_id);
-		_shape->AddUniform(new ImageUniform(Texture_Awesome), "ImageTexture");
+		_shape->AddUniform(new ImageUniform(Texture_Crate), "ImageTexture");
+		_shape->AddUniform(new ImageUniform(Texture_CrateReflectionMap), "ReflectionMap");
+		_shape->AddUniform(new CubemapUniform(Texture_Cubemap), "Skybox");
+		_shape->AddUniform(new FloatUniform(0.5f), "Reflectivity");
 		_shape->AddUniform(new FloatUniform(0), "CurrentTime");
 		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM()), "PVMMat");
 		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM()), "Model");
 	}
 	
-	
 	//Set program and add uniforms to skybox
 	if (_shape = CObjectManager::GetShape("skybox")) {
-		_shape->SetProgram(ShaderLoader::GetProgram("Skybox")->m_id);
+		_shape->SetProgram(ShaderLoader::GetProgram("skybox")->m_id);
 		_shape->AddUniform(new CubemapUniform(Texture_Cubemap), "ImageTexture");
 		_shape->AddUniform(new FloatUniform(0), "CurrentTime");
 		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM()), "PVMMat");
 	}
 	
 	Text_Message->SetProgram(ShaderLoader::GetProgram("textScroll")->m_id);
+
+	
 }
 
 /// <summary>
@@ -780,7 +817,7 @@ void Update()
 
 	//Move shapes around world origin in circle
 	CObjectManager::GetShape("sphere1")->SetPosition(glm::vec3(sin(utils::currentTime + glm::pi<float>())*2, 0, cos(utils::currentTime + glm::pi<float>())*2));
-	CObjectManager::GetShape("cube2")->SetPosition(glm::vec3(sin(utils::currentTime)*2, 0, cos(utils::currentTime)*2));
+	//CObjectManager::GetShape("cube2")->SetPosition(glm::vec3(sin(utils::currentTime)*2, 0, cos(utils::currentTime)*2));
 
 	//Update all shapes
 	CObjectManager::UpdateAll(DeltaTime, utils::currentTime);
@@ -796,9 +833,9 @@ void Update()
 
 	glUseProgram(ShaderLoader::GetProgram("3DLight")->m_id);
 	glUniform3fv(glGetUniformLocation(ShaderLoader::GetProgram("3DLight")->m_id, "CameraPos"), 1, glm::value_ptr(g_camera->GetCameraPos()));
-	glUniform3fv(glGetUniformLocation(ShaderLoader::GetProgram("3DLight")->m_id, "ObjectPos"), 1, glm::value_ptr(CObjectManager::GetShape("sphere1")->GetPosition()));
-	glUniform2fv(glGetUniformLocation(ShaderLoader::GetProgram("3DLight")->m_id, "mousePos"), 1, glm::value_ptr(utils::mousePos));
-	glUniform1f(glGetUniformLocation(ShaderLoader::GetProgram("3DLight")->m_id, "mousePos"), utils::currentTime);
+	//glUniform3fv(glGetUniformLocation(ShaderLoader::GetProgram("3DLight")->m_id, "ObjectPos"), 1, glm::value_ptr(CObjectManager::GetShape("sphere1")->GetPosition()));
+	//glUniform2fv(glGetUniformLocation(ShaderLoader::GetProgram("3DLight")->m_id, "mousePos"), 1, glm::value_ptr(utils::mousePos));
+	//glUniform1f(glGetUniformLocation(ShaderLoader::GetProgram("3DLight")->m_id, "mousePos"), utils::currentTime);
 	glUseProgram(0);
 
 

@@ -25,17 +25,14 @@ in vec3 FragNormal;
 in vec3 FragPos;
 
 uniform sampler2D ImageTexture;
+uniform sampler2D ReflectionMap;
+uniform samplerCube Skybox;
 uniform vec3 CameraPos;
 uniform vec3 ObjectPos;
 uniform float Shininess = 64.0f;
+uniform float Reflectivity;
 uniform PointLight PointLights[MAX_POINT_LIGHTS];
 uniform DirectionalLight DirLight;
-
-//uniform float AmbientStrength = 0.05f;
-//uniform vec3 AmbientColour = vec3(1.0f, 1.0f, 1.0f);
-//uniform vec3 LightColour = vec3(1.0f, 1.0f, 1.0f);
-//uniform vec3 LightPos = vec3(-2.0f, 6.0f, 3.0f);
-//uniform float LightSpecularStrength = 1.0f;
 
 uniform float RimExponent = 4.0f;
 uniform vec3 RimColour = vec3(1.0f, 0.0f, 0.0f);
@@ -99,6 +96,17 @@ vec3 CalcDirLight(DirectionalLight _dLight) {
 	return lightOutput;
 }
 
+vec4 CalcReflection() {
+	
+	vec3 normal = normalize(FragNormal);
+	vec3 viewDir = normalize(FragPos - CameraPos);
+	vec3 reflectDir = reflect(viewDir, normal);
+
+	vec4 reflectColour = texture(Skybox, reflectDir);
+
+	return reflectColour;
+}
+
 void main() 
 {
 //	//Clips the colour to black based on mouse position relative to fragment (multiply this with light to show)
@@ -123,5 +131,9 @@ void main()
 
 	LightOutpt += CalcDirLight(DirLight);
 
-	FinalColor = vec4(LightOutpt, 1.0f) * texture(ImageTexture, FragTexCoords);
+	vec4 trueColour = vec4(LightOutpt, 1.0f) * texture(ImageTexture, FragTexCoords);
+	vec4 reflectColour = CalcReflection();
+	float reflectionAmount = texture(ReflectionMap, FragTexCoords).r;
+
+	FinalColor = mix(trueColour, reflectColour, Reflectivity * reflectionAmount);
 }

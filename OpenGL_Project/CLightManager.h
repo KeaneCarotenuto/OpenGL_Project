@@ -40,5 +40,10 @@ private:
 public:
 	static void AddLight(glm::vec3 _pos, glm::vec3 _col, float _ambientStrength, float _specularStrength, float _attenDist);
 	static void UpdateUniforms(GLuint _program);
+
+	static int GetMaxPointLights() { return MAX_POINT_LIGHTS; };
+
+	static PointLight* GetPointLights() { return PointLights; };
+	static PointLight GetPointLight(int i) { return PointLights[i]; };
 };
 

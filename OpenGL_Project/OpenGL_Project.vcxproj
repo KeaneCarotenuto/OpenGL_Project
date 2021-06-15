@@ -171,10 +171,12 @@
     <None Include="Resources\Shaders\3DLight_Phong.frag" />
     <None Include="Resources\Shaders\3D_Normals.vert" />
     <None Include="Resources\Shaders\ClipSpace.vert" />
+    <None Include="Resources\Shaders\ColourOnly.frag" />
     <None Include="Resources\Shaders\Fractal.frag" />
     <None Include="Resources\Shaders\Gouraud.frag" />
     <None Include="Resources\Shaders\Gouraud.vert" />
     <None Include="Resources\Shaders\NDC_Texture.vert" />
+    <None Include="Resources\Shaders\PositionOnly.vert" />
     <None Include="Resources\Shaders\Quad.vert" />
     <None Include="Resources\Shaders\Skybox.frag" />
     <None Include="Resources\Shaders\Skybox.vert" />
