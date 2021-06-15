@@ -148,6 +148,23 @@ public:
 };
 
 /// <summary>
+/// Uniform for ints...
+/// </summary>
+class BoolUniform : public CUniform {
+public:
+	BoolUniform(bool _val) :
+		value(_val)
+	{
+
+	}
+
+	int value;
+	void Send(CShape* _shape) {
+		glUniform1i(location, value);
+	}
+};
+
+/// <summary>
 /// Uniform for glm::mat4
 /// </summary>
 class Mat4Uniform : public CUniform { 

@@ -222,8 +222,8 @@ void InitialSetup()
 	ProgramSetup();
 
 	CLightManager::AddLight(glm::vec3(3.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), 0.05f, 1.0f, 100);
-	CLightManager::AddLight(glm::vec3(0.0f, 0.0f, 3.0f), glm::vec3(0.0f, 0.0f, 1.0f), 0.05f, 1.0f, 100);
-	CLightManager::AddLight(glm::vec3(-3.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), 0.05f, 1.0f, 100);
+	CLightManager::AddLight(glm::vec3(0.0f, 0.0f, 3.0f), glm::vec3(0.0f, 0.0f, 1.0f), 0.05f, 1.0f, 10);
+	CLightManager::AddLight(glm::vec3(-3.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), 0.05f, 1.0f, 50);
 	CLightManager::UpdateUniforms(ShaderLoader::GetProgram("3DLight")->m_id);
 
 	CShape* _shape = nullptr;
@@ -573,6 +573,7 @@ void ProgramSetup()
 		_shape->AddUniform(new ImageUniform(Texture_Floor), "ImageTexture");
 		_shape->AddUniform(new CubemapUniform(Texture_Cubemap), "Skybox");
 		_shape->AddUniform(new FloatUniform(0.05f), "Reflectivity");
+		_shape->AddUniform(new BoolUniform(false), "hasRefMap");
 		_shape->AddUniform(new FloatUniform(0), "CurrentTime");
 		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM()), "PVMMat");
 		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM()), "Model");
@@ -585,6 +586,7 @@ void ProgramSetup()
 		_shape->AddUniform(new ImageUniform(Texture_Rayman), "ImageTexture");
 		_shape->AddUniform(new CubemapUniform(Texture_Cubemap), "Skybox");
 		_shape->AddUniform(new FloatUniform(0.5f), "Reflectivity");
+		_shape->AddUniform(new BoolUniform(false), "hasRefMap");
 		_shape->AddUniform(new FloatUniform(0), "CurrentTime");
 		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM()), "PVMMat");
 		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM()), "Model");
@@ -595,8 +597,9 @@ void ProgramSetup()
 	if (_shape = CObjectManager::GetShape("cube2")) {
 		_shape->SetProgram(ShaderLoader::GetProgram("3DLight")->m_id);
 		_shape->AddUniform(new ImageUniform(Texture_Crate), "ImageTexture");
-		_shape->AddUniform(new ImageUniform(Texture_CrateReflectionMap), "ReflectionMap");
 		_shape->AddUniform(new CubemapUniform(Texture_Cubemap), "Skybox");
+		_shape->AddUniform(new BoolUniform(true), "hasRefMap");
+		_shape->AddUniform(new ImageUniform(Texture_CrateReflectionMap), "ReflectionMap");
 		_shape->AddUniform(new FloatUniform(0.5f), "Reflectivity");
 		_shape->AddUniform(new FloatUniform(0), "CurrentTime");
 		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM()), "PVMMat");

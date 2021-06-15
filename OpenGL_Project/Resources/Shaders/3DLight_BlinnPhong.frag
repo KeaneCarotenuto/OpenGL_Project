@@ -31,6 +31,7 @@ uniform vec3 CameraPos;
 uniform vec3 ObjectPos;
 uniform float Shininess = 64.0f;
 uniform float Reflectivity;
+uniform bool hasRefMap = true;
 uniform PointLight PointLights[MAX_POINT_LIGHTS];
 uniform DirectionalLight DirLight;
 
@@ -134,6 +135,7 @@ void main()
 	vec4 trueColour = vec4(LightOutpt, 1.0f) * texture(ImageTexture, FragTexCoords);
 	vec4 reflectColour = CalcReflection();
 	float reflectionAmount = texture(ReflectionMap, FragTexCoords).r;
+	if (!hasRefMap) reflectionAmount = 1;
 
 	FinalColor = mix(trueColour, reflectColour, Reflectivity * reflectionAmount);
 }
