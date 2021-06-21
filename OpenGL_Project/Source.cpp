@@ -222,8 +222,8 @@ void InitialSetup()
 	ProgramSetup();
 
 	CLightManager::AddLight(glm::vec3(3.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), 0.05f, 1.0f, 100);
+	CLightManager::AddLight(glm::vec3(-3.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), 0.05f, 1.0f, 20);
 	CLightManager::AddLight(glm::vec3(0.0f, 0.0f, 3.0f), glm::vec3(0.0f, 0.0f, 1.0f), 0.05f, 1.0f, 10);
-	CLightManager::AddLight(glm::vec3(-3.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), 0.05f, 1.0f, 50);
 	CLightManager::UpdateUniforms(ShaderLoader::GetProgram("3DLight")->m_id);
 
 	CShape* _shape = nullptr;
@@ -525,6 +525,12 @@ void ObjectCreation()
 	CObjectManager::AddShape("sphere1", new CShape("sphere", glm::vec3(5.0f, 0.0f, 0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), false));
 	CObjectManager::GetShape("sphere1")->SetCamera(g_camera);
 
+	CObjectManager::AddShape("sphere2", new CShape("sphere", glm::vec3(0.0f, 2.0f, 0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), false));
+	CObjectManager::GetShape("sphere2")->SetCamera(g_camera);
+
+	CObjectManager::AddShape("sphere3", new CShape("sphere", glm::vec3(0.0f, 4.0f, 0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), false));
+	CObjectManager::GetShape("sphere3")->SetCamera(g_camera);
+
 	CObjectManager::AddShape("cube2", new CShape("cubeNorm", glm::vec3(-5.0f, 0.0f, 0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), false));
 	CObjectManager::GetShape("cube2")->SetCamera(g_camera);
 
@@ -572,14 +578,14 @@ void ProgramSetup()
 		_shape->SetProgram(ShaderLoader::GetProgram("3DLight")->m_id);
 		_shape->AddUniform(new ImageUniform(Texture_Floor), "ImageTexture");
 		_shape->AddUniform(new CubemapUniform(Texture_Cubemap), "Skybox");
-		_shape->AddUniform(new FloatUniform(0.05f), "Reflectivity");
+		_shape->AddUniform(new FloatUniform(0.02f), "Reflectivity");
 		_shape->AddUniform(new BoolUniform(false), "hasRefMap");
+		_shape->AddUniform(new FloatUniform(0), "RimExponent");
 		_shape->AddUniform(new FloatUniform(0), "CurrentTime");
 		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM()), "PVMMat");
 		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM()), "Model");
 	}
-	
-	
+
 	//Set program and add uniforms to Cube
 	if (_shape = CObjectManager::GetShape("sphere1")) {
 		_shape->SetProgram(ShaderLoader::GetProgram("3DLight")->m_id);
@@ -587,6 +593,36 @@ void ProgramSetup()
 		_shape->AddUniform(new CubemapUniform(Texture_Cubemap), "Skybox");
 		_shape->AddUniform(new FloatUniform(0.5f), "Reflectivity");
 		_shape->AddUniform(new BoolUniform(false), "hasRefMap");
+		_shape->AddUniform(new FloatUniform(5), "RimExponent");
+		_shape->AddUniform(new Vec3Uniform(glm::vec3(1.0f,0.0f,0.0f)), "RimColour");
+		_shape->AddUniform(new FloatUniform(0), "CurrentTime");
+		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM()), "PVMMat");
+		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM()), "Model");
+	}
+
+	//Set program and add uniforms to Cube
+	if (_shape = CObjectManager::GetShape("sphere2")) {
+		_shape->SetProgram(ShaderLoader::GetProgram("3DLight")->m_id);
+		_shape->AddUniform(new ImageUniform(Texture_Rayman), "ImageTexture");
+		_shape->AddUniform(new CubemapUniform(Texture_Cubemap), "Skybox");
+		_shape->AddUniform(new FloatUniform(0.5f), "Reflectivity");
+		_shape->AddUniform(new BoolUniform(false), "hasRefMap");
+		_shape->AddUniform(new FloatUniform(5), "RimExponent");
+		_shape->AddUniform(new Vec3Uniform(glm::vec3(0.0f, 1.0f, 0.0f)), "RimColour");
+		_shape->AddUniform(new FloatUniform(0), "CurrentTime");
+		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM()), "PVMMat");
+		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM()), "Model");
+	}
+
+	//Set program and add uniforms to Cube
+	if (_shape = CObjectManager::GetShape("sphere3")) {
+		_shape->SetProgram(ShaderLoader::GetProgram("3DLight")->m_id);
+		_shape->AddUniform(new ImageUniform(Texture_Rayman), "ImageTexture");
+		_shape->AddUniform(new CubemapUniform(Texture_Cubemap), "Skybox");
+		_shape->AddUniform(new FloatUniform(0.5f), "Reflectivity");
+		_shape->AddUniform(new BoolUniform(false), "hasRefMap");
+		_shape->AddUniform(new FloatUniform(5), "RimExponent");
+		_shape->AddUniform(new Vec3Uniform(glm::vec3(0.0f, 0.0f, 1.0f)), "RimColour");
 		_shape->AddUniform(new FloatUniform(0), "CurrentTime");
 		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM()), "PVMMat");
 		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM()), "Model");
@@ -601,6 +637,7 @@ void ProgramSetup()
 		_shape->AddUniform(new BoolUniform(true), "hasRefMap");
 		_shape->AddUniform(new ImageUniform(Texture_CrateReflectionMap), "ReflectionMap");
 		_shape->AddUniform(new FloatUniform(0.5f), "Reflectivity");
+		_shape->AddUniform(new FloatUniform(0), "RimExponent");
 		_shape->AddUniform(new FloatUniform(0), "CurrentTime");
 		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM()), "PVMMat");
 		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM()), "Model");
@@ -820,7 +857,8 @@ void Update()
 
 	//Move shapes around world origin in circle
 	CObjectManager::GetShape("sphere1")->SetPosition(glm::vec3(sin(utils::currentTime + glm::pi<float>())*2, 0, cos(utils::currentTime + glm::pi<float>())*2));
-	//CObjectManager::GetShape("cube2")->SetPosition(glm::vec3(sin(utils::currentTime)*2, 0, cos(utils::currentTime)*2));
+	CObjectManager::GetShape("sphere2")->SetPosition(glm::vec3(0, sin(utils::currentTime) * 2 + 2, 0));
+	CObjectManager::GetShape("sphere3")->SetPosition(glm::vec3(0, sin(utils::currentTime) * 2 + 4, 0));
 
 	//Update all shapes
 	CObjectManager::UpdateAll(DeltaTime, utils::currentTime);

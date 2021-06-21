@@ -3,7 +3,7 @@
 const int CLightManager::MAX_POINT_LIGHTS;
 PointLight CLightManager::PointLights[MAX_POINT_LIGHTS];
 DirectionalLight CLightManager::directionalLight = {
-	glm::vec3(1,-1,1),
+	glm::vec3(-1,-1,-1),
 	glm::vec3(1,1,1),
 	0.05f,
 	0.5f

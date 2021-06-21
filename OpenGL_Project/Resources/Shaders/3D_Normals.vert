@@ -10,6 +10,7 @@ uniform mat4 Model;
 out vec2 FragTexCoords;
 out vec3 FragNormal;
 out vec3 FragPos;
+out vec2 screenPos;
 
 void main() 
 {
@@ -18,4 +19,6 @@ void main()
 	FragTexCoords = TexCoords;
 	FragNormal = mat3(transpose(inverse(Model))) * Normal;
 	FragPos = vec3(Model * vec4(Pos, 1.0f));
+
+	screenPos = Pos.xy;
 }

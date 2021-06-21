@@ -23,6 +23,7 @@ struct DirectionalLight {
 in vec2 FragTexCoords;
 in vec3 FragNormal;
 in vec3 FragPos;
+in vec2 screenPos;
 
 uniform sampler2D ImageTexture;
 uniform sampler2D ReflectionMap;
@@ -35,8 +36,8 @@ uniform bool hasRefMap = true;
 uniform PointLight PointLights[MAX_POINT_LIGHTS];
 uniform DirectionalLight DirLight;
 
-uniform float RimExponent = 4.0f;
-uniform vec3 RimColour = vec3(1.0f, 0.0f, 0.0f);
+uniform float RimExponent = 0.0f;
+uniform vec3 RimColour;
 
 uniform vec2 mousePos;
 uniform float CurrentTime;
@@ -60,10 +61,14 @@ vec3 CalcPointLight(PointLight _pLight) {
 	float specularReflecitivity = pow(max(dot(normal, halfWayVector), 0.0f), Shininess);
 	vec3 specular = _pLight.SpecularStrength * specularReflecitivity * _pLight.Colour;
 
-	float rimFactor = 1.0f - dot(normal, reverseViewDir);
-	rimFactor = smoothstep(0.0f, 1.0f, rimFactor);
-	rimFactor = pow(rimFactor, RimExponent);
-	vec3 rim = rimFactor * RimColour * _pLight.Colour;
+	vec3 rim = vec3(0,0,0);
+	if (RimExponent > 0 ){
+		float rimFactor = 1.0f - dot(normal, reverseViewDir);
+		rimFactor = smoothstep(0.0f, 1.0f, rimFactor);
+		rimFactor = pow(rimFactor, RimExponent);
+		rim = rimFactor * RimColour;
+	}
+	
 
 	float Distance = length(_pLight.Position - FragPos);
 	float Attenuation =  _pLight.AttenuationConstant + (_pLight.AttenuationLinear * Distance) + (_pLight.AttenuationExponent * pow(Distance, 2));
@@ -125,11 +130,15 @@ void main()
 //
 //	float rad = (distance(ObjectPos, FragPos) - dist) * 0.5f/(0.5f - dist) * 2;
 
+	//New empty colour
 	vec3 LightOutpt = vec3(0.0f, 0.0f, 0.0f);
+
+	//Add all lights to the colour
 	for (int i = 0; i < MAX_POINT_LIGHTS; i++){
 		LightOutpt += CalcPointLight(PointLights[i]);
 	}
 
+	//Add the direct light to the colour
 	LightOutpt += CalcDirLight(DirLight);
 
 	vec4 trueColour = vec4(LightOutpt, 1.0f) * texture(ImageTexture, FragTexCoords);
