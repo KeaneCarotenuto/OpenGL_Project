@@ -516,8 +516,6 @@ void MeshCreation()
 /// </summary>
 void ObjectCreation()
 {
-	CObjectManager::AddShape("fractal", new CShape("square", glm::vec3(0.3f, 0.65f, 0.0f), 0.0f, glm::vec3(0.5f, 0.5f, 1.0f), true));
-	CObjectManager::GetShape("fractal")->SetCamera(g_camera);
 
 	CObjectManager::AddShape("floor", new CShape("floor-squareNorm", glm::vec3(0.0f, -0.5f, 0.0f), 0.0f, glm::vec3(100.0f, 1.0f, 100.0f), false));
 	CObjectManager::GetShape("floor")->SetCamera(g_camera);
@@ -536,10 +534,6 @@ void ObjectCreation()
 
 	CObjectManager::AddShape("skybox", new CShape("skybox", glm::vec3(0.0f, 0.0f, 0.0f), 0.0f, glm::vec3(2000.0f, 2000.0f, 2000.0f), false));
 	CObjectManager::GetShape("skybox")->SetCamera(g_camera);
-
-	Text_Message = new TextLabel("Press [ENTER] to edit me!", "Resources/Fonts/ARIAL.ttf", glm::ivec2(0, 48), glm::vec2(100.0f, 100.0f));
-	Text_Message2 = new TextLabel("Bounce!", "Resources/Fonts/Roboto.ttf", glm::ivec2(0, 48), glm::vec2(100.0f, 700.0f));
-	Text_Message2->SetBouncing(true);
 }
 
 #pragma endregion
@@ -561,16 +555,6 @@ void ProgramSetup()
 	ShaderLoader::CreateProgram("solidColour", "Resources/Shaders/PositionOnly.vert", "Resources/Shaders/ColourOnly.frag");
 
 	CShape* _shape = nullptr;
-
-	//Set program and add uniforms to fractal
-	if (_shape = CObjectManager::GetShape("fractal")) {
-		_shape->SetProgram(ShaderLoader::GetProgram("clipSpaceFractal")->m_id);
-		_shape->AddUniform(new ImageUniform(Texture_Frac), "ImageTexture");
-		_shape->AddUniform(new FloatUniform(0), "CurrentTime");
-		_shape->AddUniform(new Vec4Uniform(glm::vec4(1, 1, 1, 1)), "FractalColour");
-		_shape->AddUniform(new Mat4Uniform(glm::mat4()), "ModelMat");
-		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM()), "PVMMat");
-	}
 	
 
 	//Set program and add uniforms to Rectangle
@@ -650,10 +634,6 @@ void ProgramSetup()
 		_shape->AddUniform(new FloatUniform(0), "CurrentTime");
 		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM()), "PVMMat");
 	}
-	
-	Text_Message->SetProgram(ShaderLoader::GetProgram("textScroll")->m_id);
-
-	
 }
 
 /// <summary>
@@ -839,22 +819,6 @@ void Update()
 	float DeltaTime = utils::currentTime - previousTimeStep;
 	previousTimeStep = utils::currentTime;
 
-	//Check mouse overlap with fractal shape, and change colour depending on distance
-	CShape* _fractal = CObjectManager::GetShape("fractal");
-	if	(_fractal != nullptr &&
-		utils::mousePos.x > (_fractal->GetPosition().x - _fractal->GetScale().x / 2) * (utils::windowWidth / 2.0f)
-		&&  utils::mousePos.x < (_fractal->GetPosition().x + _fractal->GetScale().x / 2) * (utils::windowWidth / 2.0f)
-		&&  utils::mousePos.y > (_fractal->GetPosition().y - _fractal->GetScale().y / 2) * (utils::windowHeight / 2.0f)
-		&&  utils::mousePos.y < (_fractal->GetPosition().y + _fractal->GetScale().y / 2) * (utils::windowHeight / 2.0f)
-		) 
-	{
-		float dist = glm::distance(utils::mousePos, (glm::vec2)_fractal->GetPosition() * (utils::windowWidth / 2.0f)) / ((utils::windowHeight / 2.0f) * (_fractal->GetScale().x / 2));
-		_fractal->UpdateUniform(new Vec4Uniform(glm::vec4(1, 1 - dist, dist, 1)), "FractalColour");
-	}
-	else {
-		_fractal->UpdateUniform(new Vec4Uniform(glm::vec4(0, 1, 1, 1)), "FractalColour");
-	}
-
 	//Move shapes around world origin in circle
 	CObjectManager::GetShape("sphere1")->SetPosition(glm::vec3(sin(utils::currentTime + glm::pi<float>())*2, 0, cos(utils::currentTime + glm::pi<float>())*2));
 	CObjectManager::GetShape("sphere2")->SetPosition(glm::vec3(0, sin(utils::currentTime) * 2 + 2, 0));
@@ -863,20 +827,8 @@ void Update()
 	//Update all shapes
 	CObjectManager::UpdateAll(DeltaTime, utils::currentTime);
 
-	//Update text
-	Text_Message->Update(DeltaTime, utils::currentTime);
-	Text_Message2->Update(DeltaTime, utils::currentTime);
-
-	//Update scrolling text program uniform
-	glUseProgram(ShaderLoader::GetProgram("textScroll")->m_id);
-	glUniform1f(glGetUniformLocation(ShaderLoader::GetProgram("textScroll")->m_id, "CurrentTime"), utils::currentTime);
-	glUseProgram(0);
-
 	glUseProgram(ShaderLoader::GetProgram("3DLight")->m_id);
 	glUniform3fv(glGetUniformLocation(ShaderLoader::GetProgram("3DLight")->m_id, "CameraPos"), 1, glm::value_ptr(g_camera->GetCameraPos()));
-	//glUniform3fv(glGetUniformLocation(ShaderLoader::GetProgram("3DLight")->m_id, "ObjectPos"), 1, glm::value_ptr(CObjectManager::GetShape("sphere1")->GetPosition()));
-	//glUniform2fv(glGetUniformLocation(ShaderLoader::GetProgram("3DLight")->m_id, "mousePos"), 1, glm::value_ptr(utils::mousePos));
-	//glUniform1f(glGetUniformLocation(ShaderLoader::GetProgram("3DLight")->m_id, "mousePos"), utils::currentTime);
 	glUseProgram(0);
 
 
@@ -958,9 +910,6 @@ void Render()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	CObjectManager::RenderAll();
-
-	Text_Message->Render();
-	Text_Message2->Render();
 	
 	glfwSwapBuffers(g_window);
 }
