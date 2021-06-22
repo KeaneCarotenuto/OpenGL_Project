@@ -18,7 +18,13 @@ struct DirectionalLight {
 	float SpecularStrength;
 };
 
+struct Sphere {
+	vec3 Position;
+	float rad;
+};
+
 #define MAX_POINT_LIGHTS 4
+#define MAX_SPHERES 20
 
 in vec2 FragTexCoords;
 in vec3 FragNormal;
@@ -35,6 +41,8 @@ uniform float Reflectivity;
 uniform bool hasRefMap = true;
 uniform PointLight PointLights[MAX_POINT_LIGHTS];
 uniform DirectionalLight DirLight;
+
+uniform Sphere Spheres[MAX_SPHERES];
 
 uniform float RimExponent = 0.0f;
 uniform vec3 RimColour;
@@ -68,12 +76,22 @@ vec3 CalcPointLight(PointLight _pLight) {
 		rimFactor = pow(rimFactor, RimExponent);
 		rim = rimFactor * RimColour;
 	}
-	
 
 	float Distance = length(_pLight.Position - FragPos);
 	float Attenuation =  _pLight.AttenuationConstant + (_pLight.AttenuationLinear * Distance) + (_pLight.AttenuationExponent * pow(Distance, 2));
 
-	vec3 lightOutput = (ambient +  diffuse + specular + rim) / Attenuation;
+	vec3 lightOutput = (diffuse + specular + rim);
+
+	//Basic shadows for spheres
+	for (int i = 0; i < MAX_SPHERES; i++){
+		vec3 sPos = Spheres[i].Position;
+
+		float d = distance(sPos, FragPos);
+		vec3 line = normalize(-lightDir) * d + FragPos;
+		if (distance(sPos, line) < Spheres[i].rad && d < distance(FragPos, _pLight.Position)) lightOutput = vec3(0);
+	}
+
+	lightOutput = (ambient + lightOutput) / Attenuation;
 
 	if (Attenuation < 1f) {
 		lightOutput = vec3(0,0,0);
@@ -97,7 +115,18 @@ vec3 CalcDirLight(DirectionalLight _dLight) {
 	float specularReflecitivity = pow(max(dot(normal, halfWayVector), 0.0f), Shininess);
 	vec3 specular = _dLight.SpecularStrength * specularReflecitivity * _dLight.Colour;
 
-	vec3 lightOutput = (ambient +  diffuse + specular);
+	vec3 lightOutput = (diffuse + specular);
+
+	//Basic shadows for spheres
+	for (int i = 0; i < MAX_SPHERES; i++){
+		vec3 sPos = Spheres[i].Position;
+
+		float d = distance(sPos, FragPos);
+		vec3 line = normalize(-lightDir) * d + FragPos;
+		if (distance(sPos, line) < Spheres[i].rad) lightOutput *= min(d/30,1);
+	}
+
+	lightOutput = (ambient + lightOutput);
 
 	return lightOutput;
 }
@@ -115,21 +144,6 @@ vec4 CalcReflection() {
 
 void main() 
 {
-//	//Clips the colour to black based on mouse position relative to fragment (multiply this with light to show)
-//	float clip = dot(vec2(0,1), normalize(vec2(CameraPos.xz - FragPos.xz)));
-//	float minDot = cos(radians(45));
-//	float maxDot = 1.0f;
-//	float dotDiff = maxDot - minDot;
-//	float mouseXrat = (1 - (abs(mousePos.x - 400) / 400));
-//	mouseXrat = sin(mouseXrat * PI/2);
-//	if (clip > minDot + dotDiff * mouseXrat) clip = 1;
-//	else clip = 0;
-
-//	//Highlights the verts (multiply this with light to show)
-//	float dist = 0.45;
-//
-//	float rad = (distance(ObjectPos, FragPos) - dist) * 0.5f/(0.5f - dist) * 2;
-
 	//New empty colour
 	vec3 LightOutpt = vec3(0.0f, 0.0f, 0.0f);
 

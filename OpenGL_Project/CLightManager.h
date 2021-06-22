@@ -7,6 +7,8 @@
 #include <glm.hpp>
 #include <gtc/type_ptr.hpp>
 
+#include "CObjectManager.h"
+
 struct PointLight 
 {
 	glm::vec3 Position;
@@ -36,6 +38,9 @@ private:
 	static DirectionalLight directionalLight;
 
 	static int currentLightNum;
+
+
+	static const int MAX_SPHERES = 20;
 
 public:
 	static void AddLight(glm::vec3 _pos, glm::vec3 _col, float _ambientStrength, float _specularStrength, float _attenDist);

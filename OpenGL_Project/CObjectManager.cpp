@@ -45,14 +45,17 @@ void CObjectManager::RenderAll()
 /// </summary>
 /// <param name="_name"></param>
 /// <returns></returns>
-CShape* CObjectManager::GetShape(std::string _name)
+CShape* CObjectManager::GetShape(std::string _name, bool errorLog)
 {
 	std::map<std::string, CShape*>::iterator it = m_shapes.find(_name);
 	if (it != m_shapes.end()) {
 		return it->second;
 	}
 	{
-		std::cout << "ERROR: Failed to get shape named " << _name << "." << std::endl;
+		if (errorLog) {
+			std::cout << "ERROR: Failed to get shape named " << _name << "." << std::endl;
+		}
+		
 		return nullptr;
 	}
 		

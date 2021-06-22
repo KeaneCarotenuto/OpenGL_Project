@@ -221,7 +221,7 @@ void InitialSetup()
 	//Set up shaders
 	ProgramSetup();
 
-	CLightManager::AddLight(glm::vec3(3.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), 0.05f, 1.0f, 100);
+	CLightManager::AddLight(glm::vec3(3.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), 0.05f, 1.0f, 35);
 	CLightManager::AddLight(glm::vec3(-3.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), 0.05f, 1.0f, 20);
 	CLightManager::AddLight(glm::vec3(0.0f, 0.0f, 3.0f), glm::vec3(0.0f, 0.0f, 1.0f), 0.05f, 1.0f, 10);
 	CLightManager::UpdateUniforms(ShaderLoader::GetProgram("3DLight")->m_id);
@@ -511,6 +511,8 @@ void MeshCreation()
 	CMesh::NewCMesh("sphere", 0.5f, 15);
 }
 
+int randSphereAmount = 10;
+
 /// <summary>
 /// Create all shapes used in program
 /// </summary>
@@ -528,6 +530,12 @@ void ObjectCreation()
 
 	CObjectManager::AddShape("sphere3", new CShape("sphere", glm::vec3(0.0f, 4.0f, 0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), false));
 	CObjectManager::GetShape("sphere3")->SetCamera(g_camera);
+
+	for (int i = 4; i < 4 + randSphereAmount; i++) {
+		float randScale = (float)(rand() % 200)/100 + 0.5f;
+		CObjectManager::AddShape("sphere" + std::to_string(i), new CShape("sphere", glm::vec3(rand() % 10 + 5, rand() % 10 + 5, rand() % 10 + 5), 0.0f, glm::vec3(randScale), false));
+		CObjectManager::GetShape("sphere" + std::to_string(i))->SetCamera(g_camera);
+	}
 
 	CObjectManager::AddShape("cube2", new CShape("cubeNorm", glm::vec3(-5.0f, 0.0f, 0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), false));
 	CObjectManager::GetShape("cube2")->SetCamera(g_camera);
@@ -610,6 +618,22 @@ void ProgramSetup()
 		_shape->AddUniform(new FloatUniform(0), "CurrentTime");
 		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM()), "PVMMat");
 		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM()), "Model");
+	}
+
+	for (int i = 4; i < 4 + randSphereAmount; i++) {
+		//Set program and add uniforms to Cube
+		if (_shape = CObjectManager::GetShape("sphere" + std::to_string(i))) {
+			_shape->SetProgram(ShaderLoader::GetProgram("3DLight")->m_id);
+			_shape->AddUniform(new ImageUniform(Texture_Rayman), "ImageTexture");
+			_shape->AddUniform(new CubemapUniform(Texture_Cubemap), "Skybox");
+			_shape->AddUniform(new FloatUniform(((float)(rand() % 100)) / 100), "Reflectivity");
+			_shape->AddUniform(new BoolUniform(false), "hasRefMap");
+			_shape->AddUniform(new FloatUniform(((float)(rand() % 100)) / 20), "RimExponent");
+			_shape->AddUniform(new Vec3Uniform(glm::vec3(0.0f, 0.0f, 1.0f)), "RimColour");
+			_shape->AddUniform(new FloatUniform(0), "CurrentTime");
+			_shape->AddUniform(new Mat4Uniform(_shape->GetPVM()), "PVMMat");
+			_shape->AddUniform(new Mat4Uniform(_shape->GetPVM()), "Model");
+		}
 	}
 	
 	
@@ -831,9 +855,10 @@ void Update()
 	glUniform3fv(glGetUniformLocation(ShaderLoader::GetProgram("3DLight")->m_id, "CameraPos"), 1, glm::value_ptr(g_camera->GetCameraPos()));
 	glUseProgram(0);
 
-
 	//Check for input
 	CheckInput(DeltaTime, utils::currentTime);
+
+	CLightManager::UpdateUniforms(ShaderLoader::GetProgram("3DLight")->m_id);
 
 	//Update the FMOD Audio System
 	CAudioSystem::GetInstance().Update();

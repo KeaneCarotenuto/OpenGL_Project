@@ -27,6 +27,6 @@ public:
 	static void UpdateAll(float _deltaTime, float _currentTime);
 	static void RenderAll();
 
-	static CShape* GetShape(std::string _name);
+	static CShape* GetShape(std::string _name, bool errorLog = true);
 };
 

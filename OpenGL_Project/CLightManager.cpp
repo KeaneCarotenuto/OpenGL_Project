@@ -2,10 +2,13 @@
 
 const int CLightManager::MAX_POINT_LIGHTS;
 PointLight CLightManager::PointLights[MAX_POINT_LIGHTS];
+
+const int CLightManager::MAX_SPHERES;
+
 DirectionalLight CLightManager::directionalLight = {
 	glm::vec3(-1,-1,-1),
 	glm::vec3(1,1,1),
-	0.05f,
+	0.1f,
 	0.5f
 };
 
@@ -45,11 +48,26 @@ void CLightManager::UpdateUniforms(GLuint _program)
 		glUniform1f(glGetUniformLocation(_program, ((std::string)("PointLights[" + std::to_string(i) + "].AttenuationConstant")).c_str()), PointLights[i].AttenuationConstant);
 		glUniform1f(glGetUniformLocation(_program, ((std::string)("PointLights[" + std::to_string(i) + "].AttenuationLinear")).c_str()), PointLights[i].AttenuationLinear);
 		glUniform1f(glGetUniformLocation(_program, ((std::string)("PointLights[" + std::to_string(i) + "].AttenuationExponent")).c_str()), PointLights[i].AttenuationExponent);
-
-		glUniform3fv(glGetUniformLocation(_program, "DirLight.Direction"), 1, glm::value_ptr(directionalLight.Direction));
-		glUniform3fv(glGetUniformLocation(_program, "DirLight.Colour"), 1, glm::value_ptr(directionalLight.Colour));
-		glUniform1f(glGetUniformLocation(_program, "DirLight.AmbientStrength"), directionalLight.AmbientStrength);
-		glUniform1f(glGetUniformLocation(_program, "DirLight.SpecularStrength"), directionalLight.SpecularStrength);
 	}
+
+	glUniform3fv(glGetUniformLocation(_program, "DirLight.Direction"), 1, glm::value_ptr(directionalLight.Direction));
+	glUniform3fv(glGetUniformLocation(_program, "DirLight.Colour"), 1, glm::value_ptr(directionalLight.Colour));
+	glUniform1f(glGetUniformLocation(_program, "DirLight.AmbientStrength"), directionalLight.AmbientStrength);
+	glUniform1f(glGetUniformLocation(_program, "DirLight.SpecularStrength"), directionalLight.SpecularStrength);
+
+	for (int i = 0; i < MAX_SPHERES; i++) {
+		if (CObjectManager::GetShape("sphere" + std::to_string(i), false) == nullptr) continue;
+
+		glm::vec3 pos = CObjectManager::GetShape("sphere" + std::to_string(i))->GetPosition();
+		float rad = CObjectManager::GetShape("sphere" + std::to_string(i))->GetScale().x / 2;
+
+		glUniform3fv(glGetUniformLocation(_program, ((std::string)("Spheres[" + std::to_string(i) + "].Position")).c_str()), 1, glm::value_ptr(pos));
+		glUniform1f(glGetUniformLocation(_program, ((std::string)("Spheres[" + std::to_string(i) + "].rad")).c_str()), rad);
+	}
+
 	glUseProgram(0);
+
+
+
+	
 }
