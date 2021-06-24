@@ -628,8 +628,8 @@ void ProgramSetup()
 			_shape->AddUniform(new CubemapUniform(Texture_Cubemap), "Skybox");
 			_shape->AddUniform(new FloatUniform(((float)(rand() % 100)) / 100), "Reflectivity");
 			_shape->AddUniform(new BoolUniform(false), "hasRefMap");
-			_shape->AddUniform(new FloatUniform(((float)(rand() % 100)) / 20), "RimExponent");
-			_shape->AddUniform(new Vec3Uniform(glm::vec3(0.0f, 0.0f, 1.0f)), "RimColour");
+			_shape->AddUniform(new FloatUniform(0), "RimExponent");
+			_shape->AddUniform(new Vec3Uniform(glm::vec3(0.0f, 0.0f, 0.0f)), "RimColour");
 			_shape->AddUniform(new FloatUniform(0), "CurrentTime");
 			_shape->AddUniform(new Mat4Uniform(_shape->GetPVM()), "PVMMat");
 			_shape->AddUniform(new Mat4Uniform(_shape->GetPVM()), "Model");
