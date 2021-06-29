@@ -54,6 +54,7 @@ out vec4 FinalColor;
 
 #define PI 3.1415926538
 
+//Caluclate the effect of a single point light on this fragment
 vec3 CalcPointLight(PointLight _pLight) {
 	
 	vec3 normal = normalize(FragNormal);
@@ -100,6 +101,7 @@ vec3 CalcPointLight(PointLight _pLight) {
 	return lightOutput;
 }
 
+//Caluclate the effect of the directional light on this fragment
 vec3 CalcDirLight(DirectionalLight _dLight) {
 	
 	vec3 normal = normalize(FragNormal);
@@ -131,6 +133,7 @@ vec3 CalcDirLight(DirectionalLight _dLight) {
 	return lightOutput;
 }
 
+//Calculate skybox reflection
 vec4 CalcReflection() {
 	
 	vec3 normal = normalize(FragNormal);

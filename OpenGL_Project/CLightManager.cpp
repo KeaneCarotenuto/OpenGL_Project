@@ -14,6 +14,14 @@ DirectionalLight CLightManager::directionalLight = {
 
 int CLightManager::currentLightNum = 0;
 
+/// <summary>
+/// Add a light to the scene
+/// </summary>
+/// <param name="_pos"></param>
+/// <param name="_col"></param>
+/// <param name="_ambientStrength"></param>
+/// <param name="_specularStrength"></param>
+/// <param name="_attenDist"></param>
 void CLightManager::AddLight(glm::vec3 _pos, glm::vec3 _col, float _ambientStrength, float _specularStrength, float _attenDist)
 {
 	if (currentLightNum < MAX_POINT_LIGHTS) {
@@ -24,8 +32,8 @@ void CLightManager::AddLight(glm::vec3 _pos, glm::vec3 _col, float _ambientStren
 		_tempLight.SpecularStrength = _specularStrength;
 
 		_tempLight.AttenuationConstant = 1.0f;
-		_tempLight.AttenuationLinear = glm::pow(1.1, -_attenDist + 3);
-		_tempLight.AttenuationExponent = glm::pow(1.17, -_attenDist + 10);
+		_tempLight.AttenuationLinear = glm::pow(1.1f, -_attenDist + 3.0f);
+		_tempLight.AttenuationExponent = glm::pow(1.17f, -_attenDist + 10.0f);
 
 		PointLights[currentLightNum] = _tempLight;
 		currentLightNum++;
@@ -35,9 +43,15 @@ void CLightManager::AddLight(glm::vec3 _pos, glm::vec3 _col, float _ambientStren
 	}
 }
 
+/// <summary>
+/// Update all of the light uniforms
+/// </summary>
+/// <param name="_program"></param>
 void CLightManager::UpdateUniforms(GLuint _program)
 {
 	glUseProgram(_program);
+
+	//Update all point lights
 	for (int i = 0; i < MAX_POINT_LIGHTS; i++) {
 		std::string str = std::to_string(i);
 		const char* num = str.c_str();
@@ -50,11 +64,13 @@ void CLightManager::UpdateUniforms(GLuint _program)
 		glUniform1f(glGetUniformLocation(_program, ((std::string)("PointLights[" + std::to_string(i) + "].AttenuationExponent")).c_str()), PointLights[i].AttenuationExponent);
 	}
 
+	//Update dir light
 	glUniform3fv(glGetUniformLocation(_program, "DirLight.Direction"), 1, glm::value_ptr(directionalLight.Direction));
 	glUniform3fv(glGetUniformLocation(_program, "DirLight.Colour"), 1, glm::value_ptr(directionalLight.Colour));
 	glUniform1f(glGetUniformLocation(_program, "DirLight.AmbientStrength"), directionalLight.AmbientStrength);
 	glUniform1f(glGetUniformLocation(_program, "DirLight.SpecularStrength"), directionalLight.SpecularStrength);
 
+	//Update all sphere positions
 	for (int i = 0; i < MAX_SPHERES; i++) {
 		if (CObjectManager::GetShape("sphere" + std::to_string(i), false) == nullptr) continue;
 
@@ -66,8 +82,4 @@ void CLightManager::UpdateUniforms(GLuint _program)
 	}
 
 	glUseProgram(0);
-
-
-
-	
 }

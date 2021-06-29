@@ -136,7 +136,7 @@ void TextLabel::Render()
         GLfloat Height = FontCharacter.size.y * m_scale.y;
 
         if (Height > m_height) m_height = Height;
-        if (FontCharacter.size.y > m_unscaledHeight) m_unscaledHeight = FontCharacter.size.y;
+        if (FontCharacter.size.y > m_unscaledHeight) m_unscaledHeight = (float)FontCharacter.size.y;
 
         GLfloat vertices[4][4] = {
 			{PosX, PosY + Height, 0.0, 0.0}, {PosX, PosY, 0.0, 1.0},

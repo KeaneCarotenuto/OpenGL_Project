@@ -215,6 +215,9 @@ public:
 	}
 };
 
+/// <summary>
+/// Uniform for glm::vec4
+/// </summary>
 class Vec4Uniform : public CUniform {
 public:
 	Vec4Uniform(glm::vec4 _val) :

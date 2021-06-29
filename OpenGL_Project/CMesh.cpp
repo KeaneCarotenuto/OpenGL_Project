@@ -169,7 +169,7 @@ void CMesh::NewCMesh(std::string _name, float _radius, int _fidelity)
 			float y = cos(Theta);
 			float z = sin(Phi) * sin(Theta);
 
-			// Set the position of the current vertex point
+			// Set the position of the current vertex point ****(NOTE: This code was taken from the "Sphere.cpp" file provided to us, any warnings you see here were also present there)
 			Vertices[Element++] = x * _radius;
 			Vertices[Element++] = y * _radius;
 			Vertices[Element++] = z * _radius;

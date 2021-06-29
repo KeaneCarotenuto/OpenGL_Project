@@ -1,3 +1,14 @@
+// Bachelor of Software Engineering
+// Media Design School
+// Auckland
+// New Zealand
+// (c) 2021 Media Design School
+//
+// File Name   : CLightManager.h
+// Description : Manages all light objects, as well as uniforms for lights
+// Author      : Keane Carotenuto
+// Mail        : KeaneCarotenuto@gmail.com
+
 #pragma once
 #include <iostream>
 #include <string>
@@ -11,21 +22,21 @@
 
 struct PointLight 
 {
-	glm::vec3 Position;
-	glm::vec3 Colour;
-	float AmbientStrength;
-	float SpecularStrength;
+	glm::vec3 Position = glm::vec3();
+	glm::vec3 Colour = glm::vec3();
+	float AmbientStrength = 0;
+	float SpecularStrength = 0;
 
-	float AttenuationConstant;
-	float AttenuationLinear;
-	float AttenuationExponent;
+	float AttenuationConstant = 0;
+	float AttenuationLinear = 0;
+	float AttenuationExponent = 0;
 };
 
 struct DirectionalLight {
-	glm::vec3 Direction;
-	glm::vec3 Colour;
-	float AmbientStrength;
-	float SpecularStrength;
+	glm::vec3 Direction = glm::vec3();
+	glm::vec3 Colour = glm::vec3();
+	float AmbientStrength = 0;
+	float SpecularStrength = 0;
 };
 
 class CLightManager

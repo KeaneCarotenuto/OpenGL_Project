@@ -37,7 +37,6 @@
 
 #include "CShape.h"
 #include "CUniform.h"
-#include "Sphere.h"
 
 #include "CAudioSystem.h"
 
@@ -81,8 +80,6 @@ GLFWwindow* g_window = nullptr;
 
 //Main camera
 CCamera* g_camera = new CCamera();
-
-Sphere* g_sphere = nullptr;
 
 //Storing previous time step
 float previousTimeStep = 0;
