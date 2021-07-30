@@ -668,8 +668,6 @@ bool AudioInit()
 	CAudioSystem::GetInstance().AddSong("Enabled", "Resources/Audio/Enabled.wav", FMOD_DEFAULT);
 	CAudioSystem::GetInstance().AddSong("Disabled", "Resources/Audio/Disabled.wav", FMOD_DEFAULT);
 
-	CAudioSystem::GetInstance().PlaySong("DanceTrack");
-
 	return true;
 }
 
@@ -688,19 +686,6 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 	//Quit if ESC key pressed
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
 		glfwSetWindowShouldClose(window, GL_TRUE);
-	}
-
-	//Enable text input if ENTER is pressed
-	if (key == GLFW_KEY_ENTER && action == GLFW_PRESS) {
-		doInput = !doInput;
-		Print(5, 7, "Input is now " + (std::string)(doInput ? "Enabled. " : "Disabled. "), 15);
-		CAudioSystem::GetInstance().PlaySong(doInput ? "Enabled" : "Disabled");
-		(doInput == true) ? glfwSetCharCallback(window, TextInput) : glfwSetCharCallback(window, 0);
-	}
-
-	//If input is enabled, delete the last character with BACKPSACE
-	if (doInput && key == GLFW_KEY_BACKSPACE && (action == GLFW_REPEAT || action == GLFW_PRESS)) {
-		Text_Message->SetText(Text_Message->GetText().substr(0, Text_Message->GetText().size() - 1));
 	}
 
 	//Change line mode (fill or line) with F
@@ -729,9 +714,6 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 /// <param name="action">action performed</param>
 /// <param name="mods"></param>
 void MouseCallback(GLFWwindow* window, int button, int action, int mods) {
-	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
-		CAudioSystem::GetInstance().PlaySong("Gunshot");
-	}
 }
 
 /// <summary>
@@ -740,12 +722,7 @@ void MouseCallback(GLFWwindow* window, int button, int action, int mods) {
 /// <param name="window">window to check on</param>
 /// <param name="codePoint">"character" pressed</param>
 void TextInput(GLFWwindow* window, unsigned int codePoint) {
-	unsigned char uc = (unsigned char)codePoint;
-	std::string s(1, static_cast<char>(uc));
-
-	Print(5, 8, "Text input detected: " + s, 15);
-
-	Text_Message->SetText(Text_Message->GetText() + s);
+	
 }
 
 #pragma endregion
