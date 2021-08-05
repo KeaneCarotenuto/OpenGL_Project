@@ -181,6 +181,9 @@ void InitialSetup()
 	//Set the clear colour as blue (used by glClear)
 	glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
 
+	glClearStencil(1);
+	glClear(GL_STENCIL_BUFFER_BIT);
+
 	// Maps the range of the window size to NDC (-1 -> 1)
 	glViewport(0, 0, utils::windowWidth, utils::windowHeight);
 
@@ -898,6 +901,12 @@ void CheckInput(float _deltaTime, float _currentTime)
 		camMovement = glm::normalize(camMovement) * camSpeed * _deltaTime;
 		g_camera->SetCameraPos(g_camera->GetCameraPos() + camMovement);
 	}
+
+	if (glfwGetKey(g_window, GLFW_KEY_R)) {
+		glClearStencil(1);
+		glClear(GL_STENCIL_BUFFER_BIT);
+		glClearStencil(0);
+	}
 }
 
 /// <summary>
@@ -908,8 +917,37 @@ void Render()
 	//Clear Screen
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+	glEnable(GL_SCISSOR_TEST);
+	glScissor(100, 100, 600, 600);
+
+	//enable stencil and set stencil operation
+	glEnable(GL_STENCIL_TEST);
+	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+	glStencilMask(0xFF); // Enable writing again for next time
+
+	//** 1st pass ** - set current stencil value
+	glStencilFunc(GL_ALWAYS, // test function
+		1,// current value to set
+		0xFF);//mask value,
+	glStencilMask(0xFF);//enable writing to stencil buffer
+	CObjectManager::GetShape("sphere1")->Render();
+
+	glStencilFunc(GL_ALWAYS, // test function
+		0,// current value to set
+		0xFF);//mask value,
+	CObjectManager::GetShape("sphere2")->Render();
+
+	glDisable(GL_SCISSOR_TEST);
+
+	// ** 2nd pass **
+	glStencilFunc(GL_EQUAL, 1, 0xFF); // write to areas where value is not equal to 1
+	glStencilMask(0x00); //disable writing to stencil buffer
 	CObjectManager::RenderAll();
-	
+
+	glStencilMask(0x00); //disable writing to stencil mask
+	glDisable(GL_STENCIL_TEST); // Disable stencil test
+	glStencilMask(0xFF); // Enable writing again for next time
+
 	glfwSwapBuffers(g_window);
 }
 
