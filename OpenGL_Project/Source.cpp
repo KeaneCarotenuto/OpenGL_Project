@@ -239,8 +239,8 @@ void InitialSetup()
 		//Set program and add uniforms to Cube
 		if (_shape = CObjectManager::GetShape(name)) {
 			_shape->SetProgram(ShaderLoader::GetProgram("solidColour")->m_id);
-			_shape->AddUniform(new Vec3Uniform(CLightManager::GetPointLight(i).Colour), "Colour");
-			_shape->AddUniform(new Mat4Uniform(_shape->GetPVM()), "PVMMat");
+			_shape->AddUniform(new Vec3Uniform(CLightManager::GetPointLight(i).Colour, "Colour"));
+			_shape->AddUniform(new Mat4Uniform(_shape->GetPVM(), "PVMMat"));
 		}
 	}
 
@@ -568,71 +568,72 @@ void ProgramSetup()
 	//Set program and add uniforms to Rectangle
 	if (_shape = CObjectManager::GetShape("floor")) {
 		_shape->SetProgram(ShaderLoader::GetProgram("3DLight")->m_id);
-		_shape->AddUniform(new ImageUniform(Texture_Floor), "ImageTexture");
-		_shape->AddUniform(new CubemapUniform(Texture_Cubemap), "Skybox");
-		_shape->AddUniform(new FloatUniform(0.02f), "Reflectivity");
-		_shape->AddUniform(new BoolUniform(false), "hasRefMap");
-		_shape->AddUniform(new FloatUniform(0), "RimExponent");
-		_shape->AddUniform(new FloatUniform(0), "CurrentTime");
-		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM()), "PVMMat");
-		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM()), "Model");
+		_shape->AddUniform(new ImageUniform(Texture_Floor, "ImageTexture"));
+		_shape->AddUniform(new CubemapUniform(Texture_Cubemap, "Skybox"));
+		_shape->AddUniform(new FloatUniform(0.02f, "Reflectivity"));
+		_shape->AddUniform(new BoolUniform(false, "hasRefMap"));
+		_shape->AddUniform(new FloatUniform(0, "RimExponent"));
+		_shape->AddUniform(new FloatUniform(0, "CurrentTime"));
+		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM(), "PVMMat"));
+		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM(), "Model"));
 	}
 
 	//Set program and add uniforms to Cube
 	if (_shape = CObjectManager::GetShape("sphere1")) {
 		_shape->SetProgram(ShaderLoader::GetProgram("3DLight")->m_id);
-		_shape->AddUniform(new ImageUniform(Texture_Rayman), "ImageTexture");
-		_shape->AddUniform(new CubemapUniform(Texture_Cubemap), "Skybox");
-		_shape->AddUniform(new FloatUniform(0.5f), "Reflectivity");
-		_shape->AddUniform(new BoolUniform(false), "hasRefMap");
-		_shape->AddUniform(new FloatUniform(5), "RimExponent");
-		_shape->AddUniform(new Vec3Uniform(glm::vec3(1.0f,0.0f,0.0f)), "RimColour");
-		_shape->AddUniform(new FloatUniform(0), "CurrentTime");
-		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM()), "PVMMat");
-		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM()), "Model");
+		_shape->AddUniform(new ImageUniform(Texture_Rayman, "ImageTexture"));
+		_shape->AddUniform(new CubemapUniform(Texture_Cubemap, "Skybox"));
+		_shape->AddUniform(new FloatUniform(0.5f, "Reflectivity"));
+		_shape->AddUniform(new BoolUniform(false, "hasRefMap"));
+		_shape->AddUniform(new FloatUniform(5, "RimExponent"));
+		_shape->AddUniform(new Vec3Uniform(glm::vec3(1.0f,0.0f,0.0f), "RimColour"));
+		_shape->AddUniform(new Vec3Uniform(glm::vec3(1.0f,0.0f,0.0f), "Colour"));
+		_shape->AddUniform(new FloatUniform(0, "CurrentTime"));
+		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM(), "PVMMat"));
+		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM(), "Model"));
 	}
 
 	//Set program and add uniforms to Cube
 	if (_shape = CObjectManager::GetShape("sphere2")) {
 		_shape->SetProgram(ShaderLoader::GetProgram("3DLight")->m_id);
-		_shape->AddUniform(new ImageUniform(Texture_Rayman), "ImageTexture");
-		_shape->AddUniform(new CubemapUniform(Texture_Cubemap), "Skybox");
-		_shape->AddUniform(new FloatUniform(0.5f), "Reflectivity");
-		_shape->AddUniform(new BoolUniform(false), "hasRefMap");
-		_shape->AddUniform(new FloatUniform(5), "RimExponent");
-		_shape->AddUniform(new Vec3Uniform(glm::vec3(0.0f, 1.0f, 0.0f)), "RimColour");
-		_shape->AddUniform(new FloatUniform(0), "CurrentTime");
-		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM()), "PVMMat");
-		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM()), "Model");
+		_shape->AddUniform(new ImageUniform(Texture_Rayman, "ImageTexture"));
+		_shape->AddUniform(new CubemapUniform(Texture_Cubemap, "Skybox"));
+		_shape->AddUniform(new FloatUniform(0.5f, "Reflectivity"));
+		_shape->AddUniform(new BoolUniform(false, "hasRefMap"));
+		_shape->AddUniform(new FloatUniform(5, "RimExponent"));
+		_shape->AddUniform(new Vec3Uniform(glm::vec3(0.0f, 1.0f, 0.0f), "RimColour"));
+		_shape->AddUniform(new FloatUniform(0, "CurrentTime"));
+		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM(), "PVMMat"));
+		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM(), "Model"));
 	}
 
 	//Set program and add uniforms to Cube
 	if (_shape = CObjectManager::GetShape("sphere3")) {
 		_shape->SetProgram(ShaderLoader::GetProgram("3DLight")->m_id);
-		_shape->AddUniform(new ImageUniform(Texture_Rayman), "ImageTexture");
-		_shape->AddUniform(new CubemapUniform(Texture_Cubemap), "Skybox");
-		_shape->AddUniform(new FloatUniform(0.5f), "Reflectivity");
-		_shape->AddUniform(new BoolUniform(false), "hasRefMap");
-		_shape->AddUniform(new FloatUniform(5), "RimExponent");
-		_shape->AddUniform(new Vec3Uniform(glm::vec3(0.0f, 0.0f, 1.0f)), "RimColour");
-		_shape->AddUniform(new FloatUniform(0), "CurrentTime");
-		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM()), "PVMMat");
-		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM()), "Model");
+		_shape->AddUniform(new ImageUniform(Texture_Rayman, "ImageTexture"));
+		_shape->AddUniform(new CubemapUniform(Texture_Cubemap, "Skybox"));
+		_shape->AddUniform(new FloatUniform(0.5f, "Reflectivity"));
+		_shape->AddUniform(new BoolUniform(false, "hasRefMap"));
+		_shape->AddUniform(new FloatUniform(5, "RimExponent"));
+		_shape->AddUniform(new Vec3Uniform(glm::vec3(0.0f, 0.0f, 1.0f), "RimColour"));
+		_shape->AddUniform(new FloatUniform(0, "CurrentTime"));
+		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM(), "PVMMat"));
+		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM(), "Model"));
 	}
 
 	for (int i = 4; i < 4 + randSphereAmount; i++) {
 		//Set program and add uniforms to Cube
 		if (_shape = CObjectManager::GetShape("sphere" + std::to_string(i))) {
 			_shape->SetProgram(ShaderLoader::GetProgram("3DLight")->m_id);
-			_shape->AddUniform(new ImageUniform(Texture_Rayman), "ImageTexture");
-			_shape->AddUniform(new CubemapUniform(Texture_Cubemap), "Skybox");
-			_shape->AddUniform(new FloatUniform(((float)(rand() % 100)) / 100), "Reflectivity");
-			_shape->AddUniform(new BoolUniform(false), "hasRefMap");
-			_shape->AddUniform(new FloatUniform(0), "RimExponent");
-			_shape->AddUniform(new Vec3Uniform(glm::vec3(0.0f, 0.0f, 0.0f)), "RimColour");
-			_shape->AddUniform(new FloatUniform(0), "CurrentTime");
-			_shape->AddUniform(new Mat4Uniform(_shape->GetPVM()), "PVMMat");
-			_shape->AddUniform(new Mat4Uniform(_shape->GetPVM()), "Model");
+			_shape->AddUniform(new ImageUniform(Texture_Rayman, "ImageTexture"));
+			_shape->AddUniform(new CubemapUniform(Texture_Cubemap, "Skybox"));
+			_shape->AddUniform(new FloatUniform(((float)(rand() % 100)) / 100, "Reflectivity"));
+			_shape->AddUniform(new BoolUniform(false, "hasRefMap"));
+			_shape->AddUniform(new FloatUniform(0, "RimExponent"));
+			_shape->AddUniform(new Vec3Uniform(glm::vec3(0.0f, 0.0f, 0.0f), "RimColour"));
+			_shape->AddUniform(new FloatUniform(0, "CurrentTime"));
+			_shape->AddUniform(new Mat4Uniform(_shape->GetPVM(), "PVMMat"));
+			_shape->AddUniform(new Mat4Uniform(_shape->GetPVM(), "Model"));
 		}
 	}
 	
@@ -640,23 +641,23 @@ void ProgramSetup()
 	//Set program and add uniforms to Cube
 	if (_shape = CObjectManager::GetShape("cube2")) {
 		_shape->SetProgram(ShaderLoader::GetProgram("3DLight")->m_id);
-		_shape->AddUniform(new ImageUniform(Texture_Crate), "ImageTexture");
-		_shape->AddUniform(new CubemapUniform(Texture_Cubemap), "Skybox");
-		_shape->AddUniform(new BoolUniform(true), "hasRefMap");
-		_shape->AddUniform(new ImageUniform(Texture_CrateReflectionMap), "ReflectionMap");
-		_shape->AddUniform(new FloatUniform(0.5f), "Reflectivity");
-		_shape->AddUniform(new FloatUniform(0), "RimExponent");
-		_shape->AddUniform(new FloatUniform(0), "CurrentTime");
-		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM()), "PVMMat");
-		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM()), "Model");
+		_shape->AddUniform(new ImageUniform(Texture_Crate, "ImageTexture"));
+		_shape->AddUniform(new CubemapUniform(Texture_Cubemap, "Skybox"));
+		_shape->AddUniform(new BoolUniform(true, "hasRefMap"));
+		_shape->AddUniform(new ImageUniform(Texture_CrateReflectionMap, "ReflectionMap"));
+		_shape->AddUniform(new FloatUniform(0.5f, "Reflectivity"));
+		_shape->AddUniform(new FloatUniform(0, "RimExponent"));
+		_shape->AddUniform(new FloatUniform(0, "CurrentTime"));
+		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM(), "PVMMat"));
+		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM(), "Model"));
 	}
 	
 	//Set program and add uniforms to skybox
 	if (_shape = CObjectManager::GetShape("skybox")) {
 		_shape->SetProgram(ShaderLoader::GetProgram("skybox")->m_id);
-		_shape->AddUniform(new CubemapUniform(Texture_Cubemap), "ImageTexture");
-		_shape->AddUniform(new FloatUniform(0), "CurrentTime");
-		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM()), "PVMMat");
+		_shape->AddUniform(new CubemapUniform(Texture_Cubemap, "ImageTexture"));
+		_shape->AddUniform(new FloatUniform(0, "CurrentTime"));
+		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM(), "PVMMat"));
 	}
 }
 
@@ -692,6 +693,18 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 	}
 
 	//Change line mode (fill or line) with F
+	if (key == GLFW_KEY_B && action == GLFW_PRESS) {
+		GLboolean isCull = glIsEnabled(GL_CULL_FACE);
+
+		if (isCull) {
+			glDisable(GL_CULL_FACE);
+		}
+		else {
+			glEnable(GL_CULL_FACE);
+		}
+	}
+
+	//Change backface mode (cull or no cull) with B
 	if (key == GLFW_KEY_F && action == GLFW_PRESS) {
 		GLint polygonMode[2];
 		glGetIntegerv(GL_POLYGON_MODE, polygonMode);
@@ -915,7 +928,7 @@ void CheckInput(float _deltaTime, float _currentTime)
 void Render()
 {
 	//Clear Screen
-	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	//glEnable(GL_SCISSOR_TEST);
 	//glScissor(100, 100, 600, 600);
@@ -948,46 +961,28 @@ void Render()
 	//glDisable(GL_STENCIL_TEST); // Disable stencil test
 	//glStencilMask(0xFF); // Enable writing again for next time
 
-
-	glEnable(GL_DEPTH_TEST);
-	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-	//glStencilMask(0x00);
-	//CObjectManager::GetShape("floor")->Render();
+	CObjectManager::GetShape("floor")->Render();
 
-	//glStencilFunc(GL_ALWAYS, 1, 0xFF);
-	//glStencilMask(0xFF);
-	CObjectManager::GetShape("sphere1")->SetProgram(ShaderLoader::GetProgram("solidColour")->m_id);
-	CObjectManager::GetShape("sphere1")->AddUniform(new Vec3Uniform({ 1,0,0 }), "Colour");
-	CObjectManager::GetShape("sphere1")->AddUniform(new Mat4Uniform(CObjectManager::GetShape("sphere1")->GetPVM()), "PVMMat");
+	glEnable(GL_STENCIL_TEST);
+	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+
+	glStencilFunc(GL_ALWAYS, 1, 0xFF);
+	glStencilMask(0xFF);
+	CObjectManager::GetShape("sphere1")->SetProgram(ShaderLoader::GetProgram("3DLight")->m_id);
 	CObjectManager::GetShape("sphere1")->Render();
 
-	/*glm::vec3* col = new glm::vec3(1, 0, 0);
-
-	CObjectManager::GetShape("sphere1")->UpdatePVM();
-	glUseProgram(ShaderLoader::GetProgram("solidColour")->m_id);
-	glUniform3fv(glGetUniformLocation(ShaderLoader::GetProgram("solidColour")->m_id, ((std::string)"Colour").c_str()), 1, glm::value_ptr(*col));
-	glBindVertexArray(CMesh::GetMesh("sphere")->GetVAO());
-	glDrawElements(GL_TRIANGLES, CMesh::GetMesh("sphere")->GetIndices().size(), GL_UNSIGNED_INT, 0);
-	glBindVertexArray(0);
-	glUseProgram(0);*/
-
-	//CObjectManager::GetShape("sphere1")->SetProgram(ShaderLoader::GetProgram("solidColour")->m_id);
-
-	//glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
-	//glStencilMask(0x00);
-	//(GL_DEPTH_TEST);
-	/*CObjectManager::GetShape("sphere1")->Scale(2.0f);
+	glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+	glStencilMask(0x00);
+	CObjectManager::GetShape("sphere1")->Scale(1.1f);
 	CObjectManager::GetShape("sphere1")->SetProgram(ShaderLoader::GetProgram("solidColour")->m_id);
-	CObjectManager::GetShape("sphere1")->Render();*/
+	CObjectManager::GetShape("sphere1")->UpdateUniform(new Vec3Uniform({ 1,0,0 }, "Colour"));
+	CObjectManager::GetShape("sphere1")->Render();
+	CObjectManager::GetShape("sphere1")->Scale(1.0 / 1.1f);
 
-	//glStencilMask(0xFF);
-	//glStencilFunc(GL_ALWAYS, 1, 0xFF);
-	//glEnable(GL_DEPTH_TEST);
-
-	//CObjectManager::GetShape("sphere1")->Scale(1.0/2.0f);
+	glStencilMask(0xFF);
+	glDisable(GL_STENCIL_TEST);
 
 
 	glfwSwapBuffers(g_window);

@@ -20,7 +20,7 @@
 
 class CUniform {
 public:
-	CUniform(std::string _name) : name(name) {};
+	CUniform(std::string _name) : name(_name) {};
 	std::string name;
 	GLint location = NULL;
 	virtual void Send(CShape * _shape) = 0;
@@ -128,7 +128,7 @@ public:
 
 		float newVal = (float)currentFrame * (1.0f / frameCount);
 
-		_shape->UpdateUniform(new FloatUniform(newVal), "offset");
+		_shape->UpdateUniform(new FloatUniform(newVal, "offset"));
 	}
 };
 
