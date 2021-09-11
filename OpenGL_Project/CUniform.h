@@ -20,6 +20,8 @@
 
 class CUniform {
 public:
+	CUniform(std::string _name) : name(name) {};
+	std::string name;
 	GLint location = NULL;
 	virtual void Send(CShape * _shape) = 0;
 };
@@ -29,7 +31,7 @@ public:
 /// </summary>
 class ImageUniform : public CUniform { 
 public:
-	ImageUniform(GLuint _val):
+	ImageUniform(GLuint _val, std::string _name): CUniform(_name),
 		value(_val)
 	{
 
@@ -49,7 +51,7 @@ public:
 /// </summary>
 class CubemapUniform : public CUniform {
 public:
-	CubemapUniform(GLuint _val) :
+	CubemapUniform(GLuint _val, std::string _name) : CUniform(_name),
 		value(_val)
 	{
 
@@ -71,7 +73,7 @@ public:
 /// </summary>
 class FloatUniform : public CUniform {
 public:
-	FloatUniform(float _val) :
+	FloatUniform(float _val, std::string _name) : CUniform(_name),
 		value(_val)
 	{
 
@@ -96,7 +98,7 @@ public:
 	/// <param name="_speed">Seconds per frame</param>
 	/// <param name="_shape">The shape that is using the image</param>
 	/// <returns></returns>
-	AnimationUniform(GLuint _val, int _count, float _speed, CShape* _shape) :
+	AnimationUniform(GLuint _val, int _count, float _speed, CShape* _shape, std::string _name) : CUniform(_name),
 		value(_val),
 		frameCount(_count),
 		SPF(_speed)
@@ -135,7 +137,7 @@ public:
 /// </summary>
 class IntUniform : public CUniform { 
 public:
-	IntUniform(int _val) :
+	IntUniform(int _val, std::string _name) : CUniform(_name),
 		value(_val)
 	{
 
@@ -152,7 +154,7 @@ public:
 /// </summary>
 class BoolUniform : public CUniform {
 public:
-	BoolUniform(bool _val) :
+	BoolUniform(bool _val, std::string _name) : CUniform(_name),
 		value(_val)
 	{
 
@@ -169,7 +171,7 @@ public:
 /// </summary>
 class Mat4Uniform : public CUniform { 
 public:
-	Mat4Uniform(glm::mat4 _val) :
+	Mat4Uniform(glm::mat4 _val, std::string _name) : CUniform(_name),
 		value(_val)
 	{
 
@@ -186,14 +188,14 @@ public:
 /// </summary>
 class Vec3Uniform : public CUniform { 
 public:
-	Vec3Uniform(glm::vec3 _val) :
+	Vec3Uniform(glm::vec3 _val, std::string _name) : CUniform(_name),
 		value(_val)
 	{
 
 	}
 
 	glm::vec3 value;
-	void Send(CShape * _shape) {
+	void Send(CShape * _shape){
 		glUniform3fv(location, 1, glm::value_ptr(value));
 	}
 };
@@ -203,14 +205,14 @@ public:
 /// </summary>
 class Vec2Uniform : public CUniform {
 public:
-	Vec2Uniform(glm::vec2 _val) :
+	Vec2Uniform(glm::vec2 _val, std::string _name) : CUniform(_name),
 		value(_val)
 	{
 
 	}
 
 	glm::vec2 value;
-	void Send(CShape* _shape) {
+	void Send(CShape* _shape){
 		glUniform2fv(location, 1, glm::value_ptr(value));
 	}
 };
@@ -220,7 +222,7 @@ public:
 /// </summary>
 class Vec4Uniform : public CUniform {
 public:
-	Vec4Uniform(glm::vec4 _val) :
+	Vec4Uniform(glm::vec4 _val, std::string _name) : CUniform(_name),
 		value(_val)
 	{
 

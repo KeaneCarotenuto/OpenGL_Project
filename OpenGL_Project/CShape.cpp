@@ -44,9 +44,9 @@ CShape::CShape(std::string _meshName ,glm::vec3 _pos, float _rot, glm::vec3 _sca
 /// </summary>
 /// <param name="_uniform"> type</param>
 /// <param name="_name"> what it is called in shader files</param>
-void CShape::AddUniform(CUniform* _uniform, std::string _name)
+void CShape::AddUniform(CUniform* _uniform)
 {
-	const char* val = _name.c_str();
+	const char* val = _uniform->name.c_str();
 	_uniform->location = glGetUniformLocation(m_program, val);
 
 	m_uniforms.push_back(_uniform);
@@ -57,12 +57,12 @@ void CShape::AddUniform(CUniform* _uniform, std::string _name)
 /// </summary>
 /// <param name="_NewUniform"></param>
 /// <param name="_name"></param>
-void CShape::UpdateUniform(CUniform* _NewUniform, std::string _name)
+void CShape::UpdateUniform(CUniform* _NewUniform)
 {
-	GLuint loc = glGetUniformLocation(m_program, _name.c_str());
+	GLuint loc = glGetUniformLocation(m_program, _NewUniform->name.c_str());
 	_NewUniform->location = loc;
 	for (CUniform*& _uniform : m_uniforms) {
-		if (loc == _uniform->location) {
+		if (_NewUniform->name == _uniform->name) {
 			delete _uniform;
 			_uniform = _NewUniform;
 			return;
@@ -78,7 +78,7 @@ void CShape::UpdateUniform(CUniform* _NewUniform, std::string _name)
 void CShape::Update(float deltaTime, float currentTime)
 {
 	m_currentTime = currentTime;
-	UpdateUniform(new FloatUniform(currentTime), "CurrentTime");
+	UpdateUniform(new FloatUniform(currentTime, "CurrentTime"));
 }
 
 /// <summary>
@@ -122,7 +122,7 @@ void CShape::UpdatePVM()
 
 		m_modelMat = m_camera->GetCameraProjectionMat() * m_modelMat;
 
-		UpdateUniform(new Mat4Uniform(m_modelMat), "ModelMat");
+		UpdateUniform(new Mat4Uniform(m_modelMat, "CurrentTime"));
 		return;
 	}
 	else {
@@ -136,6 +136,6 @@ void CShape::UpdatePVM()
 	//Calculate the PVM mat for the shape using camera view mat
 	m_PVMMat = m_camera->GetCameraProjectionMat() * m_camera->GetCameraViewMat() * m_modelMat;
 
-	UpdateUniform(new Mat4Uniform(m_PVMMat), "PVMMat");
-	UpdateUniform(new Mat4Uniform(m_modelMat), "Model");
+	UpdateUniform(new Mat4Uniform(m_PVMMat, "PVMMat"));
+	UpdateUniform(new Mat4Uniform(m_modelMat, "Model"));
 }

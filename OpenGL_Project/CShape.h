@@ -73,10 +73,12 @@ public:
 	glm::vec3 GetPosition() { return m_position; };
 	glm::vec3 GetScale() { return m_scale; };
 
+	void Scale(float _s) { m_scale *= _s; };
+
 
 	//Adding/updating uniforms
-	void AddUniform(CUniform* _uniform, std::string _name);
-	void UpdateUniform(CUniform* _NewUniform, std::string _name);
+	void AddUniform(CUniform* _uniform);
+	void UpdateUniform(CUniform* _NewUniform);
 
 	void Update(float deltaTime, float currentTime);
 	void Render();
