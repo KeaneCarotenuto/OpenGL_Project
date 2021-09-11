@@ -64,6 +64,8 @@ public:
 	CShape(int _verts, glm::vec3 _pos, float _rot, glm::vec3 _scale, bool _screenScale, int _renderPri = -1);
 	CShape(std::string _meshName, glm::vec3 _pos, float _rot, glm::vec3 _scale, bool _screenScale, int _renderPri = -1);
 
+	~CShape();
+
 	void SetProgram(GLuint _program) { m_program = _program; };
 	void SetCamera(CCamera* _camera) { m_camera = _camera; };
 	void SetMesh(CMesh* _mesh) { m_mesh = _mesh; };

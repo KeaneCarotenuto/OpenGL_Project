@@ -39,6 +39,13 @@ CShape::CShape(std::string _meshName ,glm::vec3 _pos, float _rot, glm::vec3 _sca
 	m_mesh = CMesh::GetMesh(_meshName);
 }
 
+CShape::~CShape()
+{
+	for (CUniform* _uniform : m_uniforms) {
+		delete _uniform;
+	}
+}
+
 /// <summary>
 /// Add unifrom to shape
 /// </summary>

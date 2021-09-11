@@ -40,6 +40,18 @@ void CObjectManager::RenderAll()
 	}
 }
 
+void CObjectManager::DeleteAll()
+{
+	if (m_shapes.size() > 0) {
+		std::cout << "\nRestarting\n";
+	}
+	
+	for (std::pair<std::string, CShape*> _shape : m_shapes) {
+		delete _shape.second;
+	}
+	m_shapes.clear();
+}
+
 /// <summary>
 /// Finds shape of given name
 /// </summary>

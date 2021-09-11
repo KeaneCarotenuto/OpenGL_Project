@@ -164,4 +164,11 @@ void main()
 	if (!hasRefMap) reflectionAmount = 1;
 
 	FinalColor = mix(trueColour, reflectColour, Reflectivity * reflectionAmount);
+
+	float d = distance(FragPos, CameraPos);
+	float lerp = (d - 5.0f)/20.f;
+	lerp = clamp(lerp, 0.0, 1.0);
+
+	vec4 vFogColor = vec4(0.5f, 0.5f, 0.5f, 1.0f);
+	FinalColor = mix(FinalColor, vFogColor, lerp);
 }

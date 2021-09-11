@@ -60,6 +60,8 @@ void ObjectCreation();
 
 void ProgramSetup();
 
+void InitShapes();
+
 bool AudioInit();
 
 void GenTexture(GLuint& texture, const char* texPath);
@@ -221,28 +223,8 @@ void InitialSetup()
 	//Set up shaders
 	ProgramSetup();
 
-	CLightManager::AddLight(glm::vec3(3.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), 0.05f, 1.0f, 35);
-	CLightManager::AddLight(glm::vec3(-3.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), 0.05f, 1.0f, 20);
-	CLightManager::AddLight(glm::vec3(0.0f, 0.0f, 3.0f), glm::vec3(0.0f, 0.0f, 1.0f), 0.05f, 1.0f, 10);
-	CLightManager::UpdateUniforms(ShaderLoader::GetProgram("3DLight")->m_id);
-
-	CShape* _shape = nullptr;
-
-	for (int i = 0; i < CLightManager::GetMaxPointLights(); i++) {
-
-		if (CLightManager::GetPointLight(i).Colour == glm::vec3(0,0,0)) continue;
-
-		std::string name = "lSphere" + std::to_string(i);
-		CObjectManager::AddShape(name, new CShape("sphere", CLightManager::GetPointLight(i).Position, 0.0f, glm::vec3(0.2f, 0.2f, 0.2f), false));
-		CObjectManager::GetShape(name)->SetCamera(g_camera);
-
-		//Set program and add uniforms to Cube
-		if (_shape = CObjectManager::GetShape(name)) {
-			_shape->SetProgram(ShaderLoader::GetProgram("solidColour")->m_id);
-			_shape->AddUniform(new Vec3Uniform(CLightManager::GetPointLight(i).Colour, "Colour"));
-			_shape->AddUniform(new Mat4Uniform(_shape->GetPVM(), "PVMMat"));
-		}
-	}
+	//Set up shapes
+	InitShapes();
 
 	//Set up Audio files
 	AudioInit();
@@ -522,23 +504,11 @@ void ObjectCreation()
 	CObjectManager::AddShape("floor", new CShape("floor-squareNorm", glm::vec3(0.0f, -0.5f, 0.0f), 0.0f, glm::vec3(100.0f, 1.0f, 100.0f), false));
 	CObjectManager::GetShape("floor")->SetCamera(g_camera);
 
-	CObjectManager::AddShape("sphere1", new CShape("sphere", glm::vec3(5.0f, 0.0f, 0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), false));
+	CObjectManager::AddShape("sphere1", new CShape("sphere", glm::vec3(0.0f, 0.0f, 0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), false));
 	CObjectManager::GetShape("sphere1")->SetCamera(g_camera);
 
-	CObjectManager::AddShape("sphere2", new CShape("sphere", glm::vec3(0.0f, 2.0f, 0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), false));
-	CObjectManager::GetShape("sphere2")->SetCamera(g_camera);
-
-	CObjectManager::AddShape("sphere3", new CShape("sphere", glm::vec3(0.0f, 4.0f, 0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), false));
-	CObjectManager::GetShape("sphere3")->SetCamera(g_camera);
-
-	for (int i = 4; i < 4 + randSphereAmount; i++) {
-		float randScale = (float)(rand() % 200)/100 + 0.5f;
-		CObjectManager::AddShape("sphere" + std::to_string(i), new CShape("sphere", glm::vec3(rand() % 10 + 5, rand() % 10 + 5, rand() % 10 + 5), 0.0f, glm::vec3(randScale), false));
-		CObjectManager::GetShape("sphere" + std::to_string(i))->SetCamera(g_camera);
-	}
-
-	CObjectManager::AddShape("cube2", new CShape("cubeNorm", glm::vec3(-5.0f, 0.0f, 0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), false));
-	CObjectManager::GetShape("cube2")->SetCamera(g_camera);
+	CObjectManager::AddShape("cube1", new CShape("cubeNorm", glm::vec3(5.0f, 0.0f, 0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), false));
+	CObjectManager::GetShape("cube1")->SetCamera(g_camera);
 
 	CObjectManager::AddShape("skybox", new CShape("skybox", glm::vec3(0.0f, 0.0f, 0.0f), 0.0f, glm::vec3(2000.0f, 2000.0f, 2000.0f), false));
 	CObjectManager::GetShape("skybox")->SetCamera(g_camera);
@@ -561,9 +531,11 @@ void ProgramSetup()
 	ShaderLoader::CreateProgram("3DLight", "Resources/Shaders/3D_Normals.vert", "Resources/Shaders/3DLight_BlinnPhong.frag" );
 	ShaderLoader::CreateProgram("skybox", "Resources/Shaders/Skybox.vert", "Resources/Shaders/Skybox.frag" );
 	ShaderLoader::CreateProgram("solidColour", "Resources/Shaders/PositionOnly.vert", "Resources/Shaders/ColourOnly.frag");
+}
 
+void InitShapes()
+{
 	CShape* _shape = nullptr;
-	
 
 	//Set program and add uniforms to Rectangle
 	if (_shape = CObjectManager::GetShape("floor")) {
@@ -586,72 +558,28 @@ void ProgramSetup()
 		_shape->AddUniform(new FloatUniform(0.5f, "Reflectivity"));
 		_shape->AddUniform(new BoolUniform(false, "hasRefMap"));
 		_shape->AddUniform(new FloatUniform(5, "RimExponent"));
-		_shape->AddUniform(new Vec3Uniform(glm::vec3(1.0f,0.0f,0.0f), "RimColour"));
-		_shape->AddUniform(new Vec3Uniform(glm::vec3(1.0f,0.0f,0.0f), "Colour"));
+		_shape->AddUniform(new Vec3Uniform(glm::vec3(1.0f, 0.0f, 0.0f), "RimColour"));
+		_shape->AddUniform(new Vec3Uniform(glm::vec3(1.0f, 0.0f, 0.0f), "Colour"));
 		_shape->AddUniform(new FloatUniform(0, "CurrentTime"));
 		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM(), "PVMMat"));
 		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM(), "Model"));
 	}
 
 	//Set program and add uniforms to Cube
-	if (_shape = CObjectManager::GetShape("sphere2")) {
+	if (_shape = CObjectManager::GetShape("cube1")) {
 		_shape->SetProgram(ShaderLoader::GetProgram("3DLight")->m_id);
 		_shape->AddUniform(new ImageUniform(Texture_Rayman, "ImageTexture"));
 		_shape->AddUniform(new CubemapUniform(Texture_Cubemap, "Skybox"));
 		_shape->AddUniform(new FloatUniform(0.5f, "Reflectivity"));
 		_shape->AddUniform(new BoolUniform(false, "hasRefMap"));
 		_shape->AddUniform(new FloatUniform(5, "RimExponent"));
-		_shape->AddUniform(new Vec3Uniform(glm::vec3(0.0f, 1.0f, 0.0f), "RimColour"));
+		_shape->AddUniform(new Vec3Uniform(glm::vec3(1.0f, 0.0f, 0.0f), "RimColour"));
+		_shape->AddUniform(new Vec3Uniform(glm::vec3(1.0f, 0.0f, 0.0f), "Colour"));
 		_shape->AddUniform(new FloatUniform(0, "CurrentTime"));
 		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM(), "PVMMat"));
 		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM(), "Model"));
 	}
 
-	//Set program and add uniforms to Cube
-	if (_shape = CObjectManager::GetShape("sphere3")) {
-		_shape->SetProgram(ShaderLoader::GetProgram("3DLight")->m_id);
-		_shape->AddUniform(new ImageUniform(Texture_Rayman, "ImageTexture"));
-		_shape->AddUniform(new CubemapUniform(Texture_Cubemap, "Skybox"));
-		_shape->AddUniform(new FloatUniform(0.5f, "Reflectivity"));
-		_shape->AddUniform(new BoolUniform(false, "hasRefMap"));
-		_shape->AddUniform(new FloatUniform(5, "RimExponent"));
-		_shape->AddUniform(new Vec3Uniform(glm::vec3(0.0f, 0.0f, 1.0f), "RimColour"));
-		_shape->AddUniform(new FloatUniform(0, "CurrentTime"));
-		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM(), "PVMMat"));
-		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM(), "Model"));
-	}
-
-	for (int i = 4; i < 4 + randSphereAmount; i++) {
-		//Set program and add uniforms to Cube
-		if (_shape = CObjectManager::GetShape("sphere" + std::to_string(i))) {
-			_shape->SetProgram(ShaderLoader::GetProgram("3DLight")->m_id);
-			_shape->AddUniform(new ImageUniform(Texture_Rayman, "ImageTexture"));
-			_shape->AddUniform(new CubemapUniform(Texture_Cubemap, "Skybox"));
-			_shape->AddUniform(new FloatUniform(((float)(rand() % 100)) / 100, "Reflectivity"));
-			_shape->AddUniform(new BoolUniform(false, "hasRefMap"));
-			_shape->AddUniform(new FloatUniform(0, "RimExponent"));
-			_shape->AddUniform(new Vec3Uniform(glm::vec3(0.0f, 0.0f, 0.0f), "RimColour"));
-			_shape->AddUniform(new FloatUniform(0, "CurrentTime"));
-			_shape->AddUniform(new Mat4Uniform(_shape->GetPVM(), "PVMMat"));
-			_shape->AddUniform(new Mat4Uniform(_shape->GetPVM(), "Model"));
-		}
-	}
-	
-	
-	//Set program and add uniforms to Cube
-	if (_shape = CObjectManager::GetShape("cube2")) {
-		_shape->SetProgram(ShaderLoader::GetProgram("3DLight")->m_id);
-		_shape->AddUniform(new ImageUniform(Texture_Crate, "ImageTexture"));
-		_shape->AddUniform(new CubemapUniform(Texture_Cubemap, "Skybox"));
-		_shape->AddUniform(new BoolUniform(true, "hasRefMap"));
-		_shape->AddUniform(new ImageUniform(Texture_CrateReflectionMap, "ReflectionMap"));
-		_shape->AddUniform(new FloatUniform(0.5f, "Reflectivity"));
-		_shape->AddUniform(new FloatUniform(0, "RimExponent"));
-		_shape->AddUniform(new FloatUniform(0, "CurrentTime"));
-		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM(), "PVMMat"));
-		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM(), "Model"));
-	}
-	
 	//Set program and add uniforms to skybox
 	if (_shape = CObjectManager::GetShape("skybox")) {
 		_shape->SetProgram(ShaderLoader::GetProgram("skybox")->m_id);
@@ -704,6 +632,21 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 		}
 	}
 
+	//Change line mode (fill or line) with F
+	if (key == GLFW_KEY_R && action == GLFW_PRESS) {
+		CObjectManager::DeleteAll();
+
+		//Create objects
+		ObjectCreation();
+		//Set up shapes
+		InitShapes();
+
+		g_camera->SetCameraPos({ 0,0,0 });
+		g_camera->SetYaw(0);
+		g_camera->SetPitch(0);
+		g_camera->UpdateRotation();
+	}
+
 	//Change backface mode (cull or no cull) with B
 	if (key == GLFW_KEY_F && action == GLFW_PRESS) {
 		GLint polygonMode[2];
@@ -730,6 +673,72 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 /// <param name="action">action performed</param>
 /// <param name="mods"></param>
 void MouseCallback(GLFWwindow* window, int button, int action, int mods) {
+
+	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+		//float x = (2.0f * utils::mousePos.x) / utils::windowHeight - 1.0f;
+		//float y = 1.0f - (2.0f * utils::mousePos.y) / utils::windowWidth;
+		//float z = 1.0f;
+		//glm::vec3 ray_nds = glm::vec3(x, y, z);
+
+		//glm::vec4 ray_clip = glm::vec4(ray_nds.x, ray_nds.y, -1.0, 1.0);
+
+		//glm::vec4 ray_eye = glm::inverse(g_camera->GetCameraProjectionMat()) * ray_clip;
+
+		//ray_eye = glm::vec4(ray_eye.x, ray_eye.y, -1.0, 0.0);
+
+		//glm::vec3 ray_wor = glm::vec3(inverse(g_camera->GetCameraViewMat()) * ray_eye);
+		//// don't forget to normalise the vector at some point
+		//ray_wor = glm::normalize(ray_wor);
+
+		//CShape* _shape = CObjectManager::GetShape("sphere1");
+
+		//float radius = 0.5f;
+		//glm::vec3 v = _shape->GetPosition() - g_camera->GetCameraPos();
+		//float a = glm::dot(ray_wor, ray_wor);
+		//float b = 2 * glm::dot(v, ray_wor);
+		//float c = glm::dot(v, v) - radius * radius;
+		//float d = b * b - 4 * a * c;
+		//if (d > 0) {
+		//	float x1 = (-b - sqrt(d)) / 2;
+		//	float x2 = (-b + sqrt(d)) / 2;
+		//	_shape->SetPosition(_shape->GetPosition() + ray_wor);
+		//}
+		//else if (d <= 0) {
+
+		//}
+
+		/*CShape* _shape = CObjectManager::GetShape("cube1");
+
+		bool doesIntersect = false;
+		glm::vec3 intersectPoint = glm::vec3(0, 0, 0);
+
+		glm::vec3 lineDirection = ray_wor;
+		glm::vec3 pn = { -1,0,0 };
+		glm::vec3 lpa = g_camera->GetCameraPos();
+		glm::vec3 lpb = g_camera->GetCameraPos() + lineDirection * 1000.0f;
+
+		if (glm::dot(lineDirection, pn) == 0) {
+			doesIntersect = false;
+		}
+		else {
+			float distance = glm::dot(_shape->GetPosition() - glm::vec3(0.5f, 0, 0) - lpa, pn) / glm::dot(lineDirection, pn);
+			float lineDistance = 1000.0f;
+
+			if (distance <= lineDistance) {
+				doesIntersect = true;
+				intersectPoint = lpa + (lineDirection * distance);
+				Print(5, 15, "Int Position (y: " + std::to_string(intersectPoint.y) + " z:" + std::to_string(intersectPoint.z) + ")    ", 15);
+
+				if (abs(intersectPoint.y - _shape->GetPosition().y) <= 0.5f &&
+					abs(intersectPoint.z - _shape->GetPosition().z) <= 0.5f) {
+					_shape->SetPosition(_shape->GetPosition() + glm::vec3(1, 0, 0));
+				}
+			}
+			else {
+				doesIntersect = false;
+			}
+		}*/
+	}
 }
 
 /// <summary>
@@ -834,9 +843,7 @@ void Update()
 	previousTimeStep = utils::currentTime;
 
 	//Move shapes around world origin in circle
-	CObjectManager::GetShape("sphere1")->SetPosition(glm::vec3(sin(utils::currentTime + glm::pi<float>())*2, 0, cos(utils::currentTime + glm::pi<float>())*2));
-	CObjectManager::GetShape("sphere2")->SetPosition(glm::vec3(0, sin(utils::currentTime) * 2 + 2, 0));
-	CObjectManager::GetShape("sphere3")->SetPosition(glm::vec3(0, sin(utils::currentTime) * 2 + 4, 0));
+	//CObjectManager::GetShape("sphere1")->SetPosition(glm::vec3(sin(utils::currentTime + glm::pi<float>())*2, 0, cos(utils::currentTime + glm::pi<float>())*2));
 
 	//Update all shapes
 	CObjectManager::UpdateAll(DeltaTime, utils::currentTime);
@@ -873,12 +880,46 @@ void CheckInput(float _deltaTime, float _currentTime)
 
 	if (cursorLocked) {
 		//Update camera rotation with mouse movement
-		g_camera->SetYaw(g_camera->GetYaw() - g_camera->GetSpeed() * (utils::mousePos.x - oldMouse.x) * _deltaTime);
-		g_camera->SetPitch(g_camera->GetPitch() - g_camera->GetSpeed() * (utils::mousePos.y - oldMouse.y) * _deltaTime);
+		g_camera->SetYaw(g_camera->GetYaw() - g_camera->GetSpeed() * (utils::mousePos.x - oldMouse.x) * 0.002f);
+		g_camera->SetPitch(g_camera->GetPitch() - g_camera->GetSpeed() * (utils::mousePos.y - oldMouse.y) * 0.002f);
 		Print(5, 10, "Mouse rotation (yaw: " + std::to_string((int)glm::degrees(g_camera->GetYaw())) + " pitch:" + std::to_string((int)glm::degrees(g_camera->GetPitch())) + ")    ", 15);
 
 		g_camera->UpdateRotation();
 	}
+
+	float x = (2.0f * utils::mousePos.x) / utils::windowHeight - 1.0f;
+	float y = 1.0f - (2.0f * utils::mousePos.y) / utils::windowWidth;
+	float z = 1.0f;
+	glm::vec3 ray_nds = glm::vec3(x, y, z);
+
+	glm::vec4 ray_clip = glm::vec4(ray_nds.x, ray_nds.y, -1.0, 1.0);
+
+	glm::vec4 ray_eye = glm::inverse(g_camera->GetCameraProjectionMat()) * ray_clip;
+
+	ray_eye = glm::vec4(ray_eye.x, ray_eye.y, -1.0, 0.0);
+
+	glm::vec3 ray_wor = glm::vec3(inverse(g_camera->GetCameraViewMat()) * ray_eye);
+	// don't forget to normalise the vector at some point
+	ray_wor = glm::normalize(ray_wor);
+
+
+	CShape* _shape = CObjectManager::GetShape("sphere1");
+
+	float radius = 0.5f;
+	glm::vec3 v = _shape->GetPosition() - g_camera->GetCameraPos();
+	float a = glm::dot(ray_wor, ray_wor);
+	float b = 2 * glm::dot(v, ray_wor);
+	float c = glm::dot(v, v) - radius * radius;
+	float d = b * b - 4 * a * c;
+	if (d > 0) {
+		float x1 = (-b - sqrt(d)) / 2;
+		float x2 = (-b + sqrt(d)) / 2;
+		_shape->SetPosition(_shape->GetPosition() + glm::vec3(0,1,0) * _deltaTime);
+	}
+	else if (d <= 0) {
+
+	}
+	
 
 	//Camera movement below
 
@@ -914,12 +955,6 @@ void CheckInput(float _deltaTime, float _currentTime)
 		camMovement = glm::normalize(camMovement) * camSpeed * _deltaTime;
 		g_camera->SetCameraPos(g_camera->GetCameraPos() + camMovement);
 	}
-
-	if (glfwGetKey(g_window, GLFW_KEY_R)) {
-		glClearStencil(1);
-		glClear(GL_STENCIL_BUFFER_BIT);
-		glClearStencil(0);
-	}
 }
 
 /// <summary>
@@ -927,43 +962,16 @@ void CheckInput(float _deltaTime, float _currentTime)
 /// </summary>
 void Render()
 {
-	//Clear Screen
-	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	//glEnable(GL_SCISSOR_TEST);
-	//glScissor(100, 100, 600, 600);
-
-	////enable stencil and set stencil operation
-	//glEnable(GL_STENCIL_TEST);
-	//glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-	//glStencilMask(0xFF); // Enable writing again for next time
-
-	////** 1st pass ** - set current stencil value
-	//glStencilFunc(GL_ALWAYS, // test function
-	//	1,// current value to set
-	//	0xFF);//mask value,
-	//glStencilMask(0xFF);//enable writing to stencil buffer
-	//CObjectManager::GetShape("sphere1")->Render();
-
-	//glStencilFunc(GL_ALWAYS, // test function
-	//	0,// current value to set
-	//	0xFF);//mask value,
-	//CObjectManager::GetShape("sphere2")->Render();
-
-	//glDisable(GL_SCISSOR_TEST);
-
-	//// ** 2nd pass **
-	//glStencilFunc(GL_EQUAL, 1, 0xFF); // write to areas where value is equal to 1
-	//glStencilMask(0x00); //disable writing to stencil buffer
-	//CObjectManager::RenderAll();
-
-	//glStencilMask(0x00); //disable writing to stencil mask
-	//glDisable(GL_STENCIL_TEST); // Disable stencil test
-	//glStencilMask(0xFF); // Enable writing again for next time
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
+	//CObjectManager::RenderAll();
+
+	CObjectManager::GetShape("skybox")->Render();
+
 	CObjectManager::GetShape("floor")->Render();
+
+	CObjectManager::GetShape("cube1")->Render();
 
 	glEnable(GL_STENCIL_TEST);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
@@ -971,6 +979,8 @@ void Render()
 	glStencilFunc(GL_ALWAYS, 1, 0xFF);
 	glStencilMask(0xFF);
 	CObjectManager::GetShape("sphere1")->SetProgram(ShaderLoader::GetProgram("3DLight")->m_id);
+	CObjectManager::GetShape("sphere1")->UpdateUniform(new Vec3Uniform({ 1,0,0 }, "Colour"));
+	CObjectManager::GetShape("sphere1")->UpdateUniform(new Mat4Uniform(CObjectManager::GetShape("sphere1")->GetPVM(), "Model"));
 	CObjectManager::GetShape("sphere1")->Render();
 
 	glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
@@ -978,6 +988,7 @@ void Render()
 	CObjectManager::GetShape("sphere1")->Scale(1.1f);
 	CObjectManager::GetShape("sphere1")->SetProgram(ShaderLoader::GetProgram("solidColour")->m_id);
 	CObjectManager::GetShape("sphere1")->UpdateUniform(new Vec3Uniform({ 1,0,0 }, "Colour"));
+	CObjectManager::GetShape("sphere1")->UpdateUniform(new Mat4Uniform(CObjectManager::GetShape("sphere1")->GetPVM(), "Model"));
 	CObjectManager::GetShape("sphere1")->Render();
 	CObjectManager::GetShape("sphere1")->Scale(1.0 / 1.1f);
 

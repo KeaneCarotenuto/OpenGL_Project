@@ -22,10 +22,10 @@ private:
 	static std::map<std::string, CShape*> m_shapes;
 
 public:
-
 	static void AddShape(std::string _name, CShape* _shape);
 	static void UpdateAll(float _deltaTime, float _currentTime);
 	static void RenderAll();
+	static void DeleteAll();
 
 	static CShape* GetShape(std::string _name, bool errorLog = true);
 };
