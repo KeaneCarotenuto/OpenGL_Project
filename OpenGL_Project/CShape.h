@@ -72,8 +72,13 @@ public:
 	void SetPosition(glm::vec3 _pos) { m_position = _pos; };
 
 	glm::mat4 GetPVM() { return m_PVMMat; };
+	glm::mat4 GetModel() { return m_modelMat; };
 	glm::vec3 GetPosition() { return m_position; };
 	glm::vec3 GetScale() { return m_scale; };
+
+	glm::vec3 Right() { return glm::vec3(m_modelMat[0][0], m_modelMat[0][1], m_modelMat[0][2]); };
+	glm::vec3 Up() { return glm::vec3(m_modelMat[0][1], m_modelMat[1][1], m_modelMat[2][1]); };
+	glm::vec3 Forward() { return glm::vec3(m_modelMat[2][0], m_modelMat[2][1], m_modelMat[2][2]); };
 
 	void Scale(float _s) { m_scale *= _s; };
 

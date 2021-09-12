@@ -6,9 +6,10 @@ namespace utils {
 	const int windowWidth = 800;
 	const int windowHeight = 800;
 
-	static glm::vec2 mousePos = glm::vec2();
+	extern glm::vec2 mousePos;
 
-	static float currentTime = 0.0f;
-	static float previousTimeStep = 0.0f;
+	extern float currentTime;
+	extern float deltaTime;
+	extern float previousTimeStep;
 }
 

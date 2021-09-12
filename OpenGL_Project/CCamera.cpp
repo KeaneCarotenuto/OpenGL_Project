@@ -4,8 +4,6 @@
 
 glm::vec3 CCamera::GetWorldRay()
 {
-	float DeltaTime = utils::currentTime - utils::previousTimeStep;
-
 	float x = (2.0f * utils::mousePos.x) / utils::windowHeight - 1.0f;
 	float y = -(1.0f - (2.0f * utils::mousePos.y) / utils::windowWidth);
 	float z = 1.0f;
@@ -17,7 +15,7 @@ glm::vec3 CCamera::GetWorldRay()
 
 	ray_eye = glm::vec4(ray_eye.x, ray_eye.y, -1.0, 0.0);
 
-	glm::vec3 ray_wor = glm::vec3(inverse(GetCameraViewMat()) * ray_eye);
+	glm::vec3 ray_wor = glm::vec3(glm::inverse(GetCameraViewMat()) * ray_eye);
 	// don't forget to normalise the vector at some point
 	ray_wor = glm::normalize(ray_wor);
 

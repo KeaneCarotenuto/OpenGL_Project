@@ -77,6 +77,11 @@ void GotoXY(int x, int y);
 
 #pragma endregion
 
+glm::vec2 utils::mousePos = glm::vec2();
+float utils::currentTime = 0.0f;
+float utils::deltaTime = 0.0f;
+float utils::previousTimeStep = 0.0f;
+
 //Program render window
 GLFWwindow* g_window = nullptr;
 
@@ -476,7 +481,7 @@ void MeshCreation()
 		"floor-square",
 		VertType::Pos_Col_Tex,
 		{
-			// Index        // Position                     //Texture Coords
+			// Index        // Position											//Texture Coords
 			//Front Quad
 			/* 00 */        -0.5f,  0.0f,  0.5f,	-1.0f,  1.0f,  1.0f,         0.0f, 50.0f,     /* 00 */
 			/* 01 */        -0.5f,  0.0f, -0.5f,	-1.0f,  1.0f,  1.0f,         0.0f, 0.0f,     /* 01 */
@@ -536,6 +541,7 @@ void ObjectCreation()
 
 #pragma endregion
 
+#pragma region Setup Functions
 /// <summary>
 /// Set up shaders and shader programs
 /// </summary>
@@ -596,7 +602,7 @@ void InitShapes()
 		_shape->AddUniform(new IntUniform(0, "frameCount"));
 		_shape->AddUniform(new FloatUniform(0, "offset"));
 		_shape->AddUniform(new CubemapUniform(Texture_Cubemap, "Skybox"));
-		_shape->AddUniform(new FloatUniform(0.5f, "Reflectivity"));
+		_shape->AddUniform(new FloatUniform(0.0f, "Reflectivity"));
 		_shape->AddUniform(new BoolUniform(false, "hasRefMap"));
 		_shape->AddUniform(new FloatUniform(5, "RimExponent"));
 		_shape->AddUniform(new Vec3Uniform(glm::vec3(1.0f, 0.0f, 0.0f), "RimColour"));
@@ -610,7 +616,7 @@ void InitShapes()
 	if (_shape = CObjectManager::GetShape("water1")) {
 		_shape->SetProgram(ShaderLoader::GetProgram("3DLight")->m_id);
 		_shape->AddUniform(new AnimationUniform(Texture_Water, 100, 0.1f, _shape,  "ImageTexture"));
-		_shape->AddUniform(new IntUniform(80, "frameCount"));
+		_shape->AddUniform(new IntUniform(100, "frameCount"));
 		_shape->AddUniform(new FloatUniform(0, "offset"));
 		_shape->AddUniform(new CubemapUniform(Texture_Cubemap, "Skybox"));
 		_shape->AddUniform(new FloatUniform(0.1f, "Reflectivity"));
@@ -644,6 +650,7 @@ bool AudioInit()
 
 	return true;
 }
+#pragma endregion
 
 #pragma region Callback Functions
 
@@ -716,63 +723,84 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 /// <param name="mods"></param>
 void MouseCallback(GLFWwindow* window, int button, int action, int mods) {
 
-	float DeltaTime = utils::currentTime - utils::previousTimeStep;
-
 	glm::vec3 ray_wor = g_camera->GetWorldRay();
 
 	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
 
 		CShape* _shape = CObjectManager::GetShape("cube1");
+		std::vector<glm::vec3> dirsToCheck = { _shape->Up() , -_shape->Up(),  _shape->Forward(), -_shape->Forward(), _shape->Right() ,-_shape->Right()};
 
 		bool doesIntersect = false;
 		glm::vec3 intersectPoint = glm::vec3(0, 0, 0);
 
 		glm::vec3 lineDirection = ray_wor;
-		glm::vec3 pn = { -1,0,0 };
-		glm::vec3 lpa = g_camera->GetCameraPos();
-		glm::vec3 lpb = g_camera->GetCameraPos() + lineDirection * 1000.0f;
 
-		if (glm::dot(lineDirection, pn) == 0) {
-			doesIntersect = false;
-		}
-		else {
-			float distance = glm::dot(_shape->GetPosition() - glm::vec3(0.5f, 0, 0) - lpa, pn) / glm::dot(lineDirection, pn);
-			float lineDistance = 1000.0f;
+		for (const glm::vec3& _dir : dirsToCheck) {
 
-			if (distance <= lineDistance) {
-				doesIntersect = true;
-				intersectPoint = lpa + (lineDirection * distance);
-				Print(5, 15, "Int Position (y: " + std::to_string(intersectPoint.y) + " z:" + std::to_string(intersectPoint.z) + ")    ", 15);
+			glm::vec3 pn = _dir;
+			glm::vec3 lpa = g_camera->GetCameraPos();
+			glm::vec3 lpb = g_camera->GetCameraPos() + lineDirection * 1000.0f;
 
-				if (abs(intersectPoint.y - _shape->GetPosition().y) <= 0.5f &&
-					abs(intersectPoint.z - _shape->GetPosition().z) <= 0.5f) {
-					_shape->SetPosition(_shape->GetPosition() + glm::vec3(1, 0, 0));
-				}
-			}
-			else {
+			float dot = glm::dot(lineDirection, pn);
+
+			if (dot >= 0) {
 				doesIntersect = false;
 			}
-		}
-	}
+			else {
+				float f1 = 0.5f;
+				float f2 = 0.5f;
+				float distScale = 0.5f;
 
-	if (button == GLFW_MOUSE_BUTTON_RIGHT)
-	{
-		CShape* _shape = CObjectManager::GetShape("sphere1");
+				if (glm::abs(_dir) == _shape->Up()) {
+					f1 = _shape->GetScale().z / 2.0f;
+					f2 = _shape->GetScale().x / 2.0f;
+					distScale = _shape->GetScale().y/2;
+				}
+				else if (glm::abs(_dir) == _shape->Forward()) {
+					f1 = _shape->GetScale().y / 2.0f;
+					f2 = _shape->GetScale().x / 2.0f;
+					distScale = _shape->GetScale().z/2;
+				}
+				else if (glm::abs(_dir) == _shape->Right()) {
+					f1 = _shape->GetScale().y / 2.0f;
+					f2 = _shape->GetScale().z / 2.0f;
+					distScale = _shape->GetScale().x/2;
+				}
 
-		float radius = 0.5f;
-		glm::vec3 v = _shape->GetPosition() - g_camera->GetCameraPos();
-		float a = glm::dot(ray_wor, ray_wor);
-		float b = 2 * glm::dot(v, ray_wor);
-		float c = glm::dot(v, v) - radius * radius;
-		float d = b * b - 4 * a * c;
-		if (d > 0) {
-			float x1 = (-b - sqrt(d)) / 2;
-			float x2 = (-b + sqrt(d)) / 2;
-			_shape->SetPosition(_shape->GetPosition() + glm::vec3(0, 1, 0) * DeltaTime);
-		}
-		else if (d <= 0) {
+				float distance = glm::dot(_shape->GetPosition() + (pn * distScale) - lpa, pn) / glm::dot(lineDirection, pn);
+				float lineDistance = 1000.0f;
+
+				if (distance <= lineDistance) {
+					doesIntersect = true;
+					intersectPoint = lpa + (lineDirection * distance);
+					Print(5, 15, "Int Position (y: " + std::to_string(intersectPoint.y) + " z:" + std::to_string(intersectPoint.z) + ")    ", 15);
+
+					if (glm::abs(_dir) == _shape->Up()) {
+						if (abs(intersectPoint.z - _shape->GetPosition().z) <= f1 &&
+							abs(intersectPoint.x - _shape->GetPosition().x) <= f2) {
+							_shape->SetPosition(_shape->GetPosition() - _dir);
+						}
+					}
+					else if (glm::abs(_dir) == _shape->Forward()) {
+						if (abs(intersectPoint.y - _shape->GetPosition().y) <= f1 &&
+							abs(intersectPoint.x - _shape->GetPosition().x) <= f2) {
+							_shape->SetPosition(_shape->GetPosition() - _dir);
+						}
+					}
+					else if (glm::abs(_dir) == _shape->Right()){
+						if (abs(intersectPoint.y - _shape->GetPosition().y) <= f1 &&
+							abs(intersectPoint.z - _shape->GetPosition().z) <= f2) {
+							_shape->SetPosition(_shape->GetPosition() - _dir);
+						}
+					}
+				}
+				else {
+					doesIntersect = false;
+				}
+			}
 
 		}
+
 	}
 }
 
@@ -874,21 +902,21 @@ void Update()
 {
 	//Get current time and calc delta time
 	utils::currentTime = (float)glfwGetTime();
-	float DeltaTime = utils::currentTime - utils::previousTimeStep;
+	utils::deltaTime = utils::currentTime - utils::previousTimeStep;
 	utils::previousTimeStep = utils::currentTime;
 
 	//Move shapes around world origin in circle
 	//CObjectManager::GetShape("sphere1")->SetPosition(glm::vec3(sin(utils::currentTime + glm::pi<float>())*2, 0, cos(utils::currentTime + glm::pi<float>())*2));
 
 	//Update all shapes
-	CObjectManager::UpdateAll(DeltaTime, utils::currentTime);
+	CObjectManager::UpdateAll(utils::deltaTime, utils::currentTime);
 
 	glUseProgram(ShaderLoader::GetProgram("3DLight")->m_id);
 	glUniform3fv(glGetUniformLocation(ShaderLoader::GetProgram("3DLight")->m_id, "CameraPos"), 1, glm::value_ptr(g_camera->GetCameraPos()));
 	glUseProgram(0);
 
 	//Check for input
-	CheckInput(DeltaTime, utils::currentTime);
+	CheckInput(utils::deltaTime, utils::currentTime);
 
 	CLightManager::UpdateUniforms(ShaderLoader::GetProgram("3DLight")->m_id);
 
@@ -969,6 +997,9 @@ void Render()
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
+	glEnable(GL_SCISSOR_TEST);
+	glScissor(0, 100, 800, 600);
+
 	//CObjectManager::RenderAll();
 
 	CObjectManager::GetShape("skybox")->Render();
@@ -1003,6 +1034,8 @@ void Render()
 	glDisable(GL_CULL_FACE);
 	CObjectManager::GetShape("water1")->Render();
 	if (cull) glEnable(GL_CULL_FACE);
+
+	glDisable(GL_SCISSOR_TEST);
 
 	glfwSwapBuffers(g_window);
 }
