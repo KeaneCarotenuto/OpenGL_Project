@@ -32,6 +32,8 @@ private:
 
 public:
 
+	glm::vec3 GetWorldRay();
+
 	void SetCameraPos(glm::vec3 _pos) { CameraPos = _pos; };
 	glm::vec3 GetCameraPos() { return CameraPos; };
 

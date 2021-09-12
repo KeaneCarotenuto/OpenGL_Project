@@ -50,6 +50,9 @@ uniform vec3 RimColour;
 uniform vec2 mousePos;
 uniform float CurrentTime;
 
+uniform float offset;
+uniform int frameCount;
+
 out vec4 FinalColor;
 
 #define PI 3.1415926538
@@ -158,7 +161,10 @@ void main()
 	//Add the direct light to the colour
 	LightOutpt += CalcDirLight(DirLight);
 
-	vec4 trueColour = vec4(LightOutpt, 1.0f) * texture(ImageTexture, FragTexCoords);
+	float frameCountCopy = frameCount;
+    if (frameCountCopy <= 0) frameCountCopy = 1;
+
+	vec4 trueColour = vec4(LightOutpt, 1.0f) * texture(ImageTexture, vec2(FragTexCoords.x/frameCountCopy + offset, FragTexCoords.y));
 	vec4 reflectColour = CalcReflection();
 	float reflectionAmount = texture(ReflectionMap, FragTexCoords).r;
 	if (!hasRefMap) reflectionAmount = 1;

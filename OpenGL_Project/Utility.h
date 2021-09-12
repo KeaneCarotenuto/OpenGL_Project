@@ -9,5 +9,6 @@ namespace utils {
 	static glm::vec2 mousePos = glm::vec2();
 
 	static float currentTime = 0.0f;
+	static float previousTimeStep = 0.0f;
 }
 

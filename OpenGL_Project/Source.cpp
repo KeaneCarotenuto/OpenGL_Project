@@ -83,9 +83,6 @@ GLFWwindow* g_window = nullptr;
 //Main camera
 CCamera* g_camera = new CCamera();
 
-//Storing previous time step
-float previousTimeStep = 0;
-
 //Enable and disable input
 bool doInput = false;
 
@@ -98,6 +95,7 @@ GLuint Texture_CapMan;
 GLuint Texture_Frac;
 GLuint Texture_Floor;
 GLuint Texture_Crate;
+GLuint Texture_Water;
 
 GLuint Texture_Cubemap;
 
@@ -181,7 +179,7 @@ bool Startup()
 void InitialSetup()
 {
 	//Set the clear colour as blue (used by glClear)
-	glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
+	glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
 
 	glClearStencil(0);
 	glClear(GL_STENCIL_BUFFER_BIT);
@@ -246,6 +244,7 @@ void TextureCreation()
 	GenTexture(Texture_Frac, "Resources/Textures/pal.png");
 	GenTexture(Texture_Floor, "Resources/Textures/Floor.jpg");
 	GenTexture(Texture_Crate, "Resources/Textures/Crate.jpg");
+	GenTexture(Texture_Water, "Resources/Textures/Water.png");
 	GenTexture(Texture_CrateReflectionMap, "Resources/Textures/Crate-Reflection.png");
 
 	std::string cubemapPaths[6] = {
@@ -453,6 +452,24 @@ void MeshCreation()
 			0, 2, 3, // Front Tri 2
 		}
 		);
+	
+	
+	CMesh::NewCMesh(
+		"squareNorm",
+		VertType::Pos_Tex_Norm,
+		{
+			// Index        // Position			    //Texture Coords	//Normal
+			//Front Quad
+			/* 00 */        -0.5f,  0.0f,  0.5f,	0.0f,  1.0f,  		0.0f,  1.0f,  0.0f,   /* 00 */
+			/* 01 */        -0.5f,  0.0f, -0.5f,	0.0f,  0.0f,  		0.0f,  1.0f,  0.0f,   /* 02 */
+			/* 02 */         0.5f,  0.0f, -0.5f,	1.0f,  0.0f,  		0.0f,  1.0f,  0.0f,   /* 03 */
+			/* 03 */         0.5f,  0.0f,  0.5f,	1.0f,  1.0f,  		0.0f,  1.0f,  0.0f,   /* 01 */
+		},
+		{
+			0, 2, 1, // Front Tri 1
+			0, 3, 2, // Front Tri 2
+		}
+		);
 
 	//Create cube mesh
 	CMesh::NewCMesh(
@@ -510,6 +527,9 @@ void ObjectCreation()
 	CObjectManager::AddShape("cube1", new CShape("cubeNorm", glm::vec3(5.0f, 0.0f, 0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), false));
 	CObjectManager::GetShape("cube1")->SetCamera(g_camera);
 
+	CObjectManager::AddShape("water1", new CShape("squareNorm", glm::vec3(0.0f, 1.0f, 0.0f), 0.0f, glm::vec3(10.0f, 1.0f, 10.0f), false));
+	CObjectManager::GetShape("water1")->SetCamera(g_camera);
+
 	CObjectManager::AddShape("skybox", new CShape("skybox", glm::vec3(0.0f, 0.0f, 0.0f), 0.0f, glm::vec3(2000.0f, 2000.0f, 2000.0f), false));
 	CObjectManager::GetShape("skybox")->SetCamera(g_camera);
 }
@@ -541,6 +561,8 @@ void InitShapes()
 	if (_shape = CObjectManager::GetShape("floor")) {
 		_shape->SetProgram(ShaderLoader::GetProgram("3DLight")->m_id);
 		_shape->AddUniform(new ImageUniform(Texture_Floor, "ImageTexture"));
+		_shape->AddUniform(new IntUniform(0, "frameCount"));
+		_shape->AddUniform(new FloatUniform(0, "offset"));
 		_shape->AddUniform(new CubemapUniform(Texture_Cubemap, "Skybox"));
 		_shape->AddUniform(new FloatUniform(0.02f, "Reflectivity"));
 		_shape->AddUniform(new BoolUniform(false, "hasRefMap"));
@@ -554,6 +576,8 @@ void InitShapes()
 	if (_shape = CObjectManager::GetShape("sphere1")) {
 		_shape->SetProgram(ShaderLoader::GetProgram("3DLight")->m_id);
 		_shape->AddUniform(new ImageUniform(Texture_Rayman, "ImageTexture"));
+		_shape->AddUniform(new IntUniform(0, "frameCount"));
+		_shape->AddUniform(new FloatUniform(0, "offset"));
 		_shape->AddUniform(new CubemapUniform(Texture_Cubemap, "Skybox"));
 		_shape->AddUniform(new FloatUniform(0.5f, "Reflectivity"));
 		_shape->AddUniform(new BoolUniform(false, "hasRefMap"));
@@ -569,12 +593,30 @@ void InitShapes()
 	if (_shape = CObjectManager::GetShape("cube1")) {
 		_shape->SetProgram(ShaderLoader::GetProgram("3DLight")->m_id);
 		_shape->AddUniform(new ImageUniform(Texture_Rayman, "ImageTexture"));
+		_shape->AddUniform(new IntUniform(0, "frameCount"));
+		_shape->AddUniform(new FloatUniform(0, "offset"));
 		_shape->AddUniform(new CubemapUniform(Texture_Cubemap, "Skybox"));
 		_shape->AddUniform(new FloatUniform(0.5f, "Reflectivity"));
 		_shape->AddUniform(new BoolUniform(false, "hasRefMap"));
 		_shape->AddUniform(new FloatUniform(5, "RimExponent"));
 		_shape->AddUniform(new Vec3Uniform(glm::vec3(1.0f, 0.0f, 0.0f), "RimColour"));
 		_shape->AddUniform(new Vec3Uniform(glm::vec3(1.0f, 0.0f, 0.0f), "Colour"));
+		_shape->AddUniform(new FloatUniform(0, "CurrentTime"));
+		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM(), "PVMMat"));
+		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM(), "Model"));
+	}
+
+	//Set program and add uniforms to Cube
+	if (_shape = CObjectManager::GetShape("water1")) {
+		_shape->SetProgram(ShaderLoader::GetProgram("3DLight")->m_id);
+		_shape->AddUniform(new AnimationUniform(Texture_Water, 100, 0.1f, _shape,  "ImageTexture"));
+		_shape->AddUniform(new IntUniform(80, "frameCount"));
+		_shape->AddUniform(new FloatUniform(0, "offset"));
+		_shape->AddUniform(new CubemapUniform(Texture_Cubemap, "Skybox"));
+		_shape->AddUniform(new FloatUniform(0.1f, "Reflectivity"));
+		_shape->AddUniform(new BoolUniform(false, "hasRefMap"));
+		_shape->AddUniform(new FloatUniform(0, "RimExponent"));
+		_shape->AddUniform(new Vec3Uniform(glm::vec3(0.0f, 0.0f, 0.0f), "RimColour"));
 		_shape->AddUniform(new FloatUniform(0, "CurrentTime"));
 		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM(), "PVMMat"));
 		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM(), "Model"));
@@ -674,38 +716,11 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 /// <param name="mods"></param>
 void MouseCallback(GLFWwindow* window, int button, int action, int mods) {
 
+	float DeltaTime = utils::currentTime - utils::previousTimeStep;
+
+	glm::vec3 ray_wor = g_camera->GetWorldRay();
+
 	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
-		float x = (2.0f * utils::mousePos.x) / utils::windowHeight - 1.0f;
-		float y = -(1.0f - (2.0f * utils::mousePos.y) / utils::windowWidth);
-		float z = 1.0f;
-		glm::vec3 ray_nds = glm::vec3(x, y, z);
-
-		glm::vec4 ray_clip = glm::vec4(ray_nds.x, ray_nds.y, -1.0, 1.0);
-
-		glm::vec4 ray_eye = glm::inverse(g_camera->GetCameraProjectionMat()) * ray_clip;
-
-		ray_eye = glm::vec4(ray_eye.x, ray_eye.y, -1.0, 0.0);
-
-		glm::vec3 ray_wor = glm::vec3(inverse(g_camera->GetCameraViewMat()) * ray_eye);
-		// don't forget to normalise the vector at some point
-		ray_wor = glm::normalize(ray_wor);
-
-		//CShape* _shape = CObjectManager::GetShape("sphere1");
-
-		//float radius = 0.5f;
-		//glm::vec3 v = _shape->GetPosition() - g_camera->GetCameraPos();
-		//float a = glm::dot(ray_wor, ray_wor);
-		//float b = 2 * glm::dot(v, ray_wor);
-		//float c = glm::dot(v, v) - radius * radius;
-		//float d = b * b - 4 * a * c;
-		//if (d > 0) {
-		//	float x1 = (-b - sqrt(d)) / 2;
-		//	float x2 = (-b + sqrt(d)) / 2;
-		//	_shape->SetPosition(_shape->GetPosition() + ray_wor);
-		//}
-		//else if (d <= 0) {
-
-		//}
 
 		CShape* _shape = CObjectManager::GetShape("cube1");
 
@@ -737,6 +752,26 @@ void MouseCallback(GLFWwindow* window, int button, int action, int mods) {
 			else {
 				doesIntersect = false;
 			}
+		}
+	}
+
+	if (button == GLFW_MOUSE_BUTTON_RIGHT)
+	{
+		CShape* _shape = CObjectManager::GetShape("sphere1");
+
+		float radius = 0.5f;
+		glm::vec3 v = _shape->GetPosition() - g_camera->GetCameraPos();
+		float a = glm::dot(ray_wor, ray_wor);
+		float b = 2 * glm::dot(v, ray_wor);
+		float c = glm::dot(v, v) - radius * radius;
+		float d = b * b - 4 * a * c;
+		if (d > 0) {
+			float x1 = (-b - sqrt(d)) / 2;
+			float x2 = (-b + sqrt(d)) / 2;
+			_shape->SetPosition(_shape->GetPosition() + glm::vec3(0, 1, 0) * DeltaTime);
+		}
+		else if (d <= 0) {
+
 		}
 	}
 }
@@ -839,8 +874,8 @@ void Update()
 {
 	//Get current time and calc delta time
 	utils::currentTime = (float)glfwGetTime();
-	float DeltaTime = utils::currentTime - previousTimeStep;
-	previousTimeStep = utils::currentTime;
+	float DeltaTime = utils::currentTime - utils::previousTimeStep;
+	utils::previousTimeStep = utils::currentTime;
 
 	//Move shapes around world origin in circle
 	//CObjectManager::GetShape("sphere1")->SetPosition(glm::vec3(sin(utils::currentTime + glm::pi<float>())*2, 0, cos(utils::currentTime + glm::pi<float>())*2));
@@ -886,39 +921,6 @@ void CheckInput(float _deltaTime, float _currentTime)
 
 		g_camera->UpdateRotation();
 	}
-
-	float x = (2.0f * utils::mousePos.x) / utils::windowHeight - 1.0f;
-	float y = -(1.0f - (2.0f * utils::mousePos.y) / utils::windowWidth);
-	float z = 1.0f;
-	glm::vec3 ray_nds = glm::vec3(x, y, z);
-
-	glm::vec4 ray_clip = glm::vec4(ray_nds.x, ray_nds.y, -1.0, 1.0);
-
-	glm::vec4 ray_eye = glm::inverse(g_camera->GetCameraProjectionMat()) * ray_clip;
-
-	ray_eye = glm::vec4(ray_eye.x, ray_eye.y, -1.0, 0.0);
-
-	glm::vec3 ray_wor = glm::vec3(inverse(g_camera->GetCameraViewMat()) * ray_eye);
-	// don't forget to normalise the vector at some point
-	ray_wor = glm::normalize(ray_wor);
-
-
-	CShape* _shape = CObjectManager::GetShape("sphere1");
-
-	float radius = 0.5f;
-	glm::vec3 v = _shape->GetPosition() - g_camera->GetCameraPos();
-	float a = glm::dot(ray_wor, ray_wor);
-	float b = 2 * glm::dot(v, ray_wor);
-	float c = glm::dot(v, v) - radius * radius;
-	float d = b * b - 4 * a * c;
-	if (d > 0) {
-		float x1 = (-b - sqrt(d)) / 2;
-		float x2 = (-b + sqrt(d)) / 2;
-		_shape->SetPosition(_shape->GetPosition() + glm::vec3(0,1,0) * _deltaTime);
-	}
-	else if (d <= 0) {
-
-	}
 	
 
 	//Camera movement below
@@ -945,11 +947,11 @@ void CheckInput(float _deltaTime, float _currentTime)
 	}
 	if (glfwGetKey(g_window, GLFW_KEY_LEFT_SHIFT))
 	{
-		camMovement += glm::normalize(g_camera->GetCameraUpDir());
+		camMovement += glm::vec3(0,1,0);
 	}
 	if (glfwGetKey(g_window, GLFW_KEY_LEFT_CONTROL))
 	{
-		camMovement -= glm::normalize(g_camera->GetCameraUpDir());
+		camMovement -= glm::vec3(0, 1, 0);
 	}
 	if (glm::length(camMovement) >= 0.01f) {
 		camMovement = glm::normalize(camMovement) * camSpeed * _deltaTime;
@@ -962,6 +964,8 @@ void CheckInput(float _deltaTime, float _currentTime)
 /// </summary>
 void Render()
 {
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
@@ -995,6 +999,10 @@ void Render()
 	glStencilMask(0xFF);
 	glDisable(GL_STENCIL_TEST);
 
+	GLboolean cull = glIsEnabled(GL_CULL_FACE);
+	glDisable(GL_CULL_FACE);
+	CObjectManager::GetShape("water1")->Render();
+	if (cull) glEnable(GL_CULL_FACE);
 
 	glfwSwapBuffers(g_window);
 }
