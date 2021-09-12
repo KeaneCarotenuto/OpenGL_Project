@@ -699,8 +699,13 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 /// <param name="mods"></param>
 void MouseCallback(GLFWwindow* window, int button, int action, int mods) {
 
+	double xPos;
+	double yPos;
+	glfwGetCursorPos(g_window, &xPos, &yPos);
+	utils::mousePos = glm::vec2(xPos, utils::windowHeight - yPos);
+
 	//get mouse ray from camera
-	glm::vec3 ray_wor = g_camera->GetWorldRay();
+	glm::vec3 worldRay = g_camera->GetWorldRay();
 
 	//If left clicking
 	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
@@ -718,7 +723,7 @@ void MouseCallback(GLFWwindow* window, int button, int action, int mods) {
 		glm::vec3 intersectPoint = glm::vec3(0, 0, 0);
 
 		//make copy of ray to make more sense
-		glm::vec3 lineDirection = ray_wor;
+		glm::vec3 lineDirection = worldRay;
 
 		//Look through all directions/faces of cube, and check intersections
 		for (const glm::vec3& _dir : dirsToCheck) {

@@ -4,12 +4,12 @@
 
 glm::vec3 CCamera::GetWorldRay()
 {
-	float x = (2.0f * utils::mousePos.x) / utils::windowHeight - 1.0f;
-	float y = -(1.0f - (2.0f * utils::mousePos.y) / utils::windowWidth);
-	float z = 1.0f;
-	glm::vec3 ray_nds = glm::vec3(x, y, z);
+	glm::vec2 NDC = glm::vec2(
+		(2.0f * utils::mousePos.x) / utils::windowHeight - 1.0f, 
+		-(1.0f - (2.0f * utils::mousePos.y) / utils::windowWidth)
+	);
 
-	glm::vec4 ray_clip = glm::vec4(ray_nds.x, ray_nds.y, -1.0, 1.0);
+	glm::vec4 ray_clip = glm::vec4(NDC.x, NDC.y, -1.0, 1.0);
 
 	glm::vec4 ray_eye = glm::inverse(GetCameraProjectionMat()) * ray_clip;
 
