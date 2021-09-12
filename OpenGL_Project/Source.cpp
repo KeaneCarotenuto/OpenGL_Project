@@ -965,25 +965,28 @@ void CheckInput(float _deltaTime, float _currentTime)
 /// </summary>
 void Render()
 {
+	//Enable blending for textures with opacity
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+	//Clear screen, and stenctils
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
+	//Enable scissor to cut out top and bottom
 	glEnable(GL_SCISSOR_TEST);
 	glScissor(0, 100, 800, 600);
 
-	//CObjectManager::RenderAll();
-
+	//Render normal objects
 	CObjectManager::GetShape("skybox")->Render();
-
 	CObjectManager::GetShape("floor")->Render();
-
 	CObjectManager::GetShape("cube1")->Render();
 
+	//Enable stencil, and set function
 	glEnable(GL_STENCIL_TEST);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
+	//Render normal sphere
+	//Also write to stencil, so that coloured sphere does not overlap
 	glStencilFunc(GL_ALWAYS, 1, 0xFF);
 	glStencilMask(0xFF);
 	CObjectManager::GetShape("sphere1")->SetProgram(ShaderLoader::GetProgram("3DLight")->m_id);
@@ -991,6 +994,8 @@ void Render()
 	CObjectManager::GetShape("sphere1")->UpdateUniform(new Mat4Uniform(CObjectManager::GetShape("sphere1")->GetPVM(), "Model"));
 	CObjectManager::GetShape("sphere1")->Render();
 
+	//Render scaled up and colour only sphere
+	//Only render where stencil value is not 1 (aka where original sphere is)
 	glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
 	glStencilMask(0x00);
 	CObjectManager::GetShape("sphere1")->Scale(1.1f);
@@ -999,15 +1004,16 @@ void Render()
 	CObjectManager::GetShape("sphere1")->UpdateUniform(new Mat4Uniform(CObjectManager::GetShape("sphere1")->GetPVM(), "Model"));
 	CObjectManager::GetShape("sphere1")->Render();
 	CObjectManager::GetShape("sphere1")->Scale(1.0 / 1.1f);
-
 	glStencilMask(0xFF);
 	glDisable(GL_STENCIL_TEST);
 
+	//Render water with backface enabled
 	GLboolean cull = glIsEnabled(GL_CULL_FACE);
 	glDisable(GL_CULL_FACE);
 	CObjectManager::GetShape("water1")->Render();
 	if (cull) glEnable(GL_CULL_FACE);
 
+	//Disable scissor
 	glDisable(GL_SCISSOR_TEST);
 
 	glfwSwapBuffers(g_window);
