@@ -38,8 +38,6 @@
 #include "CShape.h"
 #include "CUniform.h"
 
-#include "CAudioSystem.h"
-
 #include "Utility.h"
 #include "CObjectManager.h"
 #include "CLightManager.h"
@@ -61,8 +59,6 @@ void ObjectCreation();
 void ProgramSetup();
 
 void InitShapes();
-
-bool AudioInit();
 
 void GenTexture(GLuint& texture, const char* texPath);
 void GenCubemap(GLuint& texture, std::string texPath[6]);
@@ -128,9 +124,6 @@ int main() {
 		//Render all the objects
 		Render();
 	}
-
-	//Release all audio before quitting
-	CAudioSystem::GetInstance().ReleaseAll();
 
 	//Close GLFW correctly
 	glfwTerminate();
@@ -228,9 +221,6 @@ void InitialSetup()
 
 	//Set up shapes
 	InitShapes();
-
-	//Set up Audio files
-	AudioInit();
 
 	system("CLS");
 }
@@ -636,20 +626,6 @@ void InitShapes()
 		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM(), "PVMMat"));
 	}
 }
-
-/// <summary>
-/// Bind audio files
-/// </summary>
-/// <returns></returns>
-bool AudioInit()
-{
-	CAudioSystem::GetInstance().AddSong("DanceTrack", "Resources/Audio/DanceTrack.mp3", FMOD_LOOP_NORMAL);
-	CAudioSystem::GetInstance().AddSong("Gunshot", "Resources/Audio/Gunshot.wav", FMOD_DEFAULT);
-	CAudioSystem::GetInstance().AddSong("Enabled", "Resources/Audio/Enabled.wav", FMOD_DEFAULT);
-	CAudioSystem::GetInstance().AddSong("Disabled", "Resources/Audio/Disabled.wav", FMOD_DEFAULT);
-
-	return true;
-}
 #pragma endregion
 
 #pragma region Callback Functions
@@ -919,9 +895,6 @@ void Update()
 	CheckInput(utils::deltaTime, utils::currentTime);
 
 	CLightManager::UpdateUniforms(ShaderLoader::GetProgram("3DLight")->m_id);
-
-	//Update the FMOD Audio System
-	CAudioSystem::GetInstance().Update();
 }
 
 /// <summary>
