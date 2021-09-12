@@ -699,34 +699,51 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 /// <param name="mods"></param>
 void MouseCallback(GLFWwindow* window, int button, int action, int mods) {
 
+	//get mouse ray from camera
 	glm::vec3 ray_wor = g_camera->GetWorldRay();
 
+	//If left clicking
 	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
 
+		//Get shape to move/compare
 		CShape* _shape = CObjectManager::GetShape("cube1");
+
+		//Make list of directions to check (supposed to get local orientation, so that the following works with roations, but not yet implimented/needed)
 		std::vector<glm::vec3> dirsToCheck = { _shape->Up() , -_shape->Up(),  _shape->Forward(), -_shape->Forward(), _shape->Right() ,-_shape->Right()};
 
+		//store bool for if intersection occurs
 		bool doesIntersect = false;
+
+		//store point of intersection
 		glm::vec3 intersectPoint = glm::vec3(0, 0, 0);
 
+		//make copy of ray to make more sense
 		glm::vec3 lineDirection = ray_wor;
 
+		//Look through all directions/faces of cube, and check intersections
 		for (const glm::vec3& _dir : dirsToCheck) {
 
+			//get plane normal (face direction)
 			glm::vec3 pn = _dir;
+			//line starting point
 			glm::vec3 lpa = g_camera->GetCameraPos();
+			//line ending point
 			glm::vec3 lpb = g_camera->GetCameraPos() + lineDirection * 1000.0f;
 
+			//Get dot between line and face dir
 			float dot = glm::dot(lineDirection, pn);
 
+			//If dot is not valid (aka cannot see front of face), discard, else check collision point
 			if (dot >= 0) {
 				doesIntersect = false;
 			}
 			else {
+				//store values for later usage
 				float f1 = 0.5f;
 				float f2 = 0.5f;
 				float distScale = 0.5f;
 
+				//Check which direction it is, and assign specific values based on that info
 				if (glm::abs(_dir) == _shape->Up()) {
 					f1 = _shape->GetScale().z / 2.0f;
 					f2 = _shape->GetScale().x / 2.0f;
@@ -743,32 +760,42 @@ void MouseCallback(GLFWwindow* window, int button, int action, int mods) {
 					distScale = _shape->GetScale().x/2;
 				}
 
+				//Calc distance from camera to point hit
 				float distance = glm::dot(_shape->GetPosition() + (pn * distScale) - lpa, pn) / glm::dot(lineDirection, pn);
+
+				//max hit distance
 				float lineDistance = 1000.0f;
 
+				//If distance is within max hit distance, proceed to check specific quad values
 				if (distance <= lineDistance) {
+
+					//Does intersect at some point, might not be within values of quad
 					doesIntersect = true;
+
+					//calc actual intersect point in world
 					intersectPoint = lpa + (lineDirection * distance);
+
+					//Print in console
 					Print(5, 15, "Int Position (y: " + std::to_string(intersectPoint.y) + " z:" + std::to_string(intersectPoint.z) + ")    ", 15);
 
+					//Store max value for tangent directions (e.g. if face is forward, store up and right max)
+					float v1 = 0.0f;
+					float v2 = 0.0f;
 					if (glm::abs(_dir) == _shape->Up()) {
-						if (abs(intersectPoint.z - _shape->GetPosition().z) <= f1 &&
-							abs(intersectPoint.x - _shape->GetPosition().x) <= f2) {
-							_shape->SetPosition(_shape->GetPosition() - _dir);
-						}
+						v1 = abs(intersectPoint.z - _shape->GetPosition().z);
+						v2 = abs(intersectPoint.x - _shape->GetPosition().x);
 					}
 					else if (glm::abs(_dir) == _shape->Forward()) {
-						if (abs(intersectPoint.y - _shape->GetPosition().y) <= f1 &&
-							abs(intersectPoint.x - _shape->GetPosition().x) <= f2) {
-							_shape->SetPosition(_shape->GetPosition() - _dir);
-						}
+						v1 = abs(intersectPoint.y - _shape->GetPosition().y);
+						v2 = abs(intersectPoint.x - _shape->GetPosition().x);
 					}
 					else if (glm::abs(_dir) == _shape->Right()){
-						if (abs(intersectPoint.y - _shape->GetPosition().y) <= f1 &&
-							abs(intersectPoint.z - _shape->GetPosition().z) <= f2) {
-							_shape->SetPosition(_shape->GetPosition() - _dir);
-						}
+						v1 = abs(intersectPoint.y - _shape->GetPosition().y);
+						v2 = abs(intersectPoint.z - _shape->GetPosition().z);
 					}
+
+					//Check if point lies within max values of quad
+					if (v1 <= f1 && v2 <= f2) { _shape->SetPosition(_shape->GetPosition() - _dir); }
 				}
 				else {
 					doesIntersect = false;
