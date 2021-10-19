@@ -1035,7 +1035,7 @@ void Render()
 	CObjectManager::GetShape("sphere1")->UpdateUniform(new Vec3Uniform({ 1,0,0 }, "Colour"));
 	CObjectManager::GetShape("sphere1")->UpdateUniform(new Mat4Uniform(CObjectManager::GetShape("sphere1")->GetPVM(), "Model"));
 	CObjectManager::GetShape("sphere1")->Render();
-	CObjectManager::GetShape("sphere1")->Scale(1.0 / 1.1f);
+	CObjectManager::GetShape("sphere1")->Scale(1.0f / 1.1f);
 	glStencilMask(0xFF);
 	glDisable(GL_STENCIL_TEST);
 
