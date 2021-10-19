@@ -9,6 +9,10 @@
 // Author      : Keane Carotenuto
 // Mail        : KeaneCarotenuto@gmail.com
 
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
+
 #include <glew.h>
 #include <glfw3.h>
 
@@ -66,12 +70,34 @@ void GenCubemap(GLuint& texture, std::string texPath[6]);
 void Update();
 void CheckInput(float _deltaTime, float _currentTime);
 void Render();
+void RenderObjects();
+void RenderGUI();
 
 void Print(int x, int y, std::string str, int effect);
 void SlowPrint(int x, int y, std::string _message, int effect, int _wait);
 void GotoXY(int x, int y);
 
 #pragma endregion
+
+//GUI variables
+bool bWireFrameMode = false;
+float clothLength = 60.0f;
+float clothWidth = 60.0f;
+
+int numberOfHooks = 3;
+float hookDistance = 20.0f;
+float clothStiffness = 0.5f;
+
+const char* mouseModeItems[]{ "Pull", "Push", "Tear", "Fire", "Pin" };
+int selectedMouseMode = 0;
+
+const char* collisionItems[]{ "No Object", "Sphere", "Capsule", "Pyramid" };
+int selectedCollision = 0;
+
+float windDirection = 0.0f;
+float windStrength = 10.0f;
+
+
 
 glm::vec2 utils::mousePos = glm::vec2();
 float utils::currentTime = 0.0f;
@@ -170,6 +196,15 @@ bool Startup()
 		glfwTerminate();
 		return false;
 	}
+
+	// Initialize ImGUI
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO(); (void)io;
+	ImGui::StyleColorsDark();
+	ImGui_ImplGlfw_InitForOpenGL(g_window, true);
+	ImGui_ImplOpenGL3_Init("#version 330");
+
 
 	return true;
 }
@@ -1004,6 +1039,22 @@ void Render()
 	//Clear screen, and stenctils
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
+	ImGui_ImplOpenGL3_NewFrame();
+	ImGui_ImplGlfw_NewFrame();
+	ImGui::NewFrame();
+
+	RenderObjects();
+
+	RenderGUI();
+
+	glfwSwapBuffers(g_window);
+}
+
+/// <summary>
+/// Render objects in scene with effects
+/// </summary>
+void RenderObjects()
+{
 	//Enable scissor to cut out top and bottom
 	glEnable(GL_SCISSOR_TEST);
 	glScissor(0, 100, 800, 600);
@@ -1047,8 +1098,74 @@ void Render()
 
 	//Disable scissor
 	glDisable(GL_SCISSOR_TEST);
+}
 
-	glfwSwapBuffers(g_window);
+/// <summary>
+/// Render GUI buttons and what not
+/// </summary>
+void RenderGUI()
+{
+	// ImGUI window creation
+
+	ImGui::Begin("Physics Framework");
+
+	ImGui::Text("General Controls:");
+
+	ImGui::Checkbox("Wireframe Mode", &bWireFrameMode);
+
+	ImGui::Combo("Mouse Mode", &selectedMouseMode, mouseModeItems, IM_ARRAYSIZE(mouseModeItems));
+
+
+
+	ImGui::Text("Cloth Shape:");
+
+	ImGui::SliderFloat("Cloth Length", &clothLength, 1.0f, 200.0f);
+
+	ImGui::SliderFloat("Cloth Width", &clothWidth, 1.0f, 200.0f);
+
+	ImGui::SliderInt("Number Of Hooks", &numberOfHooks, 0, 20);
+
+	ImGui::SliderFloat("Hook Distance", &hookDistance, 1.0f, 100.0f);
+
+	ImGui::SliderFloat("Cloth Stiffness", &clothStiffness, 0.0f, 1.0f);
+
+
+	if (ImGui::Button("Reset Cloth")) {
+
+		clothLength = 60.0f;
+
+		clothWidth = 60.0f;
+
+		numberOfHooks = 3;
+
+		hookDistance = 20.0f;
+
+		clothStiffness = 0.5f;
+	}
+
+
+
+	ImGui::Text("Object Interation:");
+	ImGui::Combo("Selected Object: ", &selectedCollision, collisionItems, IM_ARRAYSIZE(collisionItems));
+
+
+
+	ImGui::Text("Wind:");
+	ImGui::SliderFloat("Wind Direction (Degrees):", &windDirection, 0.0f, 360.0f);
+	ImGui::SliderFloat("Wind Strength:", &windStrength, 0.0f, 100.0f);
+
+
+	if (ImGui::Button("Reset Wind")) {
+		windDirection = 0.0f;
+		windStrength = 10.0f;
+	}
+
+	// Closes the window
+	ImGui::End();
+
+	// Render the ImGUI elements
+	ImGui::Render();
+	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
 #pragma region "Printing Functions"
