@@ -49,7 +49,10 @@ public:
 
 	static void NewCMesh(std::string _name, VertType _type, std::vector<float> _vertices, std::vector<int> _indices);
 	static void NewCMesh(int _verts);
+	static std::vector<float> LoadImage(std::string _fileName);
+	static float GetBrightness(int x, int y, int image);
 	static void NewCMesh(std::string _name, float _radius, int _fidelity);
+	static void NewPlane(std::string _name, float _width, float _length, int _divW, int _divL, GLuint _heightMap);
 
 	static CMesh* GetMesh(std::string _name, bool* _doesExist = nullptr);
 

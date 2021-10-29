@@ -97,6 +97,7 @@ GLuint Texture_Frac;
 GLuint Texture_Floor;
 GLuint Texture_Crate;
 GLuint Texture_Water;
+GLuint Texture_HeightMap;
 
 GLuint Texture_Cubemap;
 
@@ -240,6 +241,7 @@ void TextureCreation()
 	GenTexture(Texture_Floor, "Resources/Textures/Floor.jpg");
 	GenTexture(Texture_Crate, "Resources/Textures/Crate.jpg");
 	GenTexture(Texture_Water, "Resources/Textures/Water.png");
+	GenTexture(Texture_HeightMap, "Resources/Textures/HeightMap.png");
 	GenTexture(Texture_CrateReflectionMap, "Resources/Textures/Crate-Reflection.png");
 
 	std::string cubemapPaths[6] = {
@@ -503,6 +505,8 @@ void MeshCreation()
 		);
 
 	CMesh::NewCMesh("sphere", 0.5f, 15);
+
+	CMesh::NewPlane("terrain", 20.0f, 20.0f, 30, 30, Texture_Floor);
 }
 
 int randSphereAmount = 10;
@@ -513,7 +517,7 @@ int randSphereAmount = 10;
 void ObjectCreation()
 {
 
-	CObjectManager::AddShape("floor", new CShape("floor-squareNorm", glm::vec3(0.0f, -0.5f, 0.0f), 0.0f, glm::vec3(100.0f, 1.0f, 100.0f), false));
+	CObjectManager::AddShape("floor", new CShape("terrain", glm::vec3(-100.0f, -10.0f, -100.0f), 0.0f, glm::vec3(10.0f, 1.0f, 10.0f), false));
 	CObjectManager::GetShape("floor")->SetCamera(g_camera);
 
 	CObjectManager::AddShape("sphere1", new CShape("sphere", glm::vec3(0.0f, 0.0f, 0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), false));

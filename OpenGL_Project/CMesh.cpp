@@ -1,4 +1,5 @@
 #include "CMesh.h"
+#include <stb_image.h>
 
 std::map<std::string, CMesh*> CMesh::meshMap;
 
@@ -141,6 +142,13 @@ void CMesh::NewCMesh(int _verts)
 	meshMap["poly" + std::to_string(_verts)] = new CMesh(VertType::Pos_Col_Tex ,tempVertArray.vertices, tempVertArray.indices);
 }
 
+
+/// <summary>
+/// Creates a sphere
+/// </summary>
+/// <param name="_name"></param>
+/// <param name="_radius"></param>
+/// <param name="_fidelity"></param>
 void CMesh::NewCMesh(std::string _name, float _radius, int _fidelity)
 {
 	int VertexAttrib = 8;	// Float components are needed for each vertex point
@@ -232,6 +240,137 @@ void CMesh::NewCMesh(std::string _name, float _radius, int _fidelity)
 	delete[] Vertices;
 	delete[] Indices;
 }
+
+//struct to store RGBA
+struct Color
+{
+	float r, g, b, a;
+};
+
+//use stbi to load image data and return the Color struct for a pixel at x,y in the image
+Color GetPixel(int x, int y, const char* filename)
+{
+	//load image data
+	int width, height, channels;
+	unsigned char* image = stbi_load(filename, &width, &height, &channels, 0);
+
+	//create color struct
+	Color color;
+
+	//get pixel data
+	color.r = image[(y * width + x) * channels + 0] / 255.0f;
+	color.g = image[(y * width + x) * channels + 1] / 255.0f;
+	color.b = image[(y * width + x) * channels + 2] / 255.0f;
+	color.a = image[(y * width + x) * channels + 3] / 255.0f;
+
+	//free image data
+	stbi_image_free(image);
+
+	//return color struct
+	return color;
+}
+
+//Create a plane mesh with the given dimensions (width, length) and the given number of divisions (divW, divL)
+void CMesh::NewPlane(std::string _name, float _width, float _length, int _divW, int _divL, GLuint _heightMap)
+{
+	//Calculate the number of vertices and indices
+	int numVerts = (_divW + 1) * (_divL + 1);
+	int numIndices = _divW * _divL * 6;
+
+	//Create the vertex array
+	std::vector<float> verts;
+	verts.resize(numVerts * 8);
+
+	//Create the index array
+	std::vector<int> inds;
+	inds.resize(numIndices);
+
+	//Calculate the width and length of each division
+	float widthDiv = _width / _divW;
+	float lengthDiv = _length / _divL;
+
+	//load image data
+	int width, height, channels;
+	unsigned char* image = stbi_load("Resources/Textures/HeightMap.png", &width, &height, &channels, 0);
+
+	//Loop through each division
+	for (int i = 0; i <= _divL; i++)
+	{
+		for (int j = 0; j <= _divW; j++)
+		{
+			//create color struct
+			Color color;
+
+			//get pixel data
+			color.r = image[(17 * i * width + 17 * j) * channels + 0] / 255.0f;
+			color.g = image[(17 * i * width + 17 * j) * channels + 1] / 255.0f;
+			color.b = image[(17 * i * width + 17 * j) * channels + 2] / 255.0f;
+			color.a = image[(17 * i * width + 17 * j) * channels + 3] / 255.0f;
+
+			//Calculate the position of the current vertex
+			float x = j * widthDiv;
+			float y = 20.0f * color.r;
+			float z = i * lengthDiv;
+
+			//Set the position of the current vertex
+			verts[(i * (_divW + 1) + j) * 8] = x;
+			verts[(i * (_divW + 1) + j) * 8 + 1] = y;
+			verts[(i * (_divW + 1) + j) * 8 + 2] = z;
+
+			//Set the texture coordinates of the current vertex
+			verts[(i * (_divW + 1) + j) * 8 + 3] = (float)j / _divW;
+			verts[(i * (_divW + 1) + j) * 8 + 4] = (float)i / _divL;
+
+			//Set the normal of the current vertex
+			verts[(i * (_divW + 1) + j) * 8 + 5] = 0.0f;
+			verts[(i * (_divW + 1) + j) * 8 + 6] = 1.0f;
+			verts[(i * (_divW + 1) + j) * 8 + 7] = 0.0f;
+		}
+	}
+
+	//Loop through each division
+	for (int i = 0; i < _divL; i++)
+	{
+		for (int j = 0; j < _divW; j++)
+		{
+			//Calculate the indices of the current quad
+			int a = (i * (_divW + 1) + j);
+			int b = (i * (_divW + 1) + j + 1);
+			int c = ((i + 1) * (_divW + 1) + j);
+			int d = ((i + 1) * (_divW + 1) + j + 1);
+
+			//Set the indices of the current quad
+			inds[(i * _divW + j) * 6 + 5] = a;
+			inds[(i * _divW + j) * 6 + 4] = b;
+			inds[(i * _divW + j) * 6 + 3] = c;
+			inds[(i * _divW + j) * 6 + 2] = b;
+			inds[(i * _divW + j) * 6 + 1] = d;
+			inds[(i * _divW + j) * 6 + 0] = c;
+		}
+	}
+
+	std::vector<float> verts2;
+	for (int i = 0; i < verts.size(); i++) {
+		verts2.push_back(verts[i]);
+	}
+
+	std::vector<int> inds2;
+	for (int i = 0; i < inds.size(); i++) {
+		inds2.push_back(inds[i]);
+	}
+
+	CMesh* tempPointer = new CMesh(VertType::Pos_Tex_Norm, verts2, inds2);
+	std::string tempName = (_name == "" ? "plane-" + std::to_string(_width) + "-" + std::to_string(_length) + "-" + std::to_string(_divW) + "-" + std::to_string(_divL) : _name);
+
+	CMesh::meshMap[tempName] = tempPointer;
+
+
+	//free image data
+	stbi_image_free(image);
+}
+
+			
+
 
 /// <summary>
 /// Return mesh
