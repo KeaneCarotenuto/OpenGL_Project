@@ -43,6 +43,12 @@ private:
 
 	CVertexArray m_VertexArray;
 
+	int m_width;
+	int m_length;
+
+	int m_widthDivs;
+	int m_lengthDivs;
+
 	GLuint m_VBO = NULL;
 	GLuint m_VAO = NULL;
 	GLuint m_EBO = NULL;
@@ -59,6 +65,12 @@ public:
 	static void NewPlane(std::string _name, float _width, float _length, int _divW, int _divL);
 
 	static CMesh* GetMesh(std::string _name, bool* _doesExist = nullptr);
+
+	int GetWidth() { return m_width; }
+	int GetLength() { return m_length; }
+
+	int GetWidthDivs() { return m_widthDivs; }
+	int GetLengthDivs() { return m_lengthDivs; }
 
 	GLuint GetVBO() { return m_VBO; };
 	GLuint GetVAO() { return m_VAO; };

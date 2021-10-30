@@ -11,5 +11,9 @@ namespace utils {
 	extern float currentTime;
 	extern float deltaTime;
 	extern float previousTimeStep;
+
+	static float Lerp(float a, float b, float f) {
+		return a + f * (b - a);
+	}
 }
 

@@ -65,6 +65,7 @@ void GenCubemap(GLuint& texture, std::string texPath[6]);
 
 void Update();
 void CheckInput(float _deltaTime, float _currentTime);
+float GetTerrainHeight(CShape* floor, float _worldX, float _worldZ);
 void Render();
 
 void Print(int x, int y, std::string str, int effect);
@@ -508,7 +509,7 @@ void MeshCreation()
 
 	CMesh::NewCMesh("sphere", 0.5f, 15);
 
-	CMesh::NewPlane("terrain", 200.0f, 200.0f, 2000, 2000);
+	CMesh::NewPlane("terrain", 200.0f, 200.0f, 500, 500	);
 }
 
 int randSphereAmount = 10;
@@ -647,9 +648,9 @@ void InitShapes()
 void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
 	//Quit if ESC key pressed
-	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+	/*if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
 		glfwSetWindowShouldClose(window, GL_TRUE);
-	}
+	}*/
 
 	//Change line mode (fill or line) with F
 	if (key == GLFW_KEY_B && action == GLFW_PRESS) {
@@ -692,7 +693,7 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 	}
 
 	//Hide or show cursor
-	if (key == GLFW_KEY_TAB && action == GLFW_PRESS) {
+	if ((key == GLFW_KEY_TAB || key == GLFW_KEY_ESCAPE) && action == GLFW_PRESS) {
 		GLuint mode = glfwGetInputMode(window, GLFW_CURSOR);
 
 		cursorLocked = (mode == GLFW_CURSOR_DISABLED ? false : true);
@@ -934,6 +935,42 @@ void Update()
 	glUniform3fv(glGetUniformLocation(ShaderLoader::GetProgram("3DLight")->m_id, "CameraPos"), 1, glm::value_ptr(g_camera->GetCameraPos()));
 	glUseProgram(0);
 
+	CShape* sphere = CObjectManager::GetShape("sphere1");
+	CShape* floor = CObjectManager::GetShape("floor");
+
+	if (sphere && floor) {
+		static glm::vec3 vel = glm::vec3(0,0,0);
+		static glm::vec3 acc = glm::vec3(0,0,0);
+
+		acc = glm::vec3(0,-9.81f,0);
+
+		float terrainHeight = floor->GetPosition().y + GetTerrainHeight(floor, sphere->GetPosition().x, sphere->GetPosition().z);
+
+		//If sphere is below terrain, set velocity to 0	
+		if (sphere->GetPosition().y - sphere->GetScale().y/2.0f < terrainHeight) {
+			vel.y = 0;
+			sphere->SetPosition(glm::vec3(sphere->GetPosition().x, terrainHeight + sphere->GetScale().y / 2.0f, sphere->GetPosition().z));
+
+			float relativeX = ((sphere->GetPosition().x - floor->GetPosition().x) / floor->GetScale().x) * CObjectManager::GetShape("floor")->GetMesh()->GetWidthDivs() / CObjectManager::GetShape("floor")->GetMesh()->GetWidth();
+			float relativeZ = ((sphere->GetPosition().z - floor->GetPosition().z) / floor->GetScale().z) * CObjectManager::GetShape("floor")->GetMesh()->GetLengthDivs() / CObjectManager::GetShape("floor")->GetMesh()->GetLength();
+
+
+			float xNorm = CObjectManager::GetShape("floor")->GetMesh()->GetVertices()[(int(relativeZ) * (CObjectManager::GetShape("floor")->GetMesh()->GetWidthDivs() + 1) + int(relativeX)) * 8 + 5];
+			float yNorm = CObjectManager::GetShape("floor")->GetMesh()->GetVertices()[(int(relativeZ) * (CObjectManager::GetShape("floor")->GetMesh()->GetWidthDivs() + 1) + int(relativeX)) * 8 + 6];
+			float zNorm = -(- xNorm - yNorm);
+			Print(2, 2, "X: " + std::to_string(xNorm), 15);
+			Print(2, 3, "Z: " + std::to_string(zNorm), 15);
+			
+			acc = glm::vec3(xNorm, 0,zNorm);
+			//vel = glm::vec3(vel.x + xNorm * utils::deltaTime, 0, vel.y + zNorm * utils::deltaTime);
+			/*glm::vec3 newvel = glm::vec3(xNorm, 0, zNorm);
+			vel = glm::normalize(newvel);*/
+		}
+
+		vel += acc * 5.0f * utils::deltaTime;
+		sphere->SetPosition(sphere->GetPosition() + vel * utils::deltaTime);
+	}
+
 	//Check for input
 	CheckInput(utils::deltaTime, utils::currentTime);
 
@@ -970,7 +1007,13 @@ void CheckInput(float _deltaTime, float _currentTime)
 	//Camera movement below
 
 	glm::vec3 camMovement = glm::vec3(0, 0, 0);
-	float camSpeed = 5.0f;
+	float camSpeed = 5.0f; 
+
+	if (glfwGetKey(g_window, GLFW_KEY_U))
+	{
+		CShape* sphere = CObjectManager::GetShape("sphere1");
+		sphere->SetPosition(sphere->GetPosition() + glm::vec3(0, 1, 0));
+	}
 
 	//Move camera SWAD
 	if (glfwGetKey(g_window, GLFW_KEY_A))
@@ -989,18 +1032,19 @@ void CheckInput(float _deltaTime, float _currentTime)
 	{
 		camMovement -= glm::normalize(g_camera->GetCameraForwardDir());
 	}
+
 	if (glfwGetKey(g_window, GLFW_KEY_LEFT_SHIFT))
 	{
 		camMovement += glm::vec3(0,1,0);
+		if (g_camera->followTerrain) camSpeed *= 2.0f;
 	}
 	if (glfwGetKey(g_window, GLFW_KEY_LEFT_CONTROL))
 	{
 		camMovement -= glm::vec3(0, 1, 0);
+		if (g_camera->followTerrain) camSpeed *= 0.5f;
 	}
-	if (glm::length(camMovement) >= 0.01f) {
-		camMovement = glm::normalize(camMovement) * camSpeed * _deltaTime;
-		g_camera->SetCameraPos(g_camera->GetCameraPos() + camMovement);
 
+	if (glm::length(camMovement) >= 0.01f) {
 		if (g_camera->followTerrain) {
 			
 			CShape* floor = CObjectManager::GetShape("floor");
@@ -1009,16 +1053,60 @@ void CheckInput(float _deltaTime, float _currentTime)
 				float camX = g_camera->GetCameraPos().x;
 				float camZ = g_camera->GetCameraPos().z;
 
-				float relative_camX = (camX - floor->GetPosition().x) / floor->GetScale().x;
-				float relative_camZ = (camZ - floor->GetPosition().z) / floor->GetScale().z;
+				float terrainHeight = GetTerrainHeight(CObjectManager::GetShape("floor"), camX, camZ);
+				
+				float relative_camY = terrainHeight + 1.0f;
 
-				std::vector<float> verts = floor->GetMesh()->GetVertices();
+				g_camera->SetCameraPos(glm::vec3(camX, floor->GetPosition().y + relative_camY * floor->GetScale().y, camZ));
 
+				camMovement.y = 0;
+			}
 
-
-				g_camera->SetCameraPos(glm::vec3(g_camera->GetCameraPos().x, 0, g_camera->GetCameraPos().z));
+			if (glm::length(camMovement) >= 0.01f) {
+				camMovement = glm::normalize(camMovement) * camSpeed * _deltaTime;
+				g_camera->SetCameraPos(g_camera->GetCameraPos() + camMovement);
 			}
 		}
+		else {
+			camMovement = glm::normalize(camMovement) * camSpeed * _deltaTime;
+			g_camera->SetCameraPos(g_camera->GetCameraPos() + camMovement);
+		}
+	}
+}
+
+float GetTerrainHeight(CShape* floor,float _worldX, float _worldZ) {
+	if (floor) {
+		CMesh* mesh = floor->GetMesh();
+		std::vector<float> vertices = mesh->GetVertices();
+
+		int widthDivs = mesh->GetWidthDivs();
+		int lengthDivs = mesh->GetLengthDivs();
+
+		float relativeX = ((_worldX - floor->GetPosition().x) / floor->GetScale().x) * widthDivs / mesh->GetWidth();
+		//check that the camera is not outside the mesh bounds (if it is, clamp it) 
+		if (relativeX < 1) relativeX = 1;
+		if (relativeX > widthDivs - 1) relativeX = widthDivs - 1;
+
+		float relativeZ = ((_worldZ - floor->GetPosition().z) / floor->GetScale().z) * lengthDivs / mesh->GetLength();
+		//check that the camera is not outside the mesh bounds (if it is, clamp it)
+		if (relativeZ < 1) relativeZ = 1;
+		if (relativeZ > lengthDivs - 1) relativeZ = lengthDivs - 1;
+
+		float nearestVertHeight = vertices[(int(relativeZ) * (widthDivs + 1) + int(relativeX)) * 8 + 1];
+
+		//get the surrounding vertices to calculate the height of the terrain at the camera position
+		float vertHeight1 = vertices[(int(relativeZ) * (widthDivs + 1) + int(relativeX)) * 8 + 1];
+		float vertHeight2 = vertices[(int(relativeZ) * (widthDivs + 1) + int(relativeX) + 1) * 8 + 1];
+		float vertHeight3 = vertices[((int(relativeZ) + 1) * (widthDivs + 1) + int(relativeX)) * 8 + 1];
+		float vertHeight4 = vertices[((int(relativeZ) + 1) * (widthDivs + 1) + int(relativeX) + 1) * 8 + 1];
+
+		//calculate the height of the terrain at the camera position by interpolating the surrounding vertices and the relative position on the terrain to get the height 
+		float h12 = utils::Lerp(vertHeight1, vertHeight2, relativeX - int(relativeX));
+		float h34 = utils::Lerp(vertHeight3, vertHeight4, relativeX - int(relativeX));
+
+		float terrainHeight = utils::Lerp(h12, h34, relativeZ - int(relativeZ));
+
+		return terrainHeight;
 	}
 }
 
