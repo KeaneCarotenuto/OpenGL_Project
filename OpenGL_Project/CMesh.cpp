@@ -270,8 +270,32 @@ Color GetPixel(int x, int y, const char* filename)
 	return color;
 }
 
-//Create a plane mesh with the given dimensions (width, length) and the given number of divisions (divW, divL)
-void CMesh::NewPlane(std::string _name, float _width, float _length, int _divW, int _divL, GLuint _heightMap)
+//calculate the normal of a quad given the 4 points of the quad
+glm::vec3 CalculateNormal(glm::vec3 p1, glm::vec3 p2, glm::vec3 p3)
+{
+	//calculate the vectors of the two edges of the quad
+	glm::vec3 v1 = p2 - p1;
+	glm::vec3 v2 = p3 - p1;
+
+	//calculate the normal of the quad
+	glm::vec3 normal = glm::cross(v1, v2);
+
+	//normalize the normal
+	normal = glm::normalize(normal);
+
+	//return the normal
+	return normal;
+}
+
+/// <summary>
+/// Create a terrain mesh with given size and divisions
+/// </summary>
+/// <param name="_name"></param>
+/// <param name="_width"></param>
+/// <param name="_length"></param>
+/// <param name="_divW"></param>
+/// <param name="_divL"></param>
+void CMesh::NewPlane(std::string _name, float _width, float _length, int _divW, int _divL)
 {
 	//Calculate the number of vertices and indices
 	int numVerts = (_divW + 1) * (_divL + 1);
@@ -290,8 +314,12 @@ void CMesh::NewPlane(std::string _name, float _width, float _length, int _divW, 
 	float lengthDiv = _length / _divL;
 
 	//load image data
-	int width, height, channels;
-	unsigned char* image = stbi_load("Resources/Textures/HeightMap.png", &width, &height, &channels, 0);
+	int widthH, heightH, channelsH;
+	unsigned char* heightMap = stbi_load("Resources/Textures/Terrain_Alpha.png", &widthH, &heightH, &channelsH, 0);
+
+	//load image data
+	int widthN, heightN, channelsN;
+	unsigned char* normalMap = stbi_load("Resources/Textures/NormalMap.png", &widthN, &heightN, &channelsN, 0);
 
 	//Loop through each division
 	for (int i = 0; i <= _divL; i++)
@@ -299,21 +327,24 @@ void CMesh::NewPlane(std::string _name, float _width, float _length, int _divW, 
 		for (int j = 0; j <= _divW; j++)
 		{
 			//create color struct
-			Color color;
+			glm::vec3 heightColor;
 
 			//get pixel data
-			color.r = image[(17 * i * width + 17 * j) * channels + 0] / 255.0f;
-			color.g = image[(17 * i * width + 17 * j) * channels + 1] / 255.0f;
-			color.b = image[(17 * i * width + 17 * j) * channels + 2] / 255.0f;
-			color.a = image[(17 * i * width + 17 * j) * channels + 3] / 255.0f;
+			heightColor.r = heightMap[(int)floor(((widthH / _divW) * i * widthH + (heightH / _divL) * j)) * channelsH + 0] / 255.0f;
+			heightColor.g = heightMap[(int)floor(((widthH / _divW) * i * widthH + (heightH / _divL) * j)) * channelsH + 1] / 255.0f;
+			heightColor.b = heightMap[(int)floor(((widthH / _divW) * i * widthH + (heightH / _divL) * j)) * channelsH + 2] / 255.0f;
 
 			//Calculate the position of the current vertex
 			float x = j * widthDiv;
-			float y = 20.0f * color.r;
+			float y = 20.0f * heightColor.r;
 			float z = i * lengthDiv;
 
+			if (y <= 0.001f) {
+				y = -0.1f;
+			}
+
 			//Set the position of the current vertex
-			verts[(i * (_divW + 1) + j) * 8] = x;
+			verts[(i * (_divW + 1) + j) * 8 + 0] = x;
 			verts[(i * (_divW + 1) + j) * 8 + 1] = y;
 			verts[(i * (_divW + 1) + j) * 8 + 2] = z;
 
@@ -321,10 +352,19 @@ void CMesh::NewPlane(std::string _name, float _width, float _length, int _divW, 
 			verts[(i * (_divW + 1) + j) * 8 + 3] = (float)j / _divW;
 			verts[(i * (_divW + 1) + j) * 8 + 4] = (float)i / _divL;
 
+
+			//create color struct
+			glm::vec3 normalColor;
+
+			//get pixel data
+			normalColor.r = normalMap[(int)floor(((widthH / _divW) * i * widthH + (heightH / _divL) * j)) * channelsN + 0] / 255.0f;
+			normalColor.g = normalMap[(int)floor(((widthH / _divW) * i * widthH + (heightH / _divL) * j)) * channelsN + 1] / 255.0f;
+			normalColor.b = normalMap[(int)floor(((widthH / _divW) * i * widthH + (heightH / _divL) * j)) * channelsN + 2] / 255.0f;
+
 			//Set the normal of the current vertex
-			verts[(i * (_divW + 1) + j) * 8 + 5] = 0.0f;
-			verts[(i * (_divW + 1) + j) * 8 + 6] = 1.0f;
-			verts[(i * (_divW + 1) + j) * 8 + 7] = 0.0f;
+			verts[(i * (_divW + 1) + j) * 8 + 5] = normalColor.r * 2.0f - 1.0f;
+			verts[(i * (_divW + 1) + j) * 8 + 6] = normalColor.g * 2.0f - 1.0f;
+			verts[(i * (_divW + 1) + j) * 8 + 7] = normalColor.b * 2.0f - 1.0f;
 		}
 	}
 
@@ -349,6 +389,22 @@ void CMesh::NewPlane(std::string _name, float _width, float _length, int _divW, 
 		}
 	}
 
+	//for (int i = 0; i < inds.size(); i += 3) {
+	//	int a = inds[i + 0];
+	//	int b = inds[i + 1];
+	//	int c = inds[i + 2];
+
+	//	//							x					y					z
+	//	glm::vec3 p1 = glm::vec3(	verts[a * 8 + 0],	verts[a * 8 + 1],	verts[a * 8 + 2]);
+	//	glm::vec3 p2 = glm::vec3(	verts[b * 8 + 0],	verts[b * 8 + 1],	verts[b * 8 + 2]);
+	//	glm::vec3 p3 = glm::vec3(	verts[c * 8 + 0],	verts[c * 8 + 1],	verts[c * 8 + 2]);
+
+	//	glm::vec3 norm = CalculateNormal(p1, p2, p3);
+
+	//	verts[a * 8 + 5 + 0] = norm.x;	verts[a * 8 + 5 + 1] = norm.y;	verts[a * 8 + 5 + 2] = norm.z;
+	//	verts[b * 8 + 5 + 0] = norm.x;	verts[b * 8 + 5 + 1] = norm.y;	verts[b * 8 + 5 + 2] = norm.z;
+	//}
+
 	std::vector<float> verts2;
 	for (int i = 0; i < verts.size(); i++) {
 		verts2.push_back(verts[i]);
@@ -366,7 +422,8 @@ void CMesh::NewPlane(std::string _name, float _width, float _length, int _divW, 
 
 
 	//free image data
-	stbi_image_free(image);
+	stbi_image_free(heightMap);
+	stbi_image_free(normalMap);
 }
 
 			

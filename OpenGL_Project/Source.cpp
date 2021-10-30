@@ -98,6 +98,7 @@ GLuint Texture_Floor;
 GLuint Texture_Crate;
 GLuint Texture_Water;
 GLuint Texture_HeightMap;
+GLuint Texture_Terrain;
 
 GLuint Texture_Cubemap;
 
@@ -242,6 +243,7 @@ void TextureCreation()
 	GenTexture(Texture_Crate, "Resources/Textures/Crate.jpg");
 	GenTexture(Texture_Water, "Resources/Textures/Water.png");
 	GenTexture(Texture_HeightMap, "Resources/Textures/HeightMap.png");
+	GenTexture(Texture_Terrain, "Resources/Textures/Terrain_Texture.png");
 	GenTexture(Texture_CrateReflectionMap, "Resources/Textures/Crate-Reflection.png");
 
 	std::string cubemapPaths[6] = {
@@ -325,9 +327,9 @@ void MeshCreation()
 			// Index        // Position					//Texture Coords	//Normal
 			//Front Quad
 			/* 00 */        -0.5f,  0.5f,  0.5f,		0.0f, 1.0f,			0.0f,  0.0f,  1.0f,   /* 00 */
-			/* 02 */        -0.5f, -0.5f,  0.5f,		0.0f, 0.0f,			0.0f,  0.0f,  1.0f,   /* 02 */
-			/* 03 */         0.5f, -0.5f,  0.5f,		1.0f, 0.0f,			0.0f,  0.0f,  1.0f,   /* 03 */
-			/* 01 */         0.5f,  0.5f,  0.5f,		1.0f, 1.0f,			0.0f,  0.0f,  1.0f,   /* 01 */
+			/* 01 */        -0.5f, -0.5f,  0.5f,		0.0f, 0.0f,			0.0f,  0.0f,  1.0f,   /* 02 */
+			/* 02 */         0.5f, -0.5f,  0.5f,		1.0f, 0.0f,			0.0f,  0.0f,  1.0f,   /* 03 */
+			/* 03 */         0.5f,  0.5f,  0.5f,		1.0f, 1.0f,			0.0f,  0.0f,  1.0f,   /* 01 */
 			//Back Quad
 			/* 04 */         0.5f,  0.5f, -0.5f,		0.0f, 1.0f,			0.0f,  0.0f,  -1.0f,   /* 04 */
 			/* 05 */         0.5f, -0.5f, -0.5f,		0.0f, 0.0f,			0.0f,  0.0f,  -1.0f,   /* 05 */
@@ -506,7 +508,7 @@ void MeshCreation()
 
 	CMesh::NewCMesh("sphere", 0.5f, 15);
 
-	CMesh::NewPlane("terrain", 20.0f, 20.0f, 30, 30, Texture_Floor);
+	CMesh::NewPlane("terrain", 20.0f, 20.0f, 2000, 2000);
 }
 
 int randSphereAmount = 10;
@@ -526,7 +528,7 @@ void ObjectCreation()
 	CObjectManager::AddShape("cube1", new CShape("cubeNorm", glm::vec3(5.0f, 0.0f, 0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), false));
 	CObjectManager::GetShape("cube1")->SetCamera(g_camera);
 
-	CObjectManager::AddShape("water1", new CShape("squareNorm", glm::vec3(0.0f, 1.0f, 0.0f), 0.0f, glm::vec3(10.0f, 1.0f, 10.0f), false));
+	CObjectManager::AddShape("water1", new CShape("squareNorm", glm::vec3(0.0f, -5.5f, 0.0f), 0.0f, glm::vec3(325.0f, 1.0f, 325.0f), false));
 	CObjectManager::GetShape("water1")->SetCamera(g_camera);
 
 	CObjectManager::AddShape("skybox", new CShape("skybox", glm::vec3(0.0f, 0.0f, 0.0f), 0.0f, glm::vec3(2000.0f, 2000.0f, 2000.0f), false));
@@ -560,11 +562,11 @@ void InitShapes()
 	//Set program and add uniforms to Rectangle
 	if (_shape = CObjectManager::GetShape("floor")) {
 		_shape->SetProgram(ShaderLoader::GetProgram("3DLight")->m_id);
-		_shape->AddUniform(new ImageUniform(Texture_Floor, "ImageTexture"));
+		_shape->AddUniform(new ImageUniform(Texture_Terrain, "ImageTexture"));
 		_shape->AddUniform(new IntUniform(0, "frameCount"));
 		_shape->AddUniform(new FloatUniform(0, "offset"));
 		_shape->AddUniform(new CubemapUniform(Texture_Cubemap, "Skybox"));
-		_shape->AddUniform(new FloatUniform(0.02f, "Reflectivity"));
+		_shape->AddUniform(new FloatUniform(0.0f, "Reflectivity"));
 		_shape->AddUniform(new BoolUniform(false, "hasRefMap"));
 		_shape->AddUniform(new FloatUniform(0, "RimExponent"));
 		_shape->AddUniform(new FloatUniform(0, "CurrentTime"));
@@ -1008,10 +1010,6 @@ void Render()
 	//Clear screen, and stenctils
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-	//Enable scissor to cut out top and bottom
-	glEnable(GL_SCISSOR_TEST);
-	glScissor(0, 100, 800, 600);
-
 	//Render normal objects
 	CObjectManager::GetShape("skybox")->Render();
 	CObjectManager::GetShape("floor")->Render();
@@ -1048,9 +1046,6 @@ void Render()
 	glDisable(GL_CULL_FACE);
 	CObjectManager::GetShape("water1")->Render();
 	if (cull) glEnable(GL_CULL_FACE);
-
-	//Disable scissor
-	glDisable(GL_SCISSOR_TEST);
 
 	glfwSwapBuffers(g_window);
 }

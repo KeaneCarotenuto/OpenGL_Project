@@ -10,6 +10,10 @@
 // Mail        : KeaneCarotenuto@gmail.com
 
 #pragma once
+
+#include <glm.hpp>
+#include <gtc/matrix_transform.hpp>
+
 #include <vector>
 #include <map>
 #include <string>
@@ -52,7 +56,7 @@ public:
 	static std::vector<float> LoadImage(std::string _fileName);
 	static float GetBrightness(int x, int y, int image);
 	static void NewCMesh(std::string _name, float _radius, int _fidelity);
-	static void NewPlane(std::string _name, float _width, float _length, int _divW, int _divL, GLuint _heightMap);
+	static void NewPlane(std::string _name, float _width, float _length, int _divW, int _divL);
 
 	static CMesh* GetMesh(std::string _name, bool* _doesExist = nullptr);
 
