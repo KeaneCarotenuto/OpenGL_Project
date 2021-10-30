@@ -358,13 +358,13 @@ void CMesh::NewPlane(std::string _name, float _width, float _length, int _divW, 
 
 			//get pixel data
 			normalColor.r = normalMap[(int)floor(((widthH / _divW) * i * widthH + (heightH / _divL) * j)) * channelsN + 0] / 255.0f;
-			normalColor.g = normalMap[(int)floor(((widthH / _divW) * i * widthH + (heightH / _divL) * j)) * channelsN + 1] / 255.0f;
+			normalColor.g = (normalMap[(int)floor(((widthH / _divW) * i * widthH + (heightH / _divL) * j)) * channelsN + 1] / 255.0f);
 			normalColor.b = normalMap[(int)floor(((widthH / _divW) * i * widthH + (heightH / _divL) * j)) * channelsN + 2] / 255.0f;
 
 			//Set the normal of the current vertex
-			verts[(i * (_divW + 1) + j) * 8 + 5] = normalColor.r * 2.0f - 1.0f;
-			verts[(i * (_divW + 1) + j) * 8 + 6] = normalColor.g * 2.0f - 1.0f;
-			verts[(i * (_divW + 1) + j) * 8 + 7] = normalColor.b * 2.0f - 1.0f;
+			verts[(i * (_divW + 1) + j) * 8 + 5] = (normalColor.r * 2.0f - 1.0f);
+			verts[(i * (_divW + 1) + j) * 8 + 6] = (normalColor.g * 2.0f - 1.0f);
+			verts[(i * (_divW + 1) + j) * 8 + 7] = (normalColor.b * 2.0f - 1.0f);
 		}
 	}
 

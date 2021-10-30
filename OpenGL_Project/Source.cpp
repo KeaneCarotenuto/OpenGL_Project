@@ -508,7 +508,7 @@ void MeshCreation()
 
 	CMesh::NewCMesh("sphere", 0.5f, 15);
 
-	CMesh::NewPlane("terrain", 20.0f, 20.0f, 2000, 2000);
+	CMesh::NewPlane("terrain", 200.0f, 200.0f, 2000, 2000);
 }
 
 int randSphereAmount = 10;
@@ -519,7 +519,7 @@ int randSphereAmount = 10;
 void ObjectCreation()
 {
 
-	CObjectManager::AddShape("floor", new CShape("terrain", glm::vec3(-100.0f, -10.0f, -100.0f), 0.0f, glm::vec3(10.0f, 1.0f, 10.0f), false));
+	CObjectManager::AddShape("floor", new CShape("terrain", glm::vec3(-100.0f, -10.0f, -100.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), false));
 	CObjectManager::GetShape("floor")->SetCamera(g_camera);
 
 	CObjectManager::AddShape("sphere1", new CShape("sphere", glm::vec3(0.0f, 0.0f, 0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), false));
@@ -676,6 +676,11 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 		g_camera->SetYaw(0);
 		g_camera->SetPitch(0);
 		g_camera->UpdateRotation();
+	}
+
+	//Change backface mode (cull or no cull) with B
+	if (key == GLFW_KEY_G && action == GLFW_PRESS) {
+		g_camera->followTerrain = !g_camera->followTerrain;
 	}
 
 	//Change backface mode (cull or no cull) with B
@@ -995,6 +1000,25 @@ void CheckInput(float _deltaTime, float _currentTime)
 	if (glm::length(camMovement) >= 0.01f) {
 		camMovement = glm::normalize(camMovement) * camSpeed * _deltaTime;
 		g_camera->SetCameraPos(g_camera->GetCameraPos() + camMovement);
+
+		if (g_camera->followTerrain) {
+			
+			CShape* floor = CObjectManager::GetShape("floor");
+
+			if (floor) {
+				float camX = g_camera->GetCameraPos().x;
+				float camZ = g_camera->GetCameraPos().z;
+
+				float relative_camX = (camX - floor->GetPosition().x) / floor->GetScale().x;
+				float relative_camZ = (camZ - floor->GetPosition().z) / floor->GetScale().z;
+
+				std::vector<float> verts = floor->GetMesh()->GetVertices();
+
+
+
+				g_camera->SetCameraPos(glm::vec3(g_camera->GetCameraPos().x, 0, g_camera->GetCameraPos().z));
+			}
+		}
 	}
 }
 

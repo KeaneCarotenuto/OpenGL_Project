@@ -32,6 +32,8 @@ private:
 
 public:
 
+	bool followTerrain = false;
+
 	glm::vec3 GetWorldRay();
 
 	void SetCameraPos(glm::vec3 _pos) { CameraPos = _pos; };

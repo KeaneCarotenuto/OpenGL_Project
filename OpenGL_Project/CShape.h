@@ -68,12 +68,15 @@ public:
 
 	void SetProgram(GLuint _program) { m_program = _program; };
 	void SetCamera(CCamera* _camera) { m_camera = _camera; };
+
 	void SetMesh(CMesh* _mesh) { m_mesh = _mesh; };
+	CMesh* GetMesh() { return m_mesh; };
+
 	void SetPosition(glm::vec3 _pos) { m_position = _pos; };
+	glm::vec3 GetPosition() { return m_position; };
 
 	glm::mat4 GetPVM() { return m_PVMMat; };
 	glm::mat4 GetModel() { return m_modelMat; };
-	glm::vec3 GetPosition() { return m_position; };
 	glm::vec3 GetScale() { return m_scale; };
 
 	glm::vec3 Right() { return glm::vec3(m_modelMat[0][0], m_modelMat[0][1], m_modelMat[0][2]); };
