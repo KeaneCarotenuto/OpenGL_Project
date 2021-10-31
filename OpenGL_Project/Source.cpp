@@ -1216,7 +1216,7 @@ void Render()
 	glStencilMask(0xFF);
 	glDisable(GL_STENCIL_TEST);
 
-	//Render water with backface enabled
+	//Render water and star with backface enabled
 	GLboolean cull = glIsEnabled(GL_CULL_FACE);
 	glDisable(GL_CULL_FACE);
 	CObjectManager::GetShape("water1")->Render();

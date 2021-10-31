@@ -28,15 +28,14 @@ void main() {
 		float length = mod(i, 2) == 0 ? 1.0f : 0.5f;
 		float x = cos(angle) * length;
 		float y = sin(angle) * length;
+		
+		outColor = vec3(rand(vec2(i,i * i)),rand(vec2(-i,i * i)),rand(vec2(-i,-i * i)));
 
 		if (mod(i,3) == 0){
-			outColor = vec3(1,1,1);
 			gl_Position = gs_in[0].position + gs_in[0].PVMMat * vec4(0, 0, 0.0f, 0.0f); EmitVertex();
 			EndPrimitive();
 		}
 		else{
-			if (mod(i,2) == 0) outColor = vec3(0,0,1);
-			else outColor = vec3(1,0,0);
 			gl_Position = gs_in[0].position + gs_in[0].PVMMat * vec4(x, y, 0.0f, 0.0f); EmitVertex();
 		}
 	}
