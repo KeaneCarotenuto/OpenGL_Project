@@ -77,6 +77,7 @@ public:
 	GLuint GetVAO() { return m_VAO; };
 	GLuint GetEBO() { return m_EBO; };
 
+	void SetVertices(std::vector<float> _verts) { m_VertexArray.vertices = _verts; };
 	std::vector<float> GetVertices() { return m_VertexArray.vertices; };
 	std::vector<int> GetIndices() { return m_VertexArray.indices; };
 

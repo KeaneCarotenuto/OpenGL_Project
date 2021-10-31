@@ -974,6 +974,17 @@ void Update()
 	//Move shapes around world origin in circle
 	//CObjectManager::GetShape("sphere1")->SetPosition(glm::vec3(sin(utils::currentTime + glm::pi<float>())*2, 0, cos(utils::currentTime + glm::pi<float>())*2));
 
+	CMesh* mesh = CObjectManager::GetShape("sphere1")->GetMesh();
+	std::vector<float> verticies = mesh->GetVertices();
+	verticies[1] += 1.0f * utils::deltaTime;
+	mesh->SetVertices(verticies);
+
+	glBindBuffer(GL_ARRAY_BUFFER, mesh->GetVBO());
+
+	float* verts = &verticies[0];
+	glBufferData(GL_ARRAY_BUFFER, verticies.size() * sizeof(float), verts, GL_DYNAMIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
 	//Update all shapes
 	CObjectManager::UpdateAll(utils::deltaTime, utils::currentTime);
 
