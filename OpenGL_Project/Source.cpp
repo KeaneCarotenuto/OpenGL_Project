@@ -19,6 +19,7 @@
 #include <gtc/matrix_transform.hpp>
 #include <gtc/type_ptr.hpp>
 #include <gtx/rotate_vector.hpp>
+#include <gtx/vector_angle.hpp>
 
 #include <fmod.hpp>
 
@@ -68,6 +69,10 @@ void CheckInput(float _deltaTime, float _currentTime);
 float GetTerrainHeight(CShape* floor, float _worldX, float _worldZ);
 void Render();
 
+void DrawCirlce(float _rad, glm::vec3 _screenPos, glm::vec3 _colour = glm::vec3(1, 1, 1), int _points = 10);
+
+void RenderOutline();
+
 void Print(int x, int y, std::string str, int effect);
 void SlowPrint(int x, int y, std::string _message, int effect, int _wait);
 void GotoXY(int x, int y);
@@ -89,6 +94,9 @@ CCamera* g_camera = new CCamera();
 bool doInput = false;
 
 bool cursorLocked = false;
+
+bool outlineSphere = false;
+bool holdSphere = false;
 
 //Textures
 GLuint Texture_Rayman;
@@ -507,6 +515,20 @@ void MeshCreation()
 		}
 		);
 
+	//Create Colour Point Mesh
+		CMesh::NewCMesh(
+		"point-col",
+		VertType::Pos_Col,
+		{
+			// Index        // Position				//Colour
+			//Front Quad
+			/* 00 */        0.0f,  0.0f,  0.0f,		0.0f,  1.0f,  0.0f,             /* 00 */
+		},
+		{
+			0
+		}
+		);
+
 	CMesh::NewCMesh("sphere", 0.5f, 15);
 
 	CMesh::NewPlane("terrain", 200.0f, 200.0f, 500, 500	);
@@ -528,6 +550,9 @@ void ObjectCreation()
 
 	CObjectManager::AddShape("cube1", new CShape("cubeNorm", glm::vec3(5.0f, 0.0f, 0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), false));
 	CObjectManager::GetShape("cube1")->SetCamera(g_camera);
+
+	CObjectManager::AddShape("point", new CShape("point-col", glm::vec3(0.0f, 0.0f, 0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), false));
+	CObjectManager::GetShape("point")->SetCamera(g_camera);
 
 	CObjectManager::AddShape("water1", new CShape("squareNorm", glm::vec3(0.0f, -5.5f, 0.0f), 0.0f, glm::vec3(325.0f, 1.0f, 325.0f), false));
 	CObjectManager::GetShape("water1")->SetCamera(g_camera);
@@ -554,6 +579,7 @@ void ProgramSetup()
 	ShaderLoader::CreateProgram("3DLight", "Resources/Shaders/3D_Normals.vert", "Resources/Shaders/3DLight_BlinnPhong.frag" );
 	ShaderLoader::CreateProgram("skybox", "Resources/Shaders/Skybox.vert", "Resources/Shaders/Skybox.frag" );
 	ShaderLoader::CreateProgram("solidColour", "Resources/Shaders/PositionOnly.vert", "Resources/Shaders/ColourOnly.frag");
+	ShaderLoader::CreateProgram("geom", "Resources/Shaders/GeomVert.vert", "Resources/Shaders/GeomFrag.frag", "Resources/Shaders/GeomGeom.geom");
 }
 
 void InitShapes()
@@ -568,6 +594,7 @@ void InitShapes()
 		_shape->AddUniform(new FloatUniform(0, "offset"));
 		_shape->AddUniform(new CubemapUniform(Texture_Cubemap, "Skybox"));
 		_shape->AddUniform(new FloatUniform(0.0f, "Reflectivity"));
+		_shape->AddUniform(new FloatUniform(5.0f, "Shininess"));
 		_shape->AddUniform(new BoolUniform(false, "hasRefMap"));
 		_shape->AddUniform(new FloatUniform(0, "RimExponent"));
 		_shape->AddUniform(new FloatUniform(0, "CurrentTime"));
@@ -583,6 +610,7 @@ void InitShapes()
 		_shape->AddUniform(new FloatUniform(0, "offset"));
 		_shape->AddUniform(new CubemapUniform(Texture_Cubemap, "Skybox"));
 		_shape->AddUniform(new FloatUniform(0.5f, "Reflectivity"));
+		_shape->AddUniform(new FloatUniform(64.0f, "Shininess"));
 		_shape->AddUniform(new BoolUniform(false, "hasRefMap"));
 		_shape->AddUniform(new FloatUniform(5, "RimExponent"));
 		_shape->AddUniform(new Vec3Uniform(glm::vec3(1.0f, 0.0f, 0.0f), "RimColour"));
@@ -607,6 +635,13 @@ void InitShapes()
 		_shape->AddUniform(new FloatUniform(0, "CurrentTime"));
 		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM(), "PVMMat"));
 		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM(), "Model"));
+	}
+
+	//Set program and add uniforms to Cube
+	if (_shape = CObjectManager::GetShape("point")) {
+		_shape->SetProgram(ShaderLoader::GetProgram("geom")->m_id);
+		_shape->AddUniform(new FloatUniform(0, "CurrentTime"));
+		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM(), "PVMMat"));
 	}
 
 	//Set program and add uniforms to Cube
@@ -661,6 +696,17 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 		}
 		else {
 			glEnable(GL_CULL_FACE);
+		}
+	}
+
+
+	if (key == GLFW_KEY_E && action == GLFW_PRESS)
+	{
+		if (!holdSphere && outlineSphere) {
+			holdSphere = true;
+		}
+		else if (holdSphere) {
+			holdSphere = false;
 		}
 	}
 
@@ -942,33 +988,54 @@ void Update()
 		static glm::vec3 vel = glm::vec3(0,0,0);
 		static glm::vec3 acc = glm::vec3(0,0,0);
 
-		acc = glm::vec3(0,-9.81f,0);
-
-		float terrainHeight = floor->GetPosition().y + GetTerrainHeight(floor, sphere->GetPosition().x, sphere->GetPosition().z);
-
-		//If sphere is below terrain, set velocity to 0	
-		if (sphere->GetPosition().y - sphere->GetScale().y/2.0f < terrainHeight) {
-			vel.y = 0;
-			sphere->SetPosition(glm::vec3(sphere->GetPosition().x, terrainHeight + sphere->GetScale().y / 2.0f, sphere->GetPosition().z));
-
-			float relativeX = ((sphere->GetPosition().x - floor->GetPosition().x) / floor->GetScale().x) * CObjectManager::GetShape("floor")->GetMesh()->GetWidthDivs() / CObjectManager::GetShape("floor")->GetMesh()->GetWidth();
-			float relativeZ = ((sphere->GetPosition().z - floor->GetPosition().z) / floor->GetScale().z) * CObjectManager::GetShape("floor")->GetMesh()->GetLengthDivs() / CObjectManager::GetShape("floor")->GetMesh()->GetLength();
-
-
-			float xNorm = CObjectManager::GetShape("floor")->GetMesh()->GetVertices()[(int(relativeZ) * (CObjectManager::GetShape("floor")->GetMesh()->GetWidthDivs() + 1) + int(relativeX)) * 8 + 5];
-			float yNorm = CObjectManager::GetShape("floor")->GetMesh()->GetVertices()[(int(relativeZ) * (CObjectManager::GetShape("floor")->GetMesh()->GetWidthDivs() + 1) + int(relativeX)) * 8 + 6];
-			float zNorm = -(- xNorm - yNorm);
-			Print(2, 2, "X: " + std::to_string(xNorm), 15);
-			Print(2, 3, "Z: " + std::to_string(zNorm), 15);
-			
-			acc = glm::vec3(xNorm, 0,zNorm);
-			//vel = glm::vec3(vel.x + xNorm * utils::deltaTime, 0, vel.y + zNorm * utils::deltaTime);
-			/*glm::vec3 newvel = glm::vec3(xNorm, 0, zNorm);
-			vel = glm::normalize(newvel);*/
+		if (holdSphere) {
+			sphere->SetPosition(g_camera->GetCameraPos() + g_camera->GetCameraForwardDir() * 2.0f);
+			vel = glm::vec3(0, 0, 0);
+			acc = glm::vec3(0, 0, 0);
 		}
+		else {
+			acc = glm::vec3(0, -9.81f, 0) / 5.0f;
 
-		vel += acc * 5.0f * utils::deltaTime;
-		sphere->SetPosition(sphere->GetPosition() + vel * utils::deltaTime);
+			float terrainHeight = floor->GetPosition().y + GetTerrainHeight(floor, sphere->GetPosition().x, sphere->GetPosition().z);
+
+			//If sphere is below terrain, set velocity to 0	
+			if (sphere->GetPosition().y - sphere->GetScale().y / 2.0f < terrainHeight) {
+				vel.y = 0;
+				sphere->SetPosition(glm::vec3(sphere->GetPosition().x, terrainHeight + sphere->GetScale().y / 2.0f, sphere->GetPosition().z));
+
+				float relativeX = ((sphere->GetPosition().x - floor->GetPosition().x) / floor->GetScale().x) * CObjectManager::GetShape("floor")->GetMesh()->GetWidthDivs() / CObjectManager::GetShape("floor")->GetMesh()->GetWidth();
+				float relativeZ = ((sphere->GetPosition().z - floor->GetPosition().z) / floor->GetScale().z) * CObjectManager::GetShape("floor")->GetMesh()->GetLengthDivs() / CObjectManager::GetShape("floor")->GetMesh()->GetLength();
+
+
+				float xNorm = CObjectManager::GetShape("floor")->GetMesh()->GetVertices()[(int(relativeZ) * (CObjectManager::GetShape("floor")->GetMesh()->GetWidthDivs() + 1) + int(relativeX)) * 8 + 5];
+				float zNorm = CObjectManager::GetShape("floor")->GetMesh()->GetVertices()[(int(relativeZ) * (CObjectManager::GetShape("floor")->GetMesh()->GetWidthDivs() + 1) + int(relativeX)) * 8 + 7];
+				//float zNorm = -(- xNorm - yNorm);
+				Print(2, 2, "X: " + std::to_string(xNorm), 15);
+				Print(2, 3, "Z: " + std::to_string(zNorm), 15);
+
+				acc = glm::vec3(xNorm, 0, zNorm);
+			}
+
+			vel += acc * 5.0f * utils::deltaTime;
+			sphere->SetPosition(sphere->GetPosition() + vel * utils::deltaTime);
+
+			//rotate sphere in direction of velocity
+			sphere->SetRotation(glm::vec3(sphere->GetRotation().x + vel.z * utils::deltaTime, 0, sphere->GetRotation().z + vel.x * utils::deltaTime));
+		}
+	}
+
+	//pickup sphere
+	if (sphere) {
+		glm::vec3 camDir = glm::normalize(g_camera->GetCameraForwardDir());
+		glm::vec3 objDir = glm::normalize(sphere->GetPosition() - g_camera->GetCameraPos());
+		float angle = glm::degrees(glm::angle(camDir, objDir));
+
+		if (!holdSphere && angle <= 10.0f) {
+			outlineSphere = true;
+		}
+		else {
+			outlineSphere = false;
+		}
 	}
 
 	//Check for input
@@ -1126,7 +1193,7 @@ void Render()
 	CObjectManager::GetShape("skybox")->Render();
 	CObjectManager::GetShape("floor")->Render();
 	CObjectManager::GetShape("cube1")->Render();
-
+	
 	//Enable stencil, and set function
 	glEnable(GL_STENCIL_TEST);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
@@ -1140,6 +1207,49 @@ void Render()
 	CObjectManager::GetShape("sphere1")->UpdateUniform(new Mat4Uniform(CObjectManager::GetShape("sphere1")->GetPVM(), "Model"));
 	CObjectManager::GetShape("sphere1")->Render();
 
+
+	if (outlineSphere) {
+		//Render Outlined
+		RenderOutline();
+	}
+
+	glStencilMask(0xFF);
+	glDisable(GL_STENCIL_TEST);
+
+	//Render water with backface enabled
+	GLboolean cull = glIsEnabled(GL_CULL_FACE);
+	glDisable(GL_CULL_FACE);
+	CObjectManager::GetShape("water1")->Render();
+	CObjectManager::GetShape("point")->Render();
+	if (cull) glEnable(GL_CULL_FACE);
+
+	DrawCirlce(0.01f, glm::vec3(0,0,0));
+
+	glfwSwapBuffers(g_window);
+}
+
+void DrawCirlce(float _rad, glm::vec3 _screenPos, glm::vec3 _colour, int _points) {
+	glShadeModel(GL_FLAT);    // as opposed to GL_FLAT
+	glBegin(GL_LINE_LOOP);
+
+	glColor3f(_colour.r, _colour.g, _colour.b);
+
+	for (int i = 0; i < _points; i++) {
+		float theta = 2.0f * glm::pi<float>() * float(i) / float(_points);//get the current angle 
+
+		float ratio = float(utils::windowHeight) / float(utils::windowWidth);
+
+		float x = _rad * cosf(theta) * ratio;//calculate the x component 
+		float y = _rad * sinf(theta);//calculate the y component 
+
+		glVertex3f(x, y, 0);//output vertex 
+	}
+
+	glEnd();
+}
+
+void RenderOutline()
+{
 	//Render scaled up and colour only sphere
 	//Only render where stencil value is not 1 (aka where original sphere is)
 	glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
@@ -1150,16 +1260,6 @@ void Render()
 	CObjectManager::GetShape("sphere1")->UpdateUniform(new Mat4Uniform(CObjectManager::GetShape("sphere1")->GetPVM(), "Model"));
 	CObjectManager::GetShape("sphere1")->Render();
 	CObjectManager::GetShape("sphere1")->Scale(1.0f / 1.1f);
-	glStencilMask(0xFF);
-	glDisable(GL_STENCIL_TEST);
-
-	//Render water with backface enabled
-	GLboolean cull = glIsEnabled(GL_CULL_FACE);
-	glDisable(GL_CULL_FACE);
-	CObjectManager::GetShape("water1")->Render();
-	if (cull) glEnable(GL_CULL_FACE);
-
-	glfwSwapBuffers(g_window);
 }
 
 #pragma region "Printing Functions"

@@ -58,6 +58,13 @@ void CMesh::GenBindVerts()
 		glEnableVertexAttribArray(0);
 		break;
 
+	case VertType::Pos_Col:
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (void*)0);
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
+		glEnableVertexAttribArray(1);
+		break;
+
 	default:
 		break;
 	}
@@ -349,8 +356,8 @@ void CMesh::NewPlane(std::string _name, float _width, float _length, int _divW, 
 			verts[(i * (_divW + 1) + j) * 8 + 2] = z;
 
 			//Set the texture coordinates of the current vertex
-			verts[(i * (_divW + 1) + j) * 8 + 3] = (float)j / _divW;
-			verts[(i * (_divW + 1) + j) * 8 + 4] = (float)i / _divL;
+			verts[(i * (_divW + 1) + j) * 8 + 3] = (float)j / (_divW + 10);
+			verts[(i * (_divW + 1) + j) * 8 + 4] = (float)i / (_divL + 10);
 
 
 			//create color struct
@@ -363,10 +370,13 @@ void CMesh::NewPlane(std::string _name, float _width, float _length, int _divW, 
 
 			//normalColor = glm::normalize(normalColor);
 
-			//Set the normal of the current vertex
-			verts[(i * (_divW + 1) + j) * 8 + 5] = (normalColor.r * 2.0f - 1.0f);
-			verts[(i * (_divW + 1) + j) * 8 + 6] = (normalColor.g * 2.0f - 1.0f);
-			verts[(i * (_divW + 1) + j) * 8 + 7] = (normalColor.b * 2.0f - 1.0f);
+			//Set the normal of the current vertex 
+			//NOTE: Normal map is actually
+			//		R G B
+			//		X Z Y
+			verts[(i * (_divW + 1) + j) * 8 + 5] = (normalColor.r * 2.0f - 1.0f); //X
+			verts[(i * (_divW + 1) + j) * 8 + 6] = (normalColor.b * 2.0f - 1.0f); //Y
+			verts[(i * (_divW + 1) + j) * 8 + 7] = (normalColor.g * 2.0f - 1.0f); //Z
 		}
 	}
 
@@ -390,22 +400,6 @@ void CMesh::NewPlane(std::string _name, float _width, float _length, int _divW, 
 			inds[(i * _divW + j) * 6 + 0] = c;
 		}
 	}
-
-	//for (int i = 0; i < inds.size(); i += 3) {
-	//	int a = inds[i + 0];
-	//	int b = inds[i + 1];
-	//	int c = inds[i + 2];
-
-	//	//							x					y					z
-	//	glm::vec3 p1 = glm::vec3(	verts[a * 8 + 0],	verts[a * 8 + 1],	verts[a * 8 + 2]);
-	//	glm::vec3 p2 = glm::vec3(	verts[b * 8 + 0],	verts[b * 8 + 1],	verts[b * 8 + 2]);
-	//	glm::vec3 p3 = glm::vec3(	verts[c * 8 + 0],	verts[c * 8 + 1],	verts[c * 8 + 2]);
-
-	//	glm::vec3 norm = CalculateNormal(p1, p2, p3);
-
-	//	verts[a * 8 + 5 + 0] = norm.x;	verts[a * 8 + 5 + 1] = norm.y;	verts[a * 8 + 5 + 2] = norm.z;
-	//	verts[b * 8 + 5 + 0] = norm.x;	verts[b * 8 + 5 + 1] = norm.y;	verts[b * 8 + 5 + 2] = norm.z;
-	//}
 
 	std::vector<float> verts2;
 	for (int i = 0; i < verts.size(); i++) {
@@ -461,6 +455,22 @@ CMesh* CMesh::GetMesh(std::string _name, bool* _doesExist)
 void CMesh::Render()
 {
 	glBindVertexArray(GetVAO());
-	glDrawElements(GL_TRIANGLES, GetIndices().size(), GL_UNSIGNED_INT, 0);
+	switch (type)
+	{
+	case VertType::Pos_Col_Tex:
+		glDrawElements(GL_TRIANGLES, GetIndices().size(), GL_UNSIGNED_INT, 0);
+		break;
+	case VertType::Pos_Tex_Norm:
+		glDrawElements(GL_TRIANGLES, GetIndices().size(), GL_UNSIGNED_INT, 0);
+		break;
+	case VertType::Pos:
+		glDrawElements(GL_TRIANGLES, GetIndices().size(), GL_UNSIGNED_INT, 0);
+		break;
+	case VertType::Pos_Col:
+		glDrawElements(GL_POINTS, GetIndices().size(), GL_UNSIGNED_INT, 0);
+		break;
+	default:
+		break;
+	}
 	glBindVertexArray(0);
 }

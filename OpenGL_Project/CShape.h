@@ -46,7 +46,8 @@ private:
 	float m_currentTime = 0;
 
 	glm::vec3 m_position = glm::vec3(0.0f, 0.0f, 0.0f);
-	GLfloat m_rotation = 0.0f;
+	//GLfloat m_rotation = 0.0f;
+	glm::vec3 m_eulerRotation = glm::vec3(0.0f, 0.0f, 0.0f);
 	glm::vec3 m_scale = glm::vec3(1.0f, 1.0f, 1.0f);
 
 	bool isPerspective = false;
@@ -74,6 +75,9 @@ public:
 
 	void SetPosition(glm::vec3 _pos) { m_position = _pos; };
 	glm::vec3 GetPosition() { return m_position; };
+
+	void SetRotation(glm::vec3 _rot) { m_eulerRotation = _rot; };
+	glm::vec3 GetRotation() { return m_eulerRotation; };
 
 	glm::mat4 GetPVM() { return m_PVMMat; };
 	glm::mat4 GetModel() { return m_modelMat; };

@@ -58,7 +58,7 @@ class ShaderLoader
 {
 	
 public:	
-	static GLuint CreateProgram(std::string _name, const char* VertexShaderFilename, const char* FragmentShaderFilename);
+	static GLuint CreateProgram(std::string _name, const char* vertexShaderFilename, const char* fragmentShaderFilename, const char* geometryShaderFilename = nullptr);
 	static CProgram* GetProgram(std::string _name);
 
 private:

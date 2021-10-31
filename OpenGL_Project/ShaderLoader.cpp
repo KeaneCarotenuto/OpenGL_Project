@@ -12,7 +12,7 @@ std::map<std::string, CProgram*> Globals::programs;
 /// <param name="vertexShaderFilename"></param>
 /// <param name="fragmentShaderFilename"></param>
 /// <returns></returns>
-GLuint ShaderLoader::CreateProgram(std::string _name, const char* vertexShaderFilename, const char* fragmentShaderFilename)
+GLuint ShaderLoader::CreateProgram(std::string _name, const char* vertexShaderFilename, const char* fragmentShaderFilename, const char* geometryShaderFilename)
 {
 	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 15);
 	std::cout << "Start Program Creation:" << std::endl;
@@ -20,8 +20,10 @@ GLuint ShaderLoader::CreateProgram(std::string _name, const char* vertexShaderFi
 	//Init vars
 	GLuint vert_shader = NULL;
 	GLuint frag_shader = NULL;
+	GLuint geom_shader = NULL;
 	CShader* vShader = nullptr;
 	CShader* fShader = nullptr;
+	CShader* gShader = nullptr;
 
 	//Check if program/shaders exists already, if so, use them
 	for (auto it = Globals::programs.begin(); it != Globals::programs.end(); ++it)
@@ -29,11 +31,13 @@ GLuint ShaderLoader::CreateProgram(std::string _name, const char* vertexShaderFi
 		if (it->second) {
 			GLuint TEMP_vert_shader = NULL;
 			GLuint TEMP_frag_shader = NULL;
+			GLuint TEMP_geom_shader = NULL;
 
 			for (CShader* _shader : it->second->m_shaders)
 			{
-				//if vert shader exists
+				//if shader exists
 				if (_shader) {
+					//if vert shader is the same as the one we want to create
 					if (_shader->m_fileName == vertexShaderFilename) {
 						SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 14);
 						std::cout << "--Vertex shader already exists, using existing." << std::endl;
@@ -48,11 +52,19 @@ GLuint ShaderLoader::CreateProgram(std::string _name, const char* vertexShaderFi
 						frag_shader = TEMP_frag_shader = _shader->m_id;
 						fShader = _shader;
 					}
+
+					//If geom shader exists
+					if (_shader->m_fileName == geometryShaderFilename) {
+						SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 14);
+						std::cout << "--Geometry shader already exists, using existing." << std::endl;
+						geom_shader = TEMP_geom_shader = _shader->m_id;
+						gShader = _shader;
+					}
 				}
 			}
 
-			//If both exist AKA program exists
-			if (TEMP_vert_shader != NULL && TEMP_frag_shader != NULL) {
+			//If all three exist AKA program exists
+			if (TEMP_vert_shader != NULL && TEMP_frag_shader != NULL && TEMP_geom_shader != NULL) {
 				SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 14);
 				std::cout << "-Program already exists, using existing." << std::endl;
 				SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 15);
@@ -73,11 +85,16 @@ GLuint ShaderLoader::CreateProgram(std::string _name, const char* vertexShaderFi
 	if (frag_shader == NULL) {
 		frag_shader = CreateShader(GL_FRAGMENT_SHADER, fragmentShaderFilename, &fShader);
 	}
+
+	if (geom_shader == NULL) {
+		if (geometryShaderFilename) geom_shader = CreateShader(GL_GEOMETRY_SHADER, geometryShaderFilename, &gShader);
+	}
 	
 	// Create the program handle, attach the shaders and link it
 	GLuint program = glCreateProgram();
 	glAttachShader(program, vert_shader);
 	glAttachShader(program, frag_shader);
+	if (geometryShaderFilename) glAttachShader(program, geom_shader);
 
 	glLinkProgram(program);
 
@@ -89,6 +106,8 @@ GLuint ShaderLoader::CreateProgram(std::string _name, const char* vertexShaderFi
 		std::string programName(vertexShaderFilename);
 		programName.append(", ");
 		programName.append(fragmentShaderFilename);
+		programName.append(", ");
+		programName.append(geometryShaderFilename);
 		PrintErrorDetails(false, program, programName.c_str());
 		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 12);
 		std::cout << "End Program Creation." << std::endl << std::endl;
@@ -97,7 +116,7 @@ GLuint ShaderLoader::CreateProgram(std::string _name, const char* vertexShaderFi
 		return 0;
 	}
 
-	Globals::programs[_name] = (new CProgram(program, std::vector<CShader*>{vShader, fShader}));
+	Globals::programs[_name] = (new CProgram(program, std::vector<CShader*>{vShader, fShader, gShader}));
 
 	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 10);
 	std::cout << "--Program Created" << std::endl;
@@ -132,7 +151,7 @@ CProgram* ShaderLoader::GetProgram(std::string _name)
 /// <returns></returns>
 GLuint ShaderLoader::CreateShader(GLenum shaderType, const char* shaderName, CShader ** _shaderReturn = nullptr)
 {
-	std::string shaderTypeName = (std::string)(shaderType == GL_VERTEX_SHADER ? "Vertex" : (shaderType == GL_FRAGMENT_SHADER ? "Fragment" : "?"));
+	std::string shaderTypeName = (std::string)(shaderType == GL_VERTEX_SHADER ? "Vertex" : (shaderType == GL_FRAGMENT_SHADER ? "Fragment" : (shaderType == GL_GEOMETRY_SHADER ? "Geometry" : "Unknown")));
 
 	//This is redundant, but better to be safe than sorry I suppose
 	for (CShader* _shader : Globals::shaders)

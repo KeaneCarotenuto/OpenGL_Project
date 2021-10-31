@@ -171,6 +171,9 @@
     <None Include="Resources\Shaders\ClipSpace.vert" />
     <None Include="Resources\Shaders\ColourOnly.frag" />
     <None Include="Resources\Shaders\Fractal.frag" />
+    <None Include="Resources\Shaders\GeomFrag.frag" />
+    <None Include="Resources\Shaders\GeomGeom.geom" />
+    <None Include="Resources\Shaders\GeomVert.vert" />
     <None Include="Resources\Shaders\Gouraud.frag" />
     <None Include="Resources\Shaders\Gouraud.vert" />
     <None Include="Resources\Shaders\NDC_Texture.vert" />

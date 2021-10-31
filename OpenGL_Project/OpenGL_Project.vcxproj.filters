@@ -22,6 +22,9 @@
     <Filter Include="Resource Files\Shaders\vert">
       <UniqueIdentifier>{0a6ee48f-9dd3-4656-99fc-60fbe2926649}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Resource Files\Shaders\geom">
+      <UniqueIdentifier>{b567b514-50b0-4e54-8c26-f24edbcc88be}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source.cpp">
@@ -166,6 +169,15 @@
       <Filter>Resource Files\Shaders\vert</Filter>
     </None>
     <None Include="Resources\Shaders\ColourOnly.frag">
+      <Filter>Resource Files\Shaders\frag</Filter>
+    </None>
+    <None Include="Resources\Shaders\GeomVert.vert">
+      <Filter>Resource Files\Shaders\vert</Filter>
+    </None>
+    <None Include="Resources\Shaders\GeomGeom.geom">
+      <Filter>Resource Files\Shaders\geom</Filter>
+    </None>
+    <None Include="Resources\Shaders\GeomFrag.frag">
       <Filter>Resource Files\Shaders\frag</Filter>
     </None>
   </ItemGroup>

@@ -7,7 +7,7 @@
 CShape::CShape(int _verts, glm::vec3 _pos, float _rot, glm::vec3 _scale, bool _screenScale, int _renderPri)
 {
 	m_position = _pos;
-	m_rotation = _rot;
+	m_eulerRotation = glm::vec3(0.0f, _rot, 0.0f);
 	m_scale = _scale;
 	m_orthoProject = _screenScale;
 
@@ -32,7 +32,7 @@ CShape::CShape(int _verts, glm::vec3 _pos, float _rot, glm::vec3 _scale, bool _s
 CShape::CShape(std::string _meshName ,glm::vec3 _pos, float _rot, glm::vec3 _scale, bool _screenScale, int _renderPri)
 {
 	m_position = _pos;
-	m_rotation = _rot;
+	m_eulerRotation = glm::vec3(0.0f, _rot, 0.0f);
 	m_scale = _scale;
 	m_orthoProject = _screenScale;
 
@@ -110,7 +110,10 @@ void CShape::UpdatePVM()
 {
 	//Calc transformation matrices
 	m_translationMat = glm::translate(glm::mat4(), m_position);
-	m_rotationMat = glm::rotate(glm::mat4(), glm::radians(m_rotation), glm::vec3(0.0f, 0.0f, 1.0f));
+
+	//update rotation matrix with euler angles (m_eulerRotation)
+	m_rotationMat = glm::mat4_cast(glm::quat(m_eulerRotation));
+	
 	m_scaleMat = glm::scale(glm::mat4(), m_scale);
 
 	//Convert from world space to screen space for ortho
