@@ -16,6 +16,10 @@ CMesh::CMesh(VertType _type, std::vector<float> _vertices, std::vector<int> _ind
 /// </summary>
 void CMesh::GenBindVerts()
 {
+	if (type == VertType::Patches) {
+		glPatchParameteri(GL_PATCH_VERTICES, 4);
+	}
+
 	glGenVertexArrays(1, &m_VAO);
 	glBindVertexArray(m_VAO);
 
@@ -65,9 +69,17 @@ void CMesh::GenBindVerts()
 		glEnableVertexAttribArray(1);
 		break;
 
+	case VertType::Patches:
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (void*)0);
+		glEnableVertexAttribArray(0);
+		break;
+
 	default:
 		break;
 	}
+
+	//Unbind vertex array
+	glBindVertexArray(0);
 
 	
 }
@@ -468,6 +480,9 @@ void CMesh::Render()
 		break;
 	case VertType::Pos_Col:
 		glDrawElements(GL_POINTS, GetIndices().size(), GL_UNSIGNED_INT, 0);
+		break;
+	case VertType::Patches:
+		glDrawElements(GL_PATCHES, GetIndices().size(), GL_UNSIGNED_INT, 0);
 		break;
 	default:
 		break;

@@ -12,7 +12,7 @@ std::map<std::string, CProgram*> Globals::programs;
 /// <param name="vertexShaderFilename"></param>
 /// <param name="fragmentShaderFilename"></param>
 /// <returns></returns>
-GLuint ShaderLoader::CreateProgram(std::string _name, const char* vertexShaderFilename, const char* fragmentShaderFilename, const char* geometryShaderFilename)
+GLuint ShaderLoader::CreateProgram(std::string _name, const char* vertexShaderFilename, const char* fragmentShaderFilename, const char* geometryShaderFilename, const char* tessControlShaderFilename, const char* tessEvalShaderFilename)
 {
 	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 15);
 	std::cout << "Start Program Creation:" << std::endl;
@@ -21,9 +21,13 @@ GLuint ShaderLoader::CreateProgram(std::string _name, const char* vertexShaderFi
 	GLuint vert_shader = NULL;
 	GLuint frag_shader = NULL;
 	GLuint geom_shader = NULL;
+	GLuint tess_control_shader = NULL;
+	GLuint tess_eval_shader = NULL;
 	CShader* vShader = nullptr;
 	CShader* fShader = nullptr;
 	CShader* gShader = nullptr;
+	CShader* tcShader = nullptr;
+	CShader* teShader = nullptr;
 
 	//Check if program/shaders exists already, if so, use them
 	for (auto it = Globals::programs.begin(); it != Globals::programs.end(); ++it)
@@ -32,6 +36,8 @@ GLuint ShaderLoader::CreateProgram(std::string _name, const char* vertexShaderFi
 			GLuint TEMP_vert_shader = NULL;
 			GLuint TEMP_frag_shader = NULL;
 			GLuint TEMP_geom_shader = NULL;
+			GLuint TEMP_tess_control_shader = NULL;
+			GLuint TEMP_tess_eval_shader = NULL;
 
 			for (CShader* _shader : it->second->m_shaders)
 			{
@@ -60,11 +66,28 @@ GLuint ShaderLoader::CreateProgram(std::string _name, const char* vertexShaderFi
 						geom_shader = TEMP_geom_shader = _shader->m_id;
 						gShader = _shader;
 					}
+
+					//If tess control shader exists
+					if (_shader->m_fileName == tessControlShaderFilename) {
+						SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 14);
+						std::cout << "--Tess Control shader already exists, using existing." << std::endl;
+						tess_control_shader = TEMP_tess_control_shader = _shader->m_id;
+						tcShader = _shader;
+					}
+
+					//If tess eval shader exists
+					if (_shader->m_fileName == tessEvalShaderFilename) {
+						SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 14);
+						std::cout << "--Tess Eval shader already exists, using existing." << std::endl;
+						tess_eval_shader = TEMP_tess_eval_shader = _shader->m_id;
+						teShader = _shader;
+					}
+
 				}
 			}
 
-			//If all three exist AKA program exists
-			if (TEMP_vert_shader != NULL && TEMP_frag_shader != NULL && TEMP_geom_shader != NULL) {
+			//If all shaders exist AKA program exists
+			if (TEMP_vert_shader != NULL && TEMP_frag_shader != NULL && TEMP_geom_shader != NULL && TEMP_tess_control_shader != NULL && TEMP_tess_eval_shader != NULL) {
 				SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 14);
 				std::cout << "-Program already exists, using existing." << std::endl;
 				SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 15);
@@ -89,12 +112,23 @@ GLuint ShaderLoader::CreateProgram(std::string _name, const char* vertexShaderFi
 	if (geom_shader == NULL) {
 		if (geometryShaderFilename) geom_shader = CreateShader(GL_GEOMETRY_SHADER, geometryShaderFilename, &gShader);
 	}
+
+	if (tess_control_shader == NULL) {
+		if (tessControlShaderFilename) tess_control_shader = CreateShader(GL_TESS_CONTROL_SHADER, tessControlShaderFilename, &tcShader);
+	}
+
+	if (tess_eval_shader == NULL) {
+		if (tessEvalShaderFilename) tess_eval_shader = CreateShader(GL_TESS_EVALUATION_SHADER, tessEvalShaderFilename, &teShader);
+	}
+	
 	
 	// Create the program handle, attach the shaders and link it
 	GLuint program = glCreateProgram();
 	glAttachShader(program, vert_shader);
 	glAttachShader(program, frag_shader);
 	if (geometryShaderFilename) glAttachShader(program, geom_shader);
+	if (tessControlShaderFilename) glAttachShader(program, tess_control_shader);
+	if (tessEvalShaderFilename) glAttachShader(program, tess_eval_shader);
 
 	glLinkProgram(program);
 
@@ -106,8 +140,12 @@ GLuint ShaderLoader::CreateProgram(std::string _name, const char* vertexShaderFi
 		std::string programName(vertexShaderFilename);
 		programName.append(", ");
 		programName.append(fragmentShaderFilename);
-		programName.append(", ");
-		programName.append(geometryShaderFilename);
+		if (geometryShaderFilename) programName.append(", ");
+		if (geometryShaderFilename) programName.append(geometryShaderFilename);
+		if (tessControlShaderFilename) programName.append(", ");
+		if (tessControlShaderFilename) programName.append(tessControlShaderFilename);
+		if (tessEvalShaderFilename) programName.append(", ");
+		if (tessEvalShaderFilename) programName.append(tessEvalShaderFilename);
 		PrintErrorDetails(false, program, programName.c_str());
 		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 12);
 		std::cout << "End Program Creation." << std::endl << std::endl;
@@ -116,7 +154,7 @@ GLuint ShaderLoader::CreateProgram(std::string _name, const char* vertexShaderFi
 		return 0;
 	}
 
-	Globals::programs[_name] = (new CProgram(program, std::vector<CShader*>{vShader, fShader, gShader}));
+	Globals::programs[_name] = (new CProgram(program, std::vector<CShader*>{vShader, fShader, gShader, tcShader, teShader}));
 
 	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 10);
 	std::cout << "--Program Created" << std::endl;
@@ -151,7 +189,14 @@ CProgram* ShaderLoader::GetProgram(std::string _name)
 /// <returns></returns>
 GLuint ShaderLoader::CreateShader(GLenum shaderType, const char* shaderName, CShader ** _shaderReturn = nullptr)
 {
-	std::string shaderTypeName = (std::string)(shaderType == GL_VERTEX_SHADER ? "Vertex" : (shaderType == GL_FRAGMENT_SHADER ? "Fragment" : (shaderType == GL_GEOMETRY_SHADER ? "Geometry" : "Unknown")));
+	std::string shaderTypeName = (std::string)	
+	(shaderType == GL_VERTEX_SHADER ? "Vertex" : 
+	(shaderType == GL_FRAGMENT_SHADER ? "Fragment" : 
+	(shaderType == GL_GEOMETRY_SHADER ? "Geometry" : 
+	(shaderType == GL_TESS_CONTROL_SHADER ? "TessControl" :
+	(shaderType == GL_TESS_EVALUATION_SHADER ? "TessEval" : 
+	"Unknown"
+	)))));
 
 	//This is redundant, but better to be safe than sorry I suppose
 	for (CShader* _shader : Globals::shaders)

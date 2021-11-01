@@ -178,7 +178,10 @@
     <None Include="Resources\Shaders\Gouraud.vert" />
     <None Include="Resources\Shaders\NDC_Texture.vert" />
     <None Include="Resources\Shaders\PositionOnly.vert" />
+    <None Include="Resources\Shaders\PositionOnlyNoPVM.vert" />
     <None Include="Resources\Shaders\Quad.vert" />
+    <None Include="Resources\Shaders\QuadTes.tesc" />
+    <None Include="Resources\Shaders\QuadTes.tese" />
     <None Include="Resources\Shaders\Skybox.frag" />
     <None Include="Resources\Shaders\Skybox.vert" />
     <None Include="Resources\Shaders\Text.frag" />

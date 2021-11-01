@@ -504,6 +504,22 @@ void MeshCreation()
 		}
 		);
 
+	CMesh::NewCMesh(
+		"patches",
+		VertType::Patches,
+		{
+			// Index        // Position		
+			//Front Quad
+			/* 00 */        -1.0f,  1.0f, 0.0f,
+			/* 01 */        -1.0f, -1.0f, 0.0f,
+			/* 02 */         1.0f, -1.0f, 0.0f,
+			/* 03 */         1.0f,  1.0f, 0.0f,
+		},
+		{
+			0, 1, 2, 3
+		}
+		);
+
 	//Create cube mesh
 	CMesh::NewCMesh(
 		"floor-square",
@@ -583,6 +599,9 @@ void ObjectCreation()
 	CObjectManager::GetShape("renderTexture")->m_orthoProject = true;
 	CObjectManager::GetShape("renderTexture")->SetCamera(g_camera);
 
+	CObjectManager::AddShape("tess", new CShape("patches", glm::vec3(0.0f, -3.0f, 0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), false));
+	CObjectManager::GetShape("tess")->SetCamera(g_camera);
+
 	CObjectManager::AddShape("water1", new CShape("squareNorm", glm::vec3(0.0f, -5.5f, 0.0f), 0.0f, glm::vec3(325.0f, 1.0f, 325.0f), false));
 	CObjectManager::GetShape("water1")->SetCamera(g_camera);
 
@@ -610,6 +629,7 @@ void ProgramSetup()
 	ShaderLoader::CreateProgram("3Dtexture", "Resources/Shaders/3D_Normals.vert", "Resources/Shaders/TextureOnly.frag" );
 	ShaderLoader::CreateProgram("skybox", "Resources/Shaders/Skybox.vert", "Resources/Shaders/Skybox.frag" );
 	ShaderLoader::CreateProgram("solidColour", "Resources/Shaders/PositionOnly.vert", "Resources/Shaders/ColourOnly.frag");
+	ShaderLoader::CreateProgram("tesShader", "Resources/Shaders/PositionOnlyNoPVM.vert", "Resources/Shaders/ColourOnly.frag", nullptr, "Resources/Shaders/QuadTes.tesc", "Resources/Shaders/QuadTes.tese");
 	ShaderLoader::CreateProgram("geom", "Resources/Shaders/GeomVert.vert", "Resources/Shaders/GeomFrag.frag", "Resources/Shaders/GeomGeom.geom");
 }
 
@@ -696,6 +716,16 @@ void InitShapes()
 		_shape->SetProgram(ShaderLoader::GetProgram("3Dtexture")->m_id);
 		_shape->AddUniform(new ImageUniform(Texture_RenderTexture, "ImageTexture"));
 		_shape->AddUniform(new FloatUniform(0, "CurrentTime"));
+		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM(), "PVMMat"));
+		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM(), "Model"));
+	}
+
+	//Set program and add uniforms to renderTexture
+	if (_shape = CObjectManager::GetShape("tess")) {
+		_shape->SetProgram(ShaderLoader::GetProgram("tesShader")->m_id);
+		_shape->AddUniform(new FloatUniform(0, "CurrentTime"));
+		_shape->AddUniform(new FloatUniform(0, "Distance"));
+		_shape->AddUniform(new Vec3Uniform(glm::vec3(0,1,0), "Colour"));
 		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM(), "PVMMat"));
 		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM(), "Model"));
 	}
@@ -1065,6 +1095,8 @@ void Update()
 	glUniform3fv(glGetUniformLocation(ShaderLoader::GetProgram("3DLight")->m_id, "CameraPos"), 1, glm::value_ptr(g_camera->GetCameraPos()));
 	glUseProgram(0);
 
+	CObjectManager::GetShape("tess")->UpdateUniform(new FloatUniform(glm::distance(CObjectManager::GetShape("tess")->GetPosition(), g_camera->GetCameraPos()), "Distance"));
+
 	//glUseProgram(ShaderLoader::GetProgram("3DTexture")->m_id);
 	//glUniform1f(glGetUniformLocation(ShaderLoader::GetProgram("3DTexture")->m_id, "CurrentTime"), utils::currentTime);
 	//glUseProgram(0);
@@ -1091,8 +1123,16 @@ void Update()
 				vel.y = 0;
 				sphere->SetPosition(glm::vec3(sphere->GetPosition().x, terrainHeight + sphere->GetScale().y / 2.0f, sphere->GetPosition().z));
 
-				float relativeX = ((sphere->GetPosition().x - floor->GetPosition().x) / floor->GetScale().x) * CObjectManager::GetShape("floor")->GetMesh()->GetWidthDivs() / CObjectManager::GetShape("floor")->GetMesh()->GetWidth();
-				float relativeZ = ((sphere->GetPosition().z - floor->GetPosition().z) / floor->GetScale().z) * CObjectManager::GetShape("floor")->GetMesh()->GetLengthDivs() / CObjectManager::GetShape("floor")->GetMesh()->GetLength();
+				int wdivs = CObjectManager::GetShape("floor")->GetMesh()->GetWidthDivs();
+				int ldivs = CObjectManager::GetShape("floor")->GetMesh()->GetLengthDivs();
+				
+				float relativeX = ((sphere->GetPosition().x - floor->GetPosition().x) / floor->GetScale().x) * wdivs / CObjectManager::GetShape("floor")->GetMesh()->GetWidth();
+				float relativeZ = ((sphere->GetPosition().z - floor->GetPosition().z) / floor->GetScale().z)* ldivs / CObjectManager::GetShape("floor")->GetMesh()->GetLength();
+				if (relativeX < 1) relativeX = 1;
+				if (relativeX > wdivs - 1) relativeX = wdivs - 1;
+				if (relativeZ < 1) relativeZ = 1;
+				if (relativeZ > ldivs - 1) relativeZ = ldivs - 1;
+
 
 
 				float xNorm = CObjectManager::GetShape("floor")->GetMesh()->GetVertices()[(int(relativeZ) * (CObjectManager::GetShape("floor")->GetMesh()->GetWidthDivs() + 1) + int(relativeX)) * 8 + 5];
@@ -1284,10 +1324,17 @@ float GetTerrainHeight(CShape* floor,float _worldX, float _worldZ) {
 /// </summary>
 void Render()
 {
-	//bind framebuffer, enable depth test, and clear screen 
-	glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer);
-	glEnable(GL_DEPTH_TEST);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	GLint polygonMode[2];
+	glGetIntegerv(GL_POLYGON_MODE, polygonMode);
+
+
+	if (polygonMode[0] == GL_FILL) {
+		//bind framebuffer, enable depth test, and clear screen 
+		glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer);
+		glEnable(GL_DEPTH_TEST);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	}
+	
 
 
 	//Enable blending for textures with opacity
@@ -1310,10 +1357,12 @@ void Render()
 	//Also write to stencil, so that coloured sphere does not overlap
 	glStencilFunc(GL_ALWAYS, 1, 0xFF);
 	glStencilMask(0xFF);
-	CObjectManager::GetShape("sphere1")->SetProgram(ShaderLoader::GetProgram("3DLight")->m_id);
-	CObjectManager::GetShape("sphere1")->UpdateUniform(new Vec3Uniform({ 1,0,0 }, "Colour"));
-	CObjectManager::GetShape("sphere1")->UpdateUniform(new Mat4Uniform(CObjectManager::GetShape("sphere1")->GetPVM(), "Model"));
-	CObjectManager::GetShape("sphere1")->Render();
+	CShape* sphere = CObjectManager::GetShape("sphere1");
+	sphere->SetProgram(ShaderLoader::GetProgram("3DLight")->m_id);
+	sphere->UpdateUniform(new Vec3Uniform({ 1,0,0 }, "Colour"));
+	sphere->UpdateUniform(new Mat4Uniform(sphere->GetPVM(), "PVMMat"));
+	sphere->UpdateUniform(new Mat4Uniform(sphere->GetPVM(), "Model"));
+	sphere->Render();
 
 
 	if (outlineSphere) {
@@ -1329,17 +1378,20 @@ void Render()
 	glDisable(GL_CULL_FACE);
 	CObjectManager::GetShape("water1")->Render();
 	CObjectManager::GetShape("point")->Render();
+	CObjectManager::GetShape("tess")->Render();
 	if (cull) glEnable(GL_CULL_FACE);
 
 	DrawCirlce(0.01f, glm::vec3(0,0,0));
 
-	//unbind framebuffer 
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	glDisable(GL_DEPTH_TEST);
-	glClear(GL_COLOR_BUFFER_BIT);
+	if (polygonMode[0] == GL_FILL) {
+		//unbind framebuffer 
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glDisable(GL_DEPTH_TEST);
+		glClear(GL_COLOR_BUFFER_BIT);
 
-	//render the renderTexture object
-	CObjectManager::GetShape("renderTexture")->Render();
+		//render the renderTexture object
+		CObjectManager::GetShape("renderTexture")->Render();
+	}
 
 	glfwSwapBuffers(g_window);
 }
@@ -1370,12 +1422,14 @@ void RenderOutline()
 	//Only render where stencil value is not 1 (aka where original sphere is)
 	glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
 	glStencilMask(0x00);
-	CObjectManager::GetShape("sphere1")->Scale(1.1f);
-	CObjectManager::GetShape("sphere1")->SetProgram(ShaderLoader::GetProgram("solidColour")->m_id);
-	CObjectManager::GetShape("sphere1")->UpdateUniform(new Vec3Uniform({ 1,0,0 }, "Colour"));
-	CObjectManager::GetShape("sphere1")->UpdateUniform(new Mat4Uniform(CObjectManager::GetShape("sphere1")->GetPVM(), "Model"));
-	CObjectManager::GetShape("sphere1")->Render();
-	CObjectManager::GetShape("sphere1")->Scale(1.0f / 1.1f);
+	CShape* sphere = CObjectManager::GetShape("sphere1");
+	sphere->Scale(1.1f);
+	sphere->SetProgram(ShaderLoader::GetProgram("solidColour")->m_id);
+	sphere->UpdateUniform(new Vec3Uniform({ 1,0,0 }, "Colour"));
+	sphere->UpdateUniform(new Mat4Uniform(sphere->GetPVM(), "PVMMat"));
+	sphere->UpdateUniform(new Mat4Uniform(sphere->GetPVM(), "Model"));
+	sphere->Render();
+	sphere->Scale(1.0f / 1.1f);
 }
 
 #pragma region "Printing Functions"

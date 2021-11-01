@@ -25,6 +25,12 @@
     <Filter Include="Resource Files\Shaders\geom">
       <UniqueIdentifier>{b567b514-50b0-4e54-8c26-f24edbcc88be}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Resource Files\Shaders\tese">
+      <UniqueIdentifier>{c8310ec6-bf9a-40f8-859f-7052e9fb1495}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\Shaders\tesc">
+      <UniqueIdentifier>{10b3bb55-ed0a-43a0-b05e-6fe4cb06e369}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source.cpp">
@@ -185,6 +191,15 @@
     </None>
     <None Include="Resources\Shaders\TextureOnly.frag">
       <Filter>Resource Files\Shaders\frag</Filter>
+    </None>
+    <None Include="Resources\Shaders\QuadTes.tese">
+      <Filter>Resource Files\Shaders\tese</Filter>
+    </None>
+    <None Include="Resources\Shaders\QuadTes.tesc">
+      <Filter>Resource Files\Shaders\tesc</Filter>
+    </None>
+    <None Include="Resources\Shaders\PositionOnlyNoPVM.vert">
+      <Filter>Resource Files\Shaders\vert</Filter>
     </None>
   </ItemGroup>
 </Project>
