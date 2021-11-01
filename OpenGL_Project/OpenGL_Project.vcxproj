@@ -188,6 +188,7 @@
     <None Include="Resources\Shaders\Texture.frag" />
     <None Include="Resources\Shaders\TextureMix.frag" />
     <None Include="Resources\Shaders\TextureOnly.frag" />
+    <None Include="Resources\Shaders\TextureScanlineBlur.frag" />
     <None Include="Resources\Shaders\WorldSpace.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

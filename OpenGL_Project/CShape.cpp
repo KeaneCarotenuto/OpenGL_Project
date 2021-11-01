@@ -132,7 +132,7 @@ void CShape::UpdatePVM()
 
 		m_modelMat = m_camera->GetCameraProjectionMat() * m_modelMat;
 
-		UpdateUniform(new Mat4Uniform(m_modelMat, "CurrentTime"));
+		//UpdateUniform(new Mat4Uniform(m_modelMat, "CurrentTime"));
 		return;
 	}
 	else {

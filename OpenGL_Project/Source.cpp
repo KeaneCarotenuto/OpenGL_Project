@@ -66,6 +66,7 @@ void GenRenderTexture(GLuint& texture, GLuint& frameBuffer, int width, int heigh
 void GenCubemap(GLuint& texture, std::string texPath[6]);
 
 void Update();
+void ModifySphereVerts();
 void CheckInput(float _deltaTime, float _currentTime);
 float GetTerrainHeight(CShape* floor, float _worldX, float _worldZ);
 void Render();
@@ -605,7 +606,8 @@ void ProgramSetup()
 	ShaderLoader::CreateProgram("text", "Resources/Shaders/Text.vert", "Resources/Shaders/Text.frag" );
 	ShaderLoader::CreateProgram("textScroll", "Resources/Shaders/TextScroll.vert", "Resources/Shaders/TextScroll.frag" );
 	ShaderLoader::CreateProgram("3DLight", "Resources/Shaders/3D_Normals.vert", "Resources/Shaders/3DLight_BlinnPhong.frag" );
-	ShaderLoader::CreateProgram("3DTexture", "Resources/Shaders/3D_Normals.vert", "Resources/Shaders/TextureOnly.frag" );
+	ShaderLoader::CreateProgram("ScanlineBlur", "Resources/Shaders/3D_Normals.vert", "Resources/Shaders/TextureScanlineBlur.frag" );
+	ShaderLoader::CreateProgram("3Dtexture", "Resources/Shaders/3D_Normals.vert", "Resources/Shaders/TextureOnly.frag" );
 	ShaderLoader::CreateProgram("skybox", "Resources/Shaders/Skybox.vert", "Resources/Shaders/Skybox.frag" );
 	ShaderLoader::CreateProgram("solidColour", "Resources/Shaders/PositionOnly.vert", "Resources/Shaders/ColourOnly.frag");
 	ShaderLoader::CreateProgram("geom", "Resources/Shaders/GeomVert.vert", "Resources/Shaders/GeomFrag.frag", "Resources/Shaders/GeomGeom.geom");
@@ -691,15 +693,8 @@ void InitShapes()
 	
 	//Set program and add uniforms to renderTexture
 	if (_shape = CObjectManager::GetShape("renderTexture")) {
-		_shape->SetProgram(ShaderLoader::GetProgram("3DTexture")->m_id);
+		_shape->SetProgram(ShaderLoader::GetProgram("3Dtexture")->m_id);
 		_shape->AddUniform(new ImageUniform(Texture_RenderTexture, "ImageTexture"));
-		_shape->AddUniform(new IntUniform(0, "frameCount"));
-		_shape->AddUniform(new FloatUniform(0, "offset"));
-		_shape->AddUniform(new CubemapUniform(NULL, "Skybox"));
-		_shape->AddUniform(new FloatUniform(0.0f, "Reflectivity"));
-		_shape->AddUniform(new BoolUniform(false, "hasRefMap"));
-		_shape->AddUniform(new FloatUniform(0, "RimExponent"));
-		_shape->AddUniform(new Vec3Uniform(glm::vec3(0.0f, 0.0f, 0.0f), "RimColour"));
 		_shape->AddUniform(new FloatUniform(0, "CurrentTime"));
 		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM(), "PVMMat"));
 		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM(), "Model"));
@@ -773,6 +768,12 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 	//Change backface mode (cull or no cull) with B
 	if (key == GLFW_KEY_G && action == GLFW_PRESS) {
 		g_camera->followTerrain = !g_camera->followTerrain;
+		CShape* _shape = CObjectManager::GetShape("renderTexture");
+		_shape->SetProgram(ShaderLoader::GetProgram(g_camera->followTerrain ? "ScanlineBlur" : "3Dtexture")->m_id);
+		_shape->UpdateUniform(new ImageUniform(Texture_RenderTexture, "ImageTexture"));
+		_shape->UpdateUniform(new FloatUniform(0, "CurrentTime"));
+		_shape->UpdateUniform(new Mat4Uniform(_shape->GetPVM(), "PVMMat"));
+		_shape->UpdateUniform(new Mat4Uniform(_shape->GetPVM(), "Model"));
 	}
 
 	//Change backface mode (cull or no cull) with B
@@ -1055,19 +1056,7 @@ void Update()
 	utils::deltaTime = utils::currentTime - utils::previousTimeStep;
 	utils::previousTimeStep = utils::currentTime;
 
-	//Move shapes around world origin in circle
-	//CObjectManager::GetShape("sphere1")->SetPosition(glm::vec3(sin(utils::currentTime + glm::pi<float>())*2, 0, cos(utils::currentTime + glm::pi<float>())*2));
-
-	CMesh* mesh = CObjectManager::GetShape("sphere1")->GetMesh();
-	std::vector<float> verticies = mesh->GetVertices();
-	verticies[1] += 1.0f * utils::deltaTime;
-	mesh->SetVertices(verticies);
-
-	glBindBuffer(GL_ARRAY_BUFFER, mesh->GetVBO());
-
-	float* verts = &verticies[0];
-	glBufferData(GL_ARRAY_BUFFER, verticies.size() * sizeof(float), verts, GL_DYNAMIC_DRAW);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	//ModifySphereVerts();
 
 	//Update all shapes
 	CObjectManager::UpdateAll(utils::deltaTime, utils::currentTime);
@@ -1075,6 +1064,10 @@ void Update()
 	glUseProgram(ShaderLoader::GetProgram("3DLight")->m_id);
 	glUniform3fv(glGetUniformLocation(ShaderLoader::GetProgram("3DLight")->m_id, "CameraPos"), 1, glm::value_ptr(g_camera->GetCameraPos()));
 	glUseProgram(0);
+
+	//glUseProgram(ShaderLoader::GetProgram("3DTexture")->m_id);
+	//glUniform1f(glGetUniformLocation(ShaderLoader::GetProgram("3DTexture")->m_id, "CurrentTime"), utils::currentTime);
+	//glUseProgram(0);
 
 	CShape* sphere = CObjectManager::GetShape("sphere1");
 	CShape* floor = CObjectManager::GetShape("floor");
@@ -1137,6 +1130,20 @@ void Update()
 	CheckInput(utils::deltaTime, utils::currentTime);
 
 	CLightManager::UpdateUniforms(ShaderLoader::GetProgram("3DLight")->m_id);
+}
+
+void ModifySphereVerts()
+{
+	CMesh* mesh = CObjectManager::GetShape("sphere1")->GetMesh();
+	std::vector<float> verticies = mesh->GetVertices();
+	verticies[1] += 1.0f * utils::deltaTime;
+	mesh->SetVertices(verticies);
+
+	glBindBuffer(GL_ARRAY_BUFFER, mesh->GetVBO());
+
+	float* verts = &verticies[0];
+	glBufferData(GL_ARRAY_BUFFER, verticies.size() * sizeof(float), verts, GL_DYNAMIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 /// <summary>
