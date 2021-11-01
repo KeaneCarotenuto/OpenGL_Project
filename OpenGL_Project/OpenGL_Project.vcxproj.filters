@@ -180,5 +180,8 @@
     <None Include="Resources\Shaders\GeomFrag.frag">
       <Filter>Resource Files\Shaders\frag</Filter>
     </None>
+    <None Include="Resources\Shaders\TextureOnly.frag">
+      <Filter>Resource Files\Shaders\frag</Filter>
+    </None>
   </ItemGroup>
 </Project>

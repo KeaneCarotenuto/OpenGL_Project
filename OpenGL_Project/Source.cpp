@@ -62,6 +62,7 @@ void ProgramSetup();
 void InitShapes();
 
 void GenTexture(GLuint& texture, const char* texPath);
+void GenRenderTexture(GLuint& texture, GLuint& frameBuffer, int width, int height);
 void GenCubemap(GLuint& texture, std::string texPath[6]);
 
 void Update();
@@ -108,6 +109,9 @@ GLuint Texture_Crate;
 GLuint Texture_Water;
 GLuint Texture_HeightMap;
 GLuint Texture_Terrain;
+
+GLuint Texture_RenderTexture;
+GLuint frameBuffer;
 
 GLuint Texture_Cubemap;
 
@@ -188,7 +192,7 @@ bool Startup()
 void InitialSetup()
 {
 	//Set the clear colour as blue (used by glClear)
-	glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
+	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 
 	glClearStencil(0);
 	glClear(GL_STENCIL_BUFFER_BIT);
@@ -254,6 +258,9 @@ void TextureCreation()
 	GenTexture(Texture_HeightMap, "Resources/Textures/HeightMap.png");
 	GenTexture(Texture_Terrain, "Resources/Textures/Terrain_Texture.png");
 	GenTexture(Texture_CrateReflectionMap, "Resources/Textures/Crate-Reflection.png");
+
+	//Create render texture
+	GenRenderTexture(Texture_RenderTexture, frameBuffer, utils::windowWidth, utils::windowHeight);
 
 	std::string cubemapPaths[6] = {
 		"MountainOutpost/Right.jpg",
@@ -479,6 +486,23 @@ void MeshCreation()
 		}
 		);
 
+	CMesh::NewCMesh(
+		"quadNorm",
+		VertType::Pos_Tex_Norm,
+		{
+			// Index        // Position			    //Texture Coords	//Normal
+			//Front Quad
+			/* 00 */        -1.0f,  1.0f, 0.0f, 	0.0f,  1.0f,  		0.0f,  1.0f,  0.0f,   /* 00 */
+			/* 01 */        -1.0f, -1.0f, 0.0f, 	0.0f,  0.0f,  		0.0f,  1.0f,  0.0f,   /* 02 */
+			/* 02 */         1.0f, -1.0f, 0.0f, 	1.0f,  0.0f,  		0.0f,  1.0f,  0.0f,   /* 03 */
+			/* 03 */         1.0f,  1.0f, 0.0f, 	1.0f,  1.0f,  		0.0f,  1.0f,  0.0f,   /* 01 */
+		},
+		{
+			0, 1, 2, // Front Tri 1
+			0, 2, 3, // Front Tri 2
+		}
+		);
+
 	//Create cube mesh
 	CMesh::NewCMesh(
 		"floor-square",
@@ -554,6 +578,10 @@ void ObjectCreation()
 	CObjectManager::AddShape("point", new CShape("point-col", glm::vec3(0.0f, 0.0f, 0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), false));
 	CObjectManager::GetShape("point")->SetCamera(g_camera);
 
+	CObjectManager::AddShape("renderTexture", new CShape("quadNorm", glm::vec3(0.0f, 0.0f, 0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), false));
+	CObjectManager::GetShape("renderTexture")->m_orthoProject = true;
+	CObjectManager::GetShape("renderTexture")->SetCamera(g_camera);
+
 	CObjectManager::AddShape("water1", new CShape("squareNorm", glm::vec3(0.0f, -5.5f, 0.0f), 0.0f, glm::vec3(325.0f, 1.0f, 325.0f), false));
 	CObjectManager::GetShape("water1")->SetCamera(g_camera);
 
@@ -577,6 +605,7 @@ void ProgramSetup()
 	ShaderLoader::CreateProgram("text", "Resources/Shaders/Text.vert", "Resources/Shaders/Text.frag" );
 	ShaderLoader::CreateProgram("textScroll", "Resources/Shaders/TextScroll.vert", "Resources/Shaders/TextScroll.frag" );
 	ShaderLoader::CreateProgram("3DLight", "Resources/Shaders/3D_Normals.vert", "Resources/Shaders/3DLight_BlinnPhong.frag" );
+	ShaderLoader::CreateProgram("3DTexture", "Resources/Shaders/3D_Normals.vert", "Resources/Shaders/TextureOnly.frag" );
 	ShaderLoader::CreateProgram("skybox", "Resources/Shaders/Skybox.vert", "Resources/Shaders/Skybox.frag" );
 	ShaderLoader::CreateProgram("solidColour", "Resources/Shaders/PositionOnly.vert", "Resources/Shaders/ColourOnly.frag");
 	ShaderLoader::CreateProgram("geom", "Resources/Shaders/GeomVert.vert", "Resources/Shaders/GeomFrag.frag", "Resources/Shaders/GeomGeom.geom");
@@ -637,14 +666,14 @@ void InitShapes()
 		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM(), "Model"));
 	}
 
-	//Set program and add uniforms to Cube
+	//Set program and add uniforms to point
 	if (_shape = CObjectManager::GetShape("point")) {
 		_shape->SetProgram(ShaderLoader::GetProgram("geom")->m_id);
 		_shape->AddUniform(new FloatUniform(0, "CurrentTime"));
 		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM(), "PVMMat"));
 	}
 
-	//Set program and add uniforms to Cube
+	//Set program and add uniforms to water
 	if (_shape = CObjectManager::GetShape("water1")) {
 		_shape->SetProgram(ShaderLoader::GetProgram("3DLight")->m_id);
 		_shape->AddUniform(new AnimationUniform(Texture_Water, 100, 0.1f, _shape,  "ImageTexture"));
@@ -652,6 +681,22 @@ void InitShapes()
 		_shape->AddUniform(new FloatUniform(0, "offset"));
 		_shape->AddUniform(new CubemapUniform(Texture_Cubemap, "Skybox"));
 		_shape->AddUniform(new FloatUniform(0.1f, "Reflectivity"));
+		_shape->AddUniform(new BoolUniform(false, "hasRefMap"));
+		_shape->AddUniform(new FloatUniform(0, "RimExponent"));
+		_shape->AddUniform(new Vec3Uniform(glm::vec3(0.0f, 0.0f, 0.0f), "RimColour"));
+		_shape->AddUniform(new FloatUniform(0, "CurrentTime"));
+		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM(), "PVMMat"));
+		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM(), "Model"));
+	}
+	
+	//Set program and add uniforms to renderTexture
+	if (_shape = CObjectManager::GetShape("renderTexture")) {
+		_shape->SetProgram(ShaderLoader::GetProgram("3DTexture")->m_id);
+		_shape->AddUniform(new ImageUniform(Texture_RenderTexture, "ImageTexture"));
+		_shape->AddUniform(new IntUniform(0, "frameCount"));
+		_shape->AddUniform(new FloatUniform(0, "offset"));
+		_shape->AddUniform(new CubemapUniform(NULL, "Skybox"));
+		_shape->AddUniform(new FloatUniform(0.0f, "Reflectivity"));
 		_shape->AddUniform(new BoolUniform(false, "hasRefMap"));
 		_shape->AddUniform(new FloatUniform(0, "RimExponent"));
 		_shape->AddUniform(new Vec3Uniform(glm::vec3(0.0f, 0.0f, 0.0f), "RimColour"));
@@ -912,6 +957,45 @@ void GenTexture(GLuint& texture, const char* texPath)
 
 	//Unbind and free texture and image
 	stbi_image_free(ImageData);
+	glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+
+void GenRenderTexture(GLuint& texture, GLuint& frameBuffer, int width, int height){
+	//Generate texture and bind it to a GLuint (texture) and framebuffer (frameBuffer) 
+	glGenTextures(1, &texture);
+	glBindTexture(GL_TEXTURE_2D, texture);
+
+	//Set texture parameters
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	//Generate the texture
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+
+	//Generate the framebuffer
+	glGenFramebuffers(1, &frameBuffer);
+	glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer);
+
+	//Attach the texture to the framebuffer
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
+
+	//Generate the renderbuffer and attach it to the framebuffer (for depth) 
+	GLuint renderBuffer;
+	glGenRenderbuffers(1, &renderBuffer);
+	glBindRenderbuffer(GL_RENDERBUFFER, renderBuffer);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, renderBuffer);
+
+	//Check if framebuffer is complete
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+		std::cout << "Framebuffer not complete" << std::endl;
+	}
+
+	//Unbind framebuffer and texture
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
@@ -1193,6 +1277,12 @@ float GetTerrainHeight(CShape* floor,float _worldX, float _worldZ) {
 /// </summary>
 void Render()
 {
+	//bind framebuffer, enable depth test, and clear screen 
+	glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer);
+	glEnable(GL_DEPTH_TEST);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+
 	//Enable blending for textures with opacity
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -1235,6 +1325,14 @@ void Render()
 	if (cull) glEnable(GL_CULL_FACE);
 
 	DrawCirlce(0.01f, glm::vec3(0,0,0));
+
+	//unbind framebuffer 
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glDisable(GL_DEPTH_TEST);
+	glClear(GL_COLOR_BUFFER_BIT);
+
+	//render the renderTexture object
+	CObjectManager::GetShape("renderTexture")->Render();
 
 	glfwSwapBuffers(g_window);
 }
