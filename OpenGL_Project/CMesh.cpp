@@ -61,7 +61,8 @@ void CMesh::GenBindVerts()
 		break;
 	}
 
-	
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
 }
 
 /// <summary>
@@ -231,6 +232,63 @@ void CMesh::NewCMesh(std::string _name, float _radius, int _fidelity)
 	// Clean up the used memory
 	delete[] Vertices;
 	delete[] Indices;
+}
+
+void CMesh::CreateVertex(std::vector<float>& row, int x, int y)
+{
+	row.push_back(float(x));										//x POS
+	row.push_back(float(y));										//y
+	row.push_back(0);												//z
+
+	row.push_back(float(x) / 10.0f);								//x TEX
+	row.push_back(float(y) / 10.0f);								//y
+
+	row.push_back(0);												//x NORM
+	row.push_back(0);												//y	
+	row.push_back(1);												//z
+}
+
+// Create a cloth mesh from the given parameters and store it in the mesh map with the given name
+void CMesh::NewCMesh(std::string _name, float _width, float _height, int _wVerts, int _hVerts)
+{
+	//create a vector of vertices to be used as the cloth vertices
+	std::vector< std::vector<float> > verticies = {};
+	//create a vector of vertex indicies to be used as the cloth indicies
+	std::vector<int> indices = {};
+
+	int indNum = 0;
+	for (int y = 0; y < 20 - 1; y++) {
+		std::vector<float> row = {};
+		for (int x = 0; x < 20 - 1; x++) {
+			CreateVertex(row, x, y);
+			CreateVertex(row, x, y + 1);
+			CreateVertex(row, x + 1, y);
+			indices.push_back(indNum++);
+			indices.push_back(indNum++);
+			indices.push_back(indNum++);
+
+			CreateVertex(row, x + 1, y);
+			CreateVertex(row, x, y + 1);
+			CreateVertex(row, x + 1, y + 1);
+			indices.push_back(indNum++);
+			indices.push_back(indNum++);
+			indices.push_back(indNum++);
+		}
+		verticies.push_back(row);
+	}
+
+	//create a vector of floats to be used as the vertex data, then fill it with the verticies create above
+	std::vector<float> vertexData = {};
+	for (int i = 0; i < verticies.size(); i++) {
+		for (int j = 0; j < verticies[i].size(); j++) {
+			vertexData.push_back(verticies[i][j]);
+		}
+	}
+
+	//create the mesh
+	CMesh* tempPointer = new CMesh(VertType::Pos_Tex_Norm, vertexData, indices);
+	std::string tempName = (_name == "" ? "cloth-" + std::to_string(_width) + "-" + std::to_string(_height) + "-" + std::to_string(_wVerts) + "-" + std::to_string(_hVerts) : _name);
+	CMesh::meshMap[tempName] = tempPointer;
 }
 
 /// <summary>

@@ -3,8 +3,8 @@
 
 namespace utils {
 	//Width and height of window
-	const int windowWidth = 800;
-	const int windowHeight = 800;
+	extern int windowWidth;
+	extern int windowHeight;
 
 	extern glm::vec2 mousePos;
 

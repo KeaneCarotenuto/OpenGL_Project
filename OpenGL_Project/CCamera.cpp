@@ -5,8 +5,8 @@
 glm::vec3 CCamera::GetWorldRay()
 {
 	glm::vec2 NDC = glm::vec2(
-		(2.0f * utils::mousePos.x) / utils::windowHeight - 1.0f, 
-		-(1.0f - (2.0f * utils::mousePos.y) / utils::windowWidth)
+		(2.0f * utils::mousePos.x) / utils::windowWidth - 1.0f,
+		-(1.0f - (2.0f * utils::mousePos.y) / utils::windowHeight)
 	);
 
 	glm::vec4 ray_clip = glm::vec4(NDC.x, NDC.y, -1.0, 1.0);

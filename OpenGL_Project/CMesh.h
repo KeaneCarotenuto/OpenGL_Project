@@ -50,6 +50,10 @@ public:
 	static void NewCMesh(std::string _name, VertType _type, std::vector<float> _vertices, std::vector<int> _indices);
 	static void NewCMesh(int _verts);
 	static void NewCMesh(std::string _name, float _radius, int _fidelity);
+	static void NewCMesh(std::string _name, float _width, float _height, int _wVerts, int _hVerts);
+
+	static void CreateVertex(std::vector<float>& row, int x, int y);
+
 
 	static CMesh* GetMesh(std::string _name, bool* _doesExist = nullptr);
 
@@ -57,6 +61,7 @@ public:
 	GLuint GetVAO() { return m_VAO; };
 	GLuint GetEBO() { return m_EBO; };
 
+	void SetVertices(std::vector<float> _verts) { m_VertexArray.vertices = _verts; };
 	std::vector<float> GetVertices() { return m_VertexArray.vertices; };
 	std::vector<int> GetIndices() { return m_VertexArray.indices; };
 

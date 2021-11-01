@@ -68,6 +68,7 @@ void GenTexture(GLuint& texture, const char* texPath);
 void GenCubemap(GLuint& texture, std::string texPath[6]);
 
 void Update();
+void CreateVertex(std::vector<float>& row, float x, float y, float z);
 void CheckInput(float _deltaTime, float _currentTime);
 void Render();
 void RenderObjects();
@@ -103,6 +104,8 @@ glm::vec2 utils::mousePos = glm::vec2();
 float utils::currentTime = 0.0f;
 float utils::deltaTime = 0.0f;
 float utils::previousTimeStep = 0.0f;
+int utils::windowWidth = 1600;
+int utils::windowHeight = 900;
 
 //Program render window
 GLFWwindow* g_window = nullptr;
@@ -173,7 +176,11 @@ bool Startup()
 	SetConsoleCursorInfo(out, &cursorInfo);
 
 	//Create a GLFW controlled context window
-	g_window = glfwCreateWindow(utils::windowWidth, utils::windowHeight, "Keane Carotenuto - Summative  1", NULL, NULL);
+	glfwWindowHint(GLFW_MAXIMIZED, true);
+
+	g_window = glfwCreateWindow(utils::windowWidth, utils::windowHeight, "My Title", NULL, NULL);
+
+	glfwGetWindowSize(g_window, &utils::windowWidth, &utils::windowHeight);
 
 	//Check for failure
 	if (g_window == NULL) {
@@ -537,6 +544,9 @@ void MeshCreation()
 		}
 		);
 
+	//Create cloth mesh
+	CMesh::NewCMesh("cloth", 10.0f, 10.0f, 20, 20);
+
 	CMesh::NewCMesh("sphere", 0.5f, 15);
 }
 
@@ -557,8 +567,8 @@ void ObjectCreation()
 	CObjectManager::AddShape("cube1", new CShape("cubeNorm", glm::vec3(5.0f, 0.0f, 0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), false));
 	CObjectManager::GetShape("cube1")->SetCamera(g_camera);
 
-	CObjectManager::AddShape("water1", new CShape("squareNorm", glm::vec3(0.0f, 1.0f, 0.0f), 0.0f, glm::vec3(10.0f, 1.0f, 10.0f), false));
-	CObjectManager::GetShape("water1")->SetCamera(g_camera);
+	CObjectManager::AddShape("cloth", new CShape("cloth", glm::vec3(0.0f, 2.0f, 0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), false));
+	CObjectManager::GetShape("cloth")->SetCamera(g_camera);
 
 	CObjectManager::AddShape("skybox", new CShape("skybox", glm::vec3(0.0f, 0.0f, 0.0f), 0.0f, glm::vec3(2000.0f, 2000.0f, 2000.0f), false));
 	CObjectManager::GetShape("skybox")->SetCamera(g_camera);
@@ -638,13 +648,13 @@ void InitShapes()
 	}
 
 	//Set program and add uniforms to Cube
-	if (_shape = CObjectManager::GetShape("water1")) {
+	if (_shape = CObjectManager::GetShape("cloth")) {
 		_shape->SetProgram(ShaderLoader::GetProgram("3DLight")->m_id);
-		_shape->AddUniform(new AnimationUniform(Texture_Water, 100, 0.1f, _shape,  "ImageTexture"));
-		_shape->AddUniform(new IntUniform(100, "frameCount"));
+		_shape->AddUniform(new ImageUniform(Texture_Rayman, "ImageTexture"));
+		_shape->AddUniform(new IntUniform(0, "frameCount"));
 		_shape->AddUniform(new FloatUniform(0, "offset"));
 		_shape->AddUniform(new CubemapUniform(Texture_Cubemap, "Skybox"));
-		_shape->AddUniform(new FloatUniform(0.1f, "Reflectivity"));
+		_shape->AddUniform(new FloatUniform(0.0f, "Reflectivity"));
 		_shape->AddUniform(new BoolUniform(false, "hasRefMap"));
 		_shape->AddUniform(new FloatUniform(0, "RimExponent"));
 		_shape->AddUniform(new Vec3Uniform(glm::vec3(0.0f, 0.0f, 0.0f), "RimColour"));
@@ -948,6 +958,85 @@ void Update()
 	utils::deltaTime = utils::currentTime - utils::previousTimeStep;
 	utils::previousTimeStep = utils::currentTime;
 
+	//get cloth shape
+	CMesh* mesh = CObjectManager::GetShape("cloth")->GetMesh();
+	//create a vector of vertices to be used as the cloth vertices
+	std::vector< std::vector<float> > verticies = {};
+	//create a vector of indicies to be used as the cloth indicies
+	std::vector< int > indices = {};
+
+	std::vector < glm::vec2 > holes = { glm::vec2(int(utils::currentTime) % 20 , (int(utils::currentTime) % (10 * 10)) / 5) , glm::vec2(5,5)};
+
+	int index = 0;
+	//fill the verticies vector with the verticies of the cloth
+	for (int y = 20; y > 1; y--) {
+		std::vector<float> row = {};
+		for (int x = 20; x > 1; x--) {
+			CreateVertex(row, x, y, sin(utils::currentTime + y));
+			CreateVertex(row, x, y + 1, sin(utils::currentTime + y + 1));
+			CreateVertex(row, x + 1, y, sin(utils::currentTime + y));
+
+			bool anyHole = false;
+			for (glm::vec2 _hole : holes) {
+				if (x == _hole.x && y == _hole.y) {
+					indices.push_back(0);
+					indices.push_back(0);
+					indices.push_back(0);
+					index++; index++; index++;
+					anyHole = true;
+					break;
+				}
+			}
+			if (!anyHole) {
+				indices.push_back(index++);
+				indices.push_back(index++);
+				indices.push_back(index++);
+			}
+			
+
+			CreateVertex(row, x + 1, y, sin(utils::currentTime + y));
+			CreateVertex(row, x, y + 1, sin(utils::currentTime + y + 1));
+			CreateVertex(row, x + 1, y + 1, sin(utils::currentTime + y + 1));
+
+			anyHole = false;
+			for (glm::vec2 _hole : holes) {
+				if (x == _hole.x && y == _hole.y - 1) {
+					indices.push_back(0);
+					indices.push_back(0);
+					indices.push_back(0);
+					index++; index++; index++;
+					anyHole = true;
+					break;
+				}
+			}
+			if (!anyHole) {
+				indices.push_back(index++);
+				indices.push_back(index++);
+				indices.push_back(index++);
+			}
+		}
+		verticies.push_back(row);
+	}
+
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->GetEBO());
+	int* ind = &indices[0];
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(int), ind, GL_DYNAMIC_DRAW);
+
+	//create a vector of floats to be used as the vertex data, then fill it with the verticies create above
+	std::vector<float> vertexData = {};
+	for (int i = 0; i < verticies.size(); i++) {
+		for (int j = 0; j < verticies[i].size(); j++) {
+			vertexData.push_back(verticies[i][j]);
+		}
+	}
+
+
+	glBindBuffer(GL_ARRAY_BUFFER, mesh->GetVBO());
+	float* verts = &vertexData[0];
+	glBufferData(GL_ARRAY_BUFFER, vertexData.size() * sizeof(float), verts, GL_DYNAMIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
 	//Move shapes around world origin in circle
 	//CObjectManager::GetShape("sphere1")->SetPosition(glm::vec3(sin(utils::currentTime + glm::pi<float>())*2, 0, cos(utils::currentTime + glm::pi<float>())*2));
 
@@ -962,6 +1051,20 @@ void Update()
 	CheckInput(utils::deltaTime, utils::currentTime);
 
 	CLightManager::UpdateUniforms(ShaderLoader::GetProgram("3DLight")->m_id);
+}
+
+void CreateVertex(std::vector<float>& row, float x, float y, float z)
+{
+	row.push_back(float(x));										//x POS
+	row.push_back(float(y));										//y
+	row.push_back(z);												//z
+
+	row.push_back(float(x) / 10.0f);								//x TEX
+	row.push_back(float(y) / 10.0f);								//y
+
+	row.push_back(0);												//x NORM
+	row.push_back(0);												//y	
+	row.push_back(1);												//z
 }
 
 /// <summary>
@@ -1055,49 +1158,18 @@ void Render()
 /// </summary>
 void RenderObjects()
 {
-	//Enable scissor to cut out top and bottom
-	glEnable(GL_SCISSOR_TEST);
-	glScissor(0, 100, 800, 600);
 
 	//Render normal objects
 	CObjectManager::GetShape("skybox")->Render();
 	CObjectManager::GetShape("floor")->Render();
 	CObjectManager::GetShape("cube1")->Render();
-
-	//Enable stencil, and set function
-	glEnable(GL_STENCIL_TEST);
-	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-
-	//Render normal sphere
-	//Also write to stencil, so that coloured sphere does not overlap
-	glStencilFunc(GL_ALWAYS, 1, 0xFF);
-	glStencilMask(0xFF);
-	CObjectManager::GetShape("sphere1")->SetProgram(ShaderLoader::GetProgram("3DLight")->m_id);
-	CObjectManager::GetShape("sphere1")->UpdateUniform(new Vec3Uniform({ 1,0,0 }, "Colour"));
-	CObjectManager::GetShape("sphere1")->UpdateUniform(new Mat4Uniform(CObjectManager::GetShape("sphere1")->GetPVM(), "Model"));
 	CObjectManager::GetShape("sphere1")->Render();
-
-	//Render scaled up and colour only sphere
-	//Only render where stencil value is not 1 (aka where original sphere is)
-	glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
-	glStencilMask(0x00);
-	CObjectManager::GetShape("sphere1")->Scale(1.1f);
-	CObjectManager::GetShape("sphere1")->SetProgram(ShaderLoader::GetProgram("solidColour")->m_id);
-	CObjectManager::GetShape("sphere1")->UpdateUniform(new Vec3Uniform({ 1,0,0 }, "Colour"));
-	CObjectManager::GetShape("sphere1")->UpdateUniform(new Mat4Uniform(CObjectManager::GetShape("sphere1")->GetPVM(), "Model"));
-	CObjectManager::GetShape("sphere1")->Render();
-	CObjectManager::GetShape("sphere1")->Scale(1.0f / 1.1f);
-	glStencilMask(0xFF);
-	glDisable(GL_STENCIL_TEST);
 
 	//Render water with backface enabled
 	GLboolean cull = glIsEnabled(GL_CULL_FACE);
 	glDisable(GL_CULL_FACE);
-	CObjectManager::GetShape("water1")->Render();
+	CObjectManager::GetShape("cloth")->Render();
 	if (cull) glEnable(GL_CULL_FACE);
-
-	//Disable scissor
-	glDisable(GL_SCISSOR_TEST);
 }
 
 /// <summary>
