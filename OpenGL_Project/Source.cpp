@@ -1006,6 +1006,8 @@ void GenRenderTexture(GLuint& texture, GLuint& frameBuffer, int width, int heigh
 	//Generate the texture
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
 
+	glGenerateMipmap(GL_TEXTURE_2D);
+
 	//Generate the framebuffer
 	glGenFramebuffers(1, &frameBuffer);
 	glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer);
