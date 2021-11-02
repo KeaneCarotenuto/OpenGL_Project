@@ -183,10 +183,18 @@ void CCloth::Update(float deltaTime)
     g_wind.y = 0;
     g_wind.z = sin(glm::radians(windDirection)) * windStrength;
 
+    
+    
     for (int y = 0; y <= clothHeightDivisions - 1; y++) {
+        int hookNum = 0;
         for (int x = 0; x <= clothWidthDivisions - 1; x++) {
             //Top Left Half of quad
             CParticle* part = m_particles[y][x];
+
+            if (part->GetIsFixed()) {
+                part->SetPosition(glm::vec3(hookNum * hookDistance, part->GetPosition().y, part->GetPosition().z));
+                hookNum++;
+            }
 
             part->update(deltaTime);
         }
@@ -194,8 +202,7 @@ void CCloth::Update(float deltaTime)
 
     //make a temporary vector of constraints
     //std::vector<CConstraint*> tempConstraints = m_constraints;
-
-    ////iterate through the temporary vector of constraints randomly updating, then removing the constraint from the temporary vector
+    //iterate through the temporary vector of constraints randomly updating, then removing the constraint from the temporary vector
     //while (tempConstraints.size() > 0) {
     //    int index = rand() % tempConstraints.size();
     //    tempConstraints[index]->Update(deltaTime);
@@ -204,7 +211,9 @@ void CCloth::Update(float deltaTime)
 
     //loop through the constraints and update them
     for (int i = 0; i < m_constraints.size(); i++) {
-        m_constraints[i]->Update(deltaTime);
+        CConstraint* c = m_constraints[i];
+        c->SetStiffness(clothStiffness * (c->GetType() == CConstraint::Type::BEND ? 0.15f : 1.0f));
+        c->Update(deltaTime);
     }
     
 
@@ -228,6 +237,14 @@ void CCloth::Reset()
     clothStiffness = 0.5f;
 
     Rebuild();
+}
+
+void CCloth::UnFixAll()
+{
+    //loop through all fixed particles (m_fixedParts) and set them to not fixed
+    for (CParticle* p : m_fixedParts) {
+        p->SetIsFixed(false);
+    }
 }
 
 void CCloth::Rebuild() {
@@ -271,12 +288,14 @@ void CCloth::Rebuild() {
             //check if the particle has a neighbour to the right, make horizontal STRUCTURAL constraint
             if (x < clothWidthDivisions - 1) {
                 CConstraint* c = new CConstraint(m_particles[y][x], m_particles[y][x + 1]);
+                c->SetType(CConstraint::Type::STRUCTURAL);
                 m_constraints.push_back(c);
             }
 
             //check if the particle has a neighbour below, make vertical STRUCTURAL constraint
             if (y < clothHeightDivisions - 1) {
                 CConstraint* c = new CConstraint(m_particles[y][x], m_particles[y + 1][x]);
+                c->SetType(CConstraint::Type::STRUCTURAL);
                 m_constraints.push_back(c);
             }
 
@@ -286,12 +305,14 @@ void CCloth::Rebuild() {
             //check if the particle has a neighbour to the right and up, make diagonal SHEAR constraint
             if (x < clothWidthDivisions - 1 && y > 0) {
                 CConstraint* c = new CConstraint(m_particles[y][x], m_particles[y - 1][x + 1]);
+                c->SetType(CConstraint::Type::SHEAR);
                 m_constraints.push_back(c);
             }
 
             //check if the particle has a neighbour to the right and down, make diagonal SHEAR constraint
             if (x < clothWidthDivisions - 1 && y < clothHeightDivisions - 1) {
                 CConstraint* c = new CConstraint(m_particles[y][x], m_particles[y + 1][x + 1]);
+                c->SetType(CConstraint::Type::SHEAR);
                 m_constraints.push_back(c);
             }
 
@@ -301,43 +322,48 @@ void CCloth::Rebuild() {
             //check if the particle has a neighbour TWO to the right and TWO up, make diagonal BEND constraint
             if (x < clothWidthDivisions - 2 && y > 1) {
                 CConstraint* c = new CConstraint(m_particles[y][x], m_particles[y - 2][x + 2]);
-                c->SetStiffness(0.25f);
+                c->SetType(CConstraint::Type::BEND);
                 m_constraints.push_back(c);
             }
 
             //check if the particle has a neighbour TWO to the right and TWO down, make diagonal BEND constraint
             if (x < clothWidthDivisions - 2 && y < clothHeightDivisions - 2) {
                 CConstraint* c = new CConstraint(m_particles[y][x], m_particles[y + 2][x + 2]);
-                c->SetStiffness(0.25f);
+                c->SetType(CConstraint::Type::BEND);
                 m_constraints.push_back(c);
             }
 
             //check if the particle has a neighbour TWO to the right, make horizontal BEND constraint
             if (x < clothWidthDivisions - 2) {
                 CConstraint* c = new CConstraint(m_particles[y][x], m_particles[y][x + 2]);
-                c->SetStiffness(0.25f);
+                c->SetType(CConstraint::Type::BEND);
                 m_constraints.push_back(c);
             }
 
             //check if the particle has a neighbour TWO below, make vertical BEND constraint
             if (y < clothHeightDivisions - 2) {
                 CConstraint* c = new CConstraint(m_particles[y][x], m_particles[y + 2][x]);
-                c->SetStiffness(0.25f);
+                c->SetType(CConstraint::Type::BEND);
                 m_constraints.push_back(c);
             }
         }
     }
 
-    //Along the top row, starting at the left, set every 5th particle to be fixed
-    for (int x = 0; x < clothWidthDivisions; x++) {
-        if (x % 5 == 0 || x == clothWidthDivisions - 1) {
-            m_particles[0][x]->SetIsFixed(true);
-        }
+    //Fix the top row of particles based on the number of hooks
+    float hookSpace = (float(clothWidthDivisions - 1)) / (float(numberOfHooks - 1));
+
+    m_fixedParts.clear();
+    for (int i = 0; i < numberOfHooks; i++) {
+        CParticle* part = m_particles[0][int(i * hookSpace)];
+        part->SetIsFixed(true);
+        m_fixedParts.push_back(part);
     }
 
     //loop through every particle and give them a random z position between -0.5 and 0.5
     for (int y = 0; y < clothHeightDivisions; y++) {
         for (int x = 0; x < clothWidthDivisions; x++) {
+            if (m_particles[y][x]->GetIsFixed()) continue;
+
             m_particles[y][x]->SetPosition(m_particles[y][x]->GetPosition() + glm::vec3(0.0f, 0.0f, (rand() % 100) / 100.0f - 0.5f));
         }
     }

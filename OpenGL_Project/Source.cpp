@@ -1200,10 +1200,14 @@ void RenderGUI()
 
 	if (ImGui::SliderInt("Number Of Hooks", &g_cloth->numberOfHooks, 0, 20)) doRebuild = true;
 
-	if (ImGui::SliderFloat("Hook Distance", &g_cloth->hookDistance, 1.0f, 100.0f)) doRebuild = true;
+	if (ImGui::SliderFloat("Hook Distance", &g_cloth->hookDistance, 0.0f, 50.0f));
 
-	if (ImGui::SliderFloat("Cloth Stiffness", &g_cloth->clothStiffness, 0.0f, 1.0f)) doRebuild = true;
+	if (ImGui::SliderFloat("Cloth Stiffness", &g_cloth->clothStiffness, 0.0f, 1.0f));
 
+	if (ImGui::Button("Drop")) {
+
+		g_cloth->UnFixAll();
+	}
 
 	if (ImGui::Button("Reset Cloth")) {
 
@@ -1212,11 +1216,14 @@ void RenderGUI()
 		doRebuild = true;
 	}
 
+	if (ImGui::Button("Rebuild")) {
+
+		doRebuild = true;
+	}
+
 	if (doRebuild) {
 		g_cloth->Rebuild();
 	}
-
-
 
 	ImGui::Text("Object Interation:");
 	ImGui::Combo("Selected Object: ", &g_cloth->selectedCollision, g_cloth->collisionItems, IM_ARRAYSIZE(g_cloth->collisionItems));

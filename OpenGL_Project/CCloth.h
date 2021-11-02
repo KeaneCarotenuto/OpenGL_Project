@@ -78,6 +78,8 @@ public:
 class CConstraint
 {
 private:
+    enum class Type;
+
     CParticle* m_pParticle1 = nullptr;
     CParticle* m_pParticle2 = nullptr;
 
@@ -85,11 +87,19 @@ private:
     float m_stiffness = 0.8f;
     float m_damping = 0.99f;
 
+    CConstraint::Type m_type = CConstraint::Type::STRUCTURAL;
+
     glm::vec3 m_normal = glm::vec3(0.0f, 0.0f, 0.0f);
 
     glm::vec3 m_force = glm::vec3(0.0f, 0.0f, 0.0f);
 
 public:
+    enum class Type {
+        STRUCTURAL,
+        SHEAR,
+        BEND,
+    };
+
     CConstraint(CParticle* _pParticle1, CParticle* _pParticle2);
     ~CConstraint();
 
@@ -105,9 +115,11 @@ public:
     float GetRestLength() { return m_restLength; }
     float GetStiffness() { return m_stiffness; }
     float GetDamping() { return m_damping; }
+    CConstraint::Type GetType() { return m_type; }
     void SetRestLength(float _restLength) { m_restLength = _restLength; }
     void SetStiffness(float _stiffness) { m_stiffness = _stiffness; }
     void SetDamping(float _damping) { m_damping = _damping; }
+    void SetType(CConstraint::Type _type) { m_type = _type; }
 
     glm::vec3 GetNormal() { return m_normal; }
     glm::vec3 GetForce() { return m_force; }
@@ -126,6 +138,7 @@ private:
     static glm::vec3 g_wind;
 
     std::vector<std::vector<CParticle*>> m_particles;
+    std::vector<CParticle*> m_fixedParts;
     std::vector<CConstraint*> m_constraints;
 
 public:
@@ -162,6 +175,8 @@ public:
 
     void Rebuild();
     void Reset();
+
+    void UnFixAll();
 
     CShape* GetFloorShape() { return m_floor; };
     void SetFloorShape(CShape* _floor) { m_floor = _floor; };
