@@ -50,7 +50,7 @@ public:
 	static void NewCMesh(std::string _name, VertType _type, std::vector<float> _vertices, std::vector<int> _indices);
 	static void NewCMesh(int _verts);
 	static void NewCMesh(std::string _name, float _radius, int _fidelity);
-	static void NewCMesh(std::string _name, float _width, float _height, int _wVerts, int _hVerts);
+	static void NewCMesh(std::string _name, int _width, int _height);
 
 	static void CreateVertex(std::vector<float>& row, int x, int y);
 
@@ -63,6 +63,7 @@ public:
 
 	void SetVertices(std::vector<float> _verts) { m_VertexArray.vertices = _verts; };
 	std::vector<float> GetVertices() { return m_VertexArray.vertices; };
+	void SetIndices(std::vector<int> _indices) { m_VertexArray.indices = _indices; };
 	std::vector<int> GetIndices() { return m_VertexArray.indices; };
 
 	void Render();

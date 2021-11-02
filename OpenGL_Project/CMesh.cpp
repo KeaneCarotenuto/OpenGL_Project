@@ -249,7 +249,7 @@ void CMesh::CreateVertex(std::vector<float>& row, int x, int y)
 }
 
 // Create a cloth mesh from the given parameters and store it in the mesh map with the given name
-void CMesh::NewCMesh(std::string _name, float _width, float _height, int _wVerts, int _hVerts)
+void CMesh::NewCMesh(std::string _name, int _width, int _height)
 {
 	//create a vector of vertices to be used as the cloth vertices
 	std::vector< std::vector<float> > verticies = {};
@@ -257,9 +257,9 @@ void CMesh::NewCMesh(std::string _name, float _width, float _height, int _wVerts
 	std::vector<int> indices = {};
 
 	int indNum = 0;
-	for (int y = 0; y < 20 - 1; y++) {
+	for (int y = 0; y < _height - 1; y++) {
 		std::vector<float> row = {};
-		for (int x = 0; x < 20 - 1; x++) {
+		for (int x = 0; x < _width - 1; x++) {
 			CreateVertex(row, x, y);
 			CreateVertex(row, x, y + 1);
 			CreateVertex(row, x + 1, y);
@@ -287,7 +287,7 @@ void CMesh::NewCMesh(std::string _name, float _width, float _height, int _wVerts
 
 	//create the mesh
 	CMesh* tempPointer = new CMesh(VertType::Pos_Tex_Norm, vertexData, indices);
-	std::string tempName = (_name == "" ? "cloth-" + std::to_string(_width) + "-" + std::to_string(_height) + "-" + std::to_string(_wVerts) + "-" + std::to_string(_hVerts) : _name);
+	std::string tempName = (_name == "" ? "cloth-" + std::to_string(_width) + "-" + std::to_string(_height) : _name);
 	CMesh::meshMap[tempName] = tempPointer;
 }
 

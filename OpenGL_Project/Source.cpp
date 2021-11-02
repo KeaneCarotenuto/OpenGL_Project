@@ -68,26 +68,6 @@ void GotoXY(int x, int y);
 
 #pragma endregion
 
-//GUI variables
-bool bWireFrameMode = false;
-float clothLength = 60.0f;
-float clothWidth = 60.0f;
-
-int numberOfHooks = 3;
-float hookDistance = 20.0f;
-float clothStiffness = 0.5f;
-
-const char* mouseModeItems[]{ "Pull", "Push", "Tear", "Fire", "Pin" };
-int selectedMouseMode = 0;
-
-const char* collisionItems[]{ "No Object", "Sphere", "Capsule", "Pyramid" };
-int selectedCollision = 0;
-
-float windDirection = 0.0f;
-float windStrength = 10.0f;
-
-
-
 glm::vec2 utils::mousePos = glm::vec2();
 float utils::currentTime = 0.0f;
 float utils::deltaTime = 0.0f;
@@ -102,6 +82,8 @@ GLFWwindow* g_window = nullptr;
 CCamera* g_camera = new CCamera();
 
 CCloth* g_cloth = nullptr;
+
+bool bWireFrameMode = false;
 
 //Enable and disable input
 bool doInput = false;
@@ -255,6 +237,8 @@ void InitialSetup()
 	InitShapes();
 
 	system("CLS");
+
+	utils::previousTimeStep = float(glfwGetTime());
 }
 
 #pragma region Creation Functions
@@ -535,7 +519,7 @@ void MeshCreation()
 		);
 
 	//Create cloth mesh
-	CMesh::NewCMesh("cloth", 20.0f, 20.0f, 20, 20);
+	CMesh::NewCMesh("cloth", 2, 2);
 
 	CMesh::NewCMesh("sphere", 0.5f, 15);
 }
@@ -557,13 +541,14 @@ void ObjectCreation()
 	CObjectManager::AddShape("cube1", new CShape("cubeNorm", glm::vec3(5.0f, 0.0f, 0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), false));
 	CObjectManager::GetShape("cube1")->SetCamera(g_camera);
 
-	CObjectManager::AddShape("cloth", new CShape("cloth", glm::vec3(0.0f, 2.0f, 0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), false));
+	CObjectManager::AddShape("cloth", new CShape("cloth", glm::vec3(0.0f, 35.0f, 0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), false));
 	CObjectManager::GetShape("cloth")->SetCamera(g_camera);
 
 	CObjectManager::AddShape("skybox", new CShape("skybox", glm::vec3(0.0f, 0.0f, 0.0f), 0.0f, glm::vec3(2000.0f, 2000.0f, 2000.0f), false));
 	CObjectManager::GetShape("skybox")->SetCamera(g_camera);
 
 	g_cloth = new CCloth(CObjectManager::GetShape("cloth"), 20, 20);
+	g_cloth->SetFloorShape(CObjectManager::GetShape("floor"));
 }
 
 #pragma endregion
@@ -682,7 +667,7 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 		glfwSetWindowShouldClose(window, GL_TRUE);
 	}
 
-	//Change line mode (fill or line) with F
+	//Change backface mode (cull or no cull) with B
 	if (key == GLFW_KEY_B && action == GLFW_PRESS) {
 		GLboolean isCull = glIsEnabled(GL_CULL_FACE);
 
@@ -709,12 +694,9 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 		g_camera->UpdateRotation();
 	}
 
-	//Change backface mode (cull or no cull) with B
+	//Change line mode (fill or line) with F
 	if (key == GLFW_KEY_F && action == GLFW_PRESS) {
-		GLint polygonMode[2];
-		glGetIntegerv(GL_POLYGON_MODE, polygonMode);
-
-		glPolygonMode(GL_FRONT_AND_BACK, (polygonMode[0] == GL_FILL ? GL_LINE : GL_FILL));
+		bWireFrameMode = !bWireFrameMode;
 	}
 
 	//Hide or show cursor
@@ -1148,6 +1130,8 @@ void CheckInput(float _deltaTime, float _currentTime)
 /// </summary>
 void Render()
 {
+	glPolygonMode(GL_FRONT_AND_BACK, (bWireFrameMode ? GL_LINE : GL_FILL));
+
 	//Enable blending for textures with opacity
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -1181,7 +1165,7 @@ void RenderObjects()
 	//Render water with backface enabled
 	GLboolean cull = glIsEnabled(GL_CULL_FACE);
 	glDisable(GL_CULL_FACE);
-	CObjectManager::GetShape("cloth")->Render();
+	g_cloth->Render();
 	if (cull) glEnable(GL_CULL_FACE);
 }
 
@@ -1192,57 +1176,61 @@ void RenderGUI()
 {
 	// ImGUI window creation
 
+	bool doRebuild = false;
+
 	ImGui::Begin("Physics Framework");
 
 	ImGui::Text("General Controls:");
 
 	ImGui::Checkbox("Wireframe Mode", &bWireFrameMode);
 
-	ImGui::Combo("Mouse Mode", &selectedMouseMode, mouseModeItems, IM_ARRAYSIZE(mouseModeItems));
+	ImGui::Combo("Mouse Mode", &g_cloth->selectedCollision, g_cloth->mouseModeItems, IM_ARRAYSIZE(g_cloth->mouseModeItems));
 
 
 
 	ImGui::Text("Cloth Shape:");
 
-	ImGui::SliderFloat("Cloth Length", &clothLength, 1.0f, 200.0f);
+	if (ImGui::SliderFloat("Cloth Length", &g_cloth->clothLength, 1.0f, 200.0f)) doRebuild = true;
 
-	ImGui::SliderFloat("Cloth Width", &clothWidth, 1.0f, 200.0f);
+	if (ImGui::SliderFloat("Cloth Width", &g_cloth->clothWidth, 1.0f, 200.0f)) doRebuild = true;
 
-	ImGui::SliderInt("Number Of Hooks", &numberOfHooks, 0, 20);
+	if (ImGui::SliderInt("Cloth Length Divisions", &g_cloth->clothHeightDivisions, 1.0f, 200.0f)) doRebuild = true;
 
-	ImGui::SliderFloat("Hook Distance", &hookDistance, 1.0f, 100.0f);
+	if (ImGui::SliderInt("Cloth Width Divisions", &g_cloth->clothWidthDivisions, 1.0f, 200.0f)) doRebuild = true;
 
-	ImGui::SliderFloat("Cloth Stiffness", &clothStiffness, 0.0f, 1.0f);
+	if (ImGui::SliderInt("Number Of Hooks", &g_cloth->numberOfHooks, 0, 20)) doRebuild = true;
+
+	if (ImGui::SliderFloat("Hook Distance", &g_cloth->hookDistance, 1.0f, 100.0f)) doRebuild = true;
+
+	if (ImGui::SliderFloat("Cloth Stiffness", &g_cloth->clothStiffness, 0.0f, 1.0f)) doRebuild = true;
 
 
 	if (ImGui::Button("Reset Cloth")) {
 
-		clothLength = 60.0f;
+		g_cloth->Reset();
 
-		clothWidth = 60.0f;
+		doRebuild = true;
+	}
 
-		numberOfHooks = 3;
-
-		hookDistance = 20.0f;
-
-		clothStiffness = 0.5f;
+	if (doRebuild) {
+		g_cloth->Rebuild();
 	}
 
 
 
 	ImGui::Text("Object Interation:");
-	ImGui::Combo("Selected Object: ", &selectedCollision, collisionItems, IM_ARRAYSIZE(collisionItems));
+	ImGui::Combo("Selected Object: ", &g_cloth->selectedCollision, g_cloth->collisionItems, IM_ARRAYSIZE(g_cloth->collisionItems));
 
 
 
 	ImGui::Text("Wind:");
-	ImGui::SliderFloat("Wind Direction (Degrees):", &windDirection, 0.0f, 360.0f);
-	ImGui::SliderFloat("Wind Strength:", &windStrength, 0.0f, 100.0f);
+	ImGui::SliderFloat("Wind Direction (Degrees):", &g_cloth->windDirection, 0.0f, 360.0f);
+	ImGui::SliderFloat("Wind Strength:", &g_cloth->windStrength, 0.0f, 100.0f);
 
 
 	if (ImGui::Button("Reset Wind")) {
-		windDirection = 0.0f;
-		windStrength = 10.0f;
+		g_cloth->windDirection = 270.0f;
+		g_cloth->windStrength = 10.0f;
 	}
 
 	// Closes the window
