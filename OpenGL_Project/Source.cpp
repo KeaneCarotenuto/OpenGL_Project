@@ -954,6 +954,8 @@ void Update()
 
 	//DoClothTest();
 
+	g_cloth->Update(utils::deltaTime);
+
 	//Move shapes around world origin in circle
 	//CObjectManager::GetShape("sphere1")->SetPosition(glm::vec3(sin(utils::currentTime + glm::pi<float>())*2, 0, cos(utils::currentTime + glm::pi<float>())*2));
 

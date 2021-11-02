@@ -38,21 +38,22 @@ public:
     void addForce(glm::vec3 _force);
     void resetForce();
 
-    glm::vec3 getPosition() { return m_position; }
-    glm::vec3 getPrevPosition() { return m_prevPosition; }
-    glm::vec3 getVelocity() { return m_velocity; }
-    glm::vec3 getAcceleration() { return m_acceleration; }
-    glm::vec3 getForce() { return m_force; }
-    float getMass() { return m_mass; }
-    float getDamping() { return m_damping; }
+    glm::vec3 GetPosition() { return m_position; }
+    glm::vec3 GetPrevPosition() { return m_prevPosition; }
+    glm::vec3 GetVelocity() { return m_velocity; }
+    glm::vec3 GetAcceleration() { return m_acceleration; }
+    glm::vec3 GetForce() { return m_force; }
+    float GetMass() { return m_mass; }
+    float GetDamping() { return m_damping; }
 
-    void setPosition(glm::vec3 _position) { m_position = _position; }
-    void setPrevPosition(glm::vec3 _prevPosition) { m_prevPosition = _prevPosition; }
-    void setVelocity(glm::vec3 _velocity) { m_velocity = _velocity; }
-    void setAcceleration(glm::vec3 _acceleration) { m_acceleration = _acceleration; }
-    void setForce(glm::vec3 _force) { m_force = _force; }
-    void setMass(float _mass) { m_mass = _mass; }
-    void setDamping(float _damping) { m_damping = _damping; }
+    void SetPosition(glm::vec3 _position) { m_position = _position; }
+    void SetPosition(float _x, float _y, float _z) { m_position = glm::vec3(_x, _y, _z); }
+    void SetPrevPosition(glm::vec3 _prevPosition) { m_prevPosition = _prevPosition; }
+    void SetVelocity(glm::vec3 _velocity) { m_velocity = _velocity; }
+    void SetAcceleration(glm::vec3 _acceleration) { m_acceleration = _acceleration; }
+    void SetForce(glm::vec3 _force) { m_force = _force; }
+    void SetMass(float _mass) { m_mass = _mass; }
+    void SetDamping(float _damping) { m_damping = _damping; }
 
 };
 
@@ -102,7 +103,8 @@ private:
     std::vector<CConstraint*> m_constraints;
 
 public:
-    CCloth(CShape* _shape, int width, int height);
+    CCloth(CShape* _shape, int _width, int _height);
+    void Rebind();
     ~CCloth();
 
     void Update(float deltaTime);

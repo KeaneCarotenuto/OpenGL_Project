@@ -15,25 +15,27 @@ CParticle::CParticle(float _x, float _y, float _z) : CParticle(glm::vec3(_x, _y,
 
 CConstraint::CConstraint(CParticle* _pParticle1, CParticle* _pParticle2){
     m_pParticle1 = _pParticle1;
-    m_pParticle1 = _pParticle2;
+    m_pParticle2 = _pParticle2;
 
-    m_restLength = glm::distance(m_pParticle1->getPosition(), m_pParticle2->getPosition());
+    m_restLength = glm::distance(m_pParticle1->GetPosition(), m_pParticle2->GetPosition());
 
     m_stiffness = 0.9f;
     m_damping = 0.99f;
 }
 
 //Cloth constructor that takes in the position of the cloth in the world, as well as the number of rows and columns of the cloth
-CCloth::CCloth(CShape* _shape, int width, int height)
+CCloth::CCloth(CShape* _shape, int _width, int _height)
 {
     m_shape = _shape;
+    m_width = _width;
+    m_height = _height;
 
     std::vector< int > indices = {};
     
     int index = 0;
-	for (int y = height; y > 1; y--) {
+	for (int y = _height; y > 1; y--) {
 		std::vector<CParticle*> row = {};
-		for (int x = width; x > 1; x--) {
+		for (int x = _width; x > 1; x--) {
             //Top Left Half of quad
             CParticle* p1 = new CParticle(x, y, sin(utils::currentTime + y));
 			CParticle* p2 = new CParticle(x, y + 1, sin(utils::currentTime + y + 1));
@@ -80,35 +82,53 @@ CCloth::CCloth(CShape* _shape, int width, int height)
 		m_particles.push_back(row);
 	}
 
+    Rebind();
+}
+
+void CCloth::Rebind()
+{
     CMesh* mesh = m_shape->GetMesh();
 
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->GetEBO());
-	int* ind = &indices[0];
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(int), ind, GL_DYNAMIC_DRAW);
-
-	//create a vector of floats to be used as the vertex data, then fill it with the verticies create above
-	std::vector<float> vertexData = {};
-	for (int i = 0; i < m_particles.size(); i++) {
-		for (int j = 0; j < m_particles[i].size(); j++) { 
+    //create a vector of floats to be used as the vertex data, then fill it with the verticies create above
+    std::vector<float> vertexData = {};
+    for (int i = 0; i < m_particles.size(); i++) {
+        for (int j = 0; j < m_particles[i].size(); j++) {
             //position data (x,y,z)
-			vertexData.push_back(m_particles[i][j]->getPosition().x);
-            vertexData.push_back(m_particles[i][j]->getPosition().y);
-            vertexData.push_back(m_particles[i][j]->getPosition().z);
+            vertexData.push_back(m_particles[i][j]->GetPosition().x);
+            vertexData.push_back(m_particles[i][j]->GetPosition().y);
+            vertexData.push_back(m_particles[i][j]->GetPosition().z);
 
             //Texture Coordinates (u,v)
-            vertexData.push_back(m_particles[i][j]->getPosition().x / m_width);
-            vertexData.push_back(m_particles[i][j]->getPosition().y / m_height);
+            vertexData.push_back(m_particles[i][j]->GetPosition().x / float(m_width));
+            vertexData.push_back(m_particles[i][j]->GetPosition().y / float(m_height));
 
             //normal data (x,y,z)
             vertexData.push_back(0.0f);
             vertexData.push_back(0.0f);
             vertexData.push_back(1.0f);
-		}
-	}
+        }
+    }
 
 
-	glBindBuffer(GL_ARRAY_BUFFER, mesh->GetVBO());
-	float* verts = &vertexData[0];
-	glBufferData(GL_ARRAY_BUFFER, vertexData.size() * sizeof(float), verts, GL_DYNAMIC_DRAW);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ARRAY_BUFFER, mesh->GetVBO());
+    float* verts = &vertexData[0];
+    glBufferData(GL_ARRAY_BUFFER, vertexData.size() * sizeof(float), verts, GL_DYNAMIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+}
+
+void CCloth::Update(float deltaTime)
+{
+    for (int y = m_height; y > 1; y--) {
+        for (int x = m_width; x > 1; x--) {
+            //Top Left Half of quad
+            m_particles[y][x]->SetPosition(x, y, sin(utils::currentTime + y));
+            m_particles[y][x+1]->SetPosition(x, y + 1, sin(utils::currentTime + y + 1));
+            m_particles[y][x+2]->SetPosition(x + 1, y, sin(utils::currentTime + y));
+
+            //Bottom Right Half of quad
+            m_particles[y][x+3]->SetPosition(x + 1, y, sin(utils::currentTime + y));
+            m_particles[y][x]->SetPosition(x, y + 1, sin(utils::currentTime + y + 1));
+            m_particles[y][x]->SetPosition(x + 1, y + 1, sin(utils::currentTime + y + 1));
+        }
+    }
 }
