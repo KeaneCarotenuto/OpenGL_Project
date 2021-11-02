@@ -9,30 +9,16 @@
 // Author      : Keane Carotenuto
 // Mail        : KeaneCarotenuto@gmail.com
 
+
+
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 
-#include <glew.h>
-#include <glfw3.h>
-
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
-#include <glm.hpp>
-#include <gtc/matrix_transform.hpp>
-#include <gtc/type_ptr.hpp>
-#include <gtx/rotate_vector.hpp>
-
-#include <fmod.hpp>
-
-#include <iostream>
-#include <Windows.h>
-#define _USE_MATH_DEFINES
-#include <math.h>
-
-#include <map>
-#include <string>
+#include "Utility.h"
 
 #include "Source.h"
 #include "ShaderLoader.h"
@@ -42,7 +28,8 @@
 #include "CShape.h"
 #include "CUniform.h"
 
-#include "Utility.h"
+#include "CCloth.h"
+
 #include "CObjectManager.h"
 #include "CLightManager.h"
 
@@ -68,6 +55,7 @@ void GenTexture(GLuint& texture, const char* texPath);
 void GenCubemap(GLuint& texture, std::string texPath[6]);
 
 void Update();
+void DoClothTest();
 void CreateVertex(std::vector<float>& row, float x, float y, float z);
 void CheckInput(float _deltaTime, float _currentTime);
 void Render();
@@ -112,6 +100,8 @@ GLFWwindow* g_window = nullptr;
 
 //Main camera
 CCamera* g_camera = new CCamera();
+
+CCloth* g_cloth = nullptr;
 
 //Enable and disable input
 bool doInput = false;
@@ -526,7 +516,7 @@ void MeshCreation()
 		}
 		);
 
-	//Create cube mesh
+	//Create floor mesh
 	CMesh::NewCMesh(
 		"floor-squareNorm",
 		VertType::Pos_Tex_Norm,
@@ -545,7 +535,7 @@ void MeshCreation()
 		);
 
 	//Create cloth mesh
-	CMesh::NewCMesh("cloth", 10.0f, 10.0f, 20, 20);
+	CMesh::NewCMesh("cloth", 20.0f, 20.0f, 20, 20);
 
 	CMesh::NewCMesh("sphere", 0.5f, 15);
 }
@@ -572,6 +562,8 @@ void ObjectCreation()
 
 	CObjectManager::AddShape("skybox", new CShape("skybox", glm::vec3(0.0f, 0.0f, 0.0f), 0.0f, glm::vec3(2000.0f, 2000.0f, 2000.0f), false));
 	CObjectManager::GetShape("skybox")->SetCamera(g_camera);
+
+	g_cloth = new CCloth(CObjectManager::GetShape("cloth"), 20, 20);
 }
 
 #pragma endregion
@@ -947,6 +939,8 @@ void GenCubemap(GLuint& texture, std::string texPath[6])
 	glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 }
 
+glm::vec2 rand1 = glm::vec2(rand() % 20, rand() % 20);
+bool dorand = false;
 
 /// <summary>
 /// Called every frame
@@ -958,6 +952,26 @@ void Update()
 	utils::deltaTime = utils::currentTime - utils::previousTimeStep;
 	utils::previousTimeStep = utils::currentTime;
 
+	//DoClothTest();
+
+	//Move shapes around world origin in circle
+	//CObjectManager::GetShape("sphere1")->SetPosition(glm::vec3(sin(utils::currentTime + glm::pi<float>())*2, 0, cos(utils::currentTime + glm::pi<float>())*2));
+
+	//Update all shapes
+	CObjectManager::UpdateAll(utils::deltaTime, utils::currentTime);
+
+	glUseProgram(ShaderLoader::GetProgram("3DLight")->m_id);
+	glUniform3fv(glGetUniformLocation(ShaderLoader::GetProgram("3DLight")->m_id, "CameraPos"), 1, glm::value_ptr(g_camera->GetCameraPos()));
+	glUseProgram(0);
+
+	//Check for input
+	CheckInput(utils::deltaTime, utils::currentTime);
+
+	CLightManager::UpdateUniforms(ShaderLoader::GetProgram("3DLight")->m_id);
+}
+
+void DoClothTest()
+{
 	//get cloth shape
 	CMesh* mesh = CObjectManager::GetShape("cloth")->GetMesh();
 	//create a vector of vertices to be used as the cloth vertices
@@ -965,11 +979,23 @@ void Update()
 	//create a vector of indicies to be used as the cloth indicies
 	std::vector< int > indices = {};
 
-	std::vector < glm::vec2 > holes = { glm::vec2(int(utils::currentTime) % 20 , (int(utils::currentTime) % (10 * 10)) / 5) , glm::vec2(5,5)};
+	if (int(utils::currentTime) % 2 == 0) {
+		if (dorand) {
+			rand1 = glm::vec2(rand() % 20, rand() % 20);
+			dorand = false;
+		}
+	}
+	else {
+		dorand = true;
+	}
+
+	int rows = 20 - (int(utils::currentTime) % 15);
+
+	std::vector < glm::vec2 > holes = { glm::vec2(int(utils::currentTime) % 20 , 1 + (int(utils::currentTime) % (10 * 10)) / 5) , glm::vec2(5,5), rand1, rand1 + glm::vec2(1,0),rand1 + glm::vec2(0,1) };
 
 	int index = 0;
 	//fill the verticies vector with the verticies of the cloth
-	for (int y = 20; y > 1; y--) {
+	for (int y = rows; y > 1; y--) {
 		std::vector<float> row = {};
 		for (int x = 20; x > 1; x--) {
 			CreateVertex(row, x, y, sin(utils::currentTime + y));
@@ -992,7 +1018,7 @@ void Update()
 				indices.push_back(index++);
 				indices.push_back(index++);
 			}
-			
+
 
 			CreateVertex(row, x + 1, y, sin(utils::currentTime + y));
 			CreateVertex(row, x, y + 1, sin(utils::currentTime + y + 1));
@@ -1036,21 +1062,6 @@ void Update()
 	float* verts = &vertexData[0];
 	glBufferData(GL_ARRAY_BUFFER, vertexData.size() * sizeof(float), verts, GL_DYNAMIC_DRAW);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-	//Move shapes around world origin in circle
-	//CObjectManager::GetShape("sphere1")->SetPosition(glm::vec3(sin(utils::currentTime + glm::pi<float>())*2, 0, cos(utils::currentTime + glm::pi<float>())*2));
-
-	//Update all shapes
-	CObjectManager::UpdateAll(utils::deltaTime, utils::currentTime);
-
-	glUseProgram(ShaderLoader::GetProgram("3DLight")->m_id);
-	glUniform3fv(glGetUniformLocation(ShaderLoader::GetProgram("3DLight")->m_id, "CameraPos"), 1, glm::value_ptr(g_camera->GetCameraPos()));
-	glUseProgram(0);
-
-	//Check for input
-	CheckInput(utils::deltaTime, utils::currentTime);
-
-	CLightManager::UpdateUniforms(ShaderLoader::GetProgram("3DLight")->m_id);
 }
 
 void CreateVertex(std::vector<float>& row, float x, float y, float z)
@@ -1059,8 +1070,8 @@ void CreateVertex(std::vector<float>& row, float x, float y, float z)
 	row.push_back(float(y));										//y
 	row.push_back(z);												//z
 
-	row.push_back(float(x) / 10.0f);								//x TEX
-	row.push_back(float(y) / 10.0f);								//y
+	row.push_back(float(x) / 20.0f);								//x TEX
+	row.push_back(float(y) / 20.0f);								//y
 
 	row.push_back(0);												//x NORM
 	row.push_back(0);												//y	
