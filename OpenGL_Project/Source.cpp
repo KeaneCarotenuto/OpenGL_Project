@@ -84,6 +84,8 @@ glm::vec2 utils::mousePos = glm::vec2();
 float utils::currentTime = 0.0f;
 float utils::deltaTime = 0.0f;
 float utils::previousTimeStep = 0.0f;
+int utils::windowWidth = 1600;
+int utils::windowHeight = 900;
 
 //Program render window
 GLFWwindow* g_window = nullptr;
@@ -162,7 +164,11 @@ bool Startup()
 	SetConsoleCursorInfo(out, &cursorInfo);
 
 	//Create a GLFW controlled context window
-	g_window = glfwCreateWindow(utils::windowWidth, utils::windowHeight, "Keane Carotenuto - Summative  1", NULL, NULL);
+	glfwWindowHint(GLFW_MAXIMIZED, true);
+
+	g_window = glfwCreateWindow(utils::windowWidth, utils::windowHeight, "OpenGL Terrain", NULL, NULL);
+
+	glfwGetWindowSize(g_window, &utils::windowWidth, &utils::windowHeight);
 
 	//Check for failure
 	if (g_window == NULL) {
