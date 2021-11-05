@@ -66,7 +66,6 @@ void GenRenderTexture(GLuint& texture, GLuint& frameBuffer, int width, int heigh
 void GenCubemap(GLuint& texture, std::string texPath[6]);
 
 void Update();
-void ModifySphereVerts();
 void CheckInput(float _deltaTime, float _currentTime);
 float GetTerrainHeight(CShape* floor, float _worldX, float _worldZ);
 void Render();
@@ -840,110 +839,6 @@ void MouseCallback(GLFWwindow* window, int button, int action, int mods) {
 
 	//get mouse ray from camera
 	glm::vec3 worldRay = g_camera->GetWorldRay();
-
-	//If left clicking
-	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
-
-		//Get shape to move/compare
-		CShape* _shape = CObjectManager::GetShape("cube1");
-
-		//Make list of directions to check (supposed to get local orientation, so that the following works with roations, but not yet implimented/needed)
-		std::vector<glm::vec3> dirsToCheck = { _shape->Up() , -_shape->Up(),  _shape->Forward(), -_shape->Forward(), _shape->Right() ,-_shape->Right()};
-
-		//store bool for if intersection occurs
-		bool doesIntersect = false;
-
-		//store point of intersection
-		glm::vec3 intersectPoint = glm::vec3(0, 0, 0);
-
-		//make copy of ray to make more sense
-		glm::vec3 lineDirection = worldRay;
-
-		//Look through all directions/faces of cube, and check intersections
-		for (const glm::vec3& _dir : dirsToCheck) {
-
-			//get plane normal (face direction)
-			glm::vec3 pn = _dir;
-			//line starting point
-			glm::vec3 lpa = g_camera->GetCameraPos();
-			//line ending point
-			glm::vec3 lpb = g_camera->GetCameraPos() + lineDirection * 1000.0f;
-
-			//Get dot between line and face dir
-			float dot = glm::dot(lineDirection, pn);
-
-			//If dot is not valid (aka cannot see front of face), discard, else check collision point
-			if (dot >= 0) {
-				doesIntersect = false;
-			}
-			else {
-				//store values for later usage
-				float f1 = 0.5f;
-				float f2 = 0.5f;
-				float distScale = 0.5f;
-
-				//Check which direction it is, and assign specific values based on that info
-				if (glm::abs(_dir) == _shape->Up()) {
-					f1 = _shape->GetScale().z / 2.0f;
-					f2 = _shape->GetScale().x / 2.0f;
-					distScale = _shape->GetScale().y/2;
-				}
-				else if (glm::abs(_dir) == _shape->Forward()) {
-					f1 = _shape->GetScale().y / 2.0f;
-					f2 = _shape->GetScale().x / 2.0f;
-					distScale = _shape->GetScale().z/2;
-				}
-				else if (glm::abs(_dir) == _shape->Right()) {
-					f1 = _shape->GetScale().y / 2.0f;
-					f2 = _shape->GetScale().z / 2.0f;
-					distScale = _shape->GetScale().x/2;
-				}
-
-				//Calc distance from camera to point hit
-				float distance = glm::dot(_shape->GetPosition() + (pn * distScale) - lpa, pn) / glm::dot(lineDirection, pn);
-
-				//max hit distance
-				float lineDistance = 1000.0f;
-
-				//If distance is within max hit distance, proceed to check specific quad values
-				if (distance <= lineDistance) {
-
-					//Does intersect at some point, might not be within values of quad
-					doesIntersect = true;
-
-					//calc actual intersect point in world
-					intersectPoint = lpa + (lineDirection * distance);
-
-					//Print in console
-					Print(5, 15, "Int Position (y: " + std::to_string(intersectPoint.y) + " z:" + std::to_string(intersectPoint.z) + ")    ", 15);
-
-					//Store max value for tangent directions (e.g. if face is forward, store up and right max)
-					float v1 = 0.0f;
-					float v2 = 0.0f;
-					if (glm::abs(_dir) == _shape->Up()) {
-						v1 = abs(intersectPoint.z - _shape->GetPosition().z);
-						v2 = abs(intersectPoint.x - _shape->GetPosition().x);
-					}
-					else if (glm::abs(_dir) == _shape->Forward()) {
-						v1 = abs(intersectPoint.y - _shape->GetPosition().y);
-						v2 = abs(intersectPoint.x - _shape->GetPosition().x);
-					}
-					else if (glm::abs(_dir) == _shape->Right()){
-						v1 = abs(intersectPoint.y - _shape->GetPosition().y);
-						v2 = abs(intersectPoint.z - _shape->GetPosition().z);
-					}
-
-					//Check if point lies within max values of quad
-					if (v1 <= f1 && v2 <= f2) { _shape->SetPosition(_shape->GetPosition() - _dir); }
-				}
-				else {
-					doesIntersect = false;
-				}
-			}
-
-		}
-
-	}
 }
 
 /// <summary>
@@ -1088,8 +983,6 @@ void Update()
 	utils::deltaTime = utils::currentTime - utils::previousTimeStep;
 	utils::previousTimeStep = utils::currentTime;
 
-	//ModifySphereVerts();
-
 	//Update all shapes
 	CObjectManager::UpdateAll(utils::deltaTime, utils::currentTime);
 
@@ -1106,18 +999,23 @@ void Update()
 	CShape* sphere = CObjectManager::GetShape("sphere1");
 	CShape* floor = CObjectManager::GetShape("floor");
 
+	//Sphere "Rolling" on the terrain
 	if (sphere && floor) {
+		//temp static velocity and acceleration
 		static glm::vec3 vel = glm::vec3(0,0,0);
 		static glm::vec3 acc = glm::vec3(0,0,0);
 
+		//If holidng sphere, dont do movement, follow camera
 		if (holdSphere) {
 			sphere->SetPosition(g_camera->GetCameraPos() + g_camera->GetCameraForwardDir() * 2.0f);
 			vel = glm::vec3(0, 0, 0);
 			acc = glm::vec3(0, 0, 0);
 		}
 		else {
+			//Gravity
 			acc = glm::vec3(0, -9.81f, 0) / 5.0f;
 
+			//Terrain height at sphere pos
 			float terrainHeight = floor->GetPosition().y + GetTerrainHeight(floor, sphere->GetPosition().x, sphere->GetPosition().z);
 
 			//If sphere is below terrain, set velocity to 0	
@@ -1128,6 +1026,7 @@ void Update()
 				int wdivs = CObjectManager::GetShape("floor")->GetMesh()->GetWidthDivs();
 				int ldivs = CObjectManager::GetShape("floor")->GetMesh()->GetLengthDivs();
 				
+				//Calc relevant data position data for normals
 				float relativeX = ((sphere->GetPosition().x - floor->GetPosition().x) / floor->GetScale().x) * wdivs / CObjectManager::GetShape("floor")->GetMesh()->GetWidth();
 				float relativeZ = ((sphere->GetPosition().z - floor->GetPosition().z) / floor->GetScale().z)* ldivs / CObjectManager::GetShape("floor")->GetMesh()->GetLength();
 				if (relativeX < 1) relativeX = 1;
@@ -1135,21 +1034,19 @@ void Update()
 				if (relativeZ < 1) relativeZ = 1;
 				if (relativeZ > ldivs - 1) relativeZ = ldivs - 1;
 
-
-
+				//get normal data from verticies
 				float xNorm = CObjectManager::GetShape("floor")->GetMesh()->GetVertices()[(int(relativeZ) * (CObjectManager::GetShape("floor")->GetMesh()->GetWidthDivs() + 1) + int(relativeX)) * 8 + 5];
 				float zNorm = CObjectManager::GetShape("floor")->GetMesh()->GetVertices()[(int(relativeZ) * (CObjectManager::GetShape("floor")->GetMesh()->GetWidthDivs() + 1) + int(relativeX)) * 8 + 7];
-				//float zNorm = -(- xNorm - yNorm);
-				Print(2, 2, "X: " + std::to_string(xNorm), 15);
-				Print(2, 3, "Z: " + std::to_string(zNorm), 15);
 
+				//Apply force in direction of normal
 				acc = glm::vec3(xNorm, 0, zNorm);
 			}
-
+			
+			//Update position from vel and accel
 			vel += acc * 5.0f * utils::deltaTime;
 			sphere->SetPosition(sphere->GetPosition() + vel * utils::deltaTime);
 
-			//rotate sphere in direction of velocity
+			//rotate sphere in direction of velocity (Not very good)
 			sphere->SetRotation(glm::vec3(sphere->GetRotation().x + vel.z * utils::deltaTime, 0, sphere->GetRotation().z + vel.x * utils::deltaTime));
 		}
 	}
@@ -1172,20 +1069,6 @@ void Update()
 	CheckInput(utils::deltaTime, utils::currentTime);
 
 	CLightManager::UpdateUniforms(ShaderLoader::GetProgram("3DLight")->m_id);
-}
-
-void ModifySphereVerts()
-{
-	CMesh* mesh = CObjectManager::GetShape("sphere1")->GetMesh();
-	std::vector<float> verticies = mesh->GetVertices();
-	verticies[1] += 1.0f * utils::deltaTime;
-	mesh->SetVertices(verticies);
-
-	glBindBuffer(GL_ARRAY_BUFFER, mesh->GetVBO());
-
-	float* verts = &verticies[0];
-	glBufferData(GL_ARRAY_BUFFER, verticies.size() * sizeof(float), verts, GL_DYNAMIC_DRAW);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 /// <summary>
@@ -1256,18 +1139,23 @@ void CheckInput(float _deltaTime, float _currentTime)
 	}
 
 	if (glm::length(camMovement) >= 0.01f) {
+		//If following terrain
 		if (g_camera->followTerrain) {
 			
+			//Get floor
 			CShape* floor = CObjectManager::GetShape("floor");
-
+			
+			//if floor exists
 			if (floor) {
 				float camX = g_camera->GetCameraPos().x;
 				float camZ = g_camera->GetCameraPos().z;
-
+				
+				//Get terrain height at camera locaiton
 				float terrainHeight = GetTerrainHeight(CObjectManager::GetShape("floor"), camX, camZ);
 				
 				float relative_camY = terrainHeight + 1.0f;
 
+				//Walk above terrain
 				g_camera->SetCameraPos(glm::vec3(camX, floor->GetPosition().y + relative_camY * floor->GetScale().y, camZ));
 
 				camMovement.y = 0;
@@ -1285,6 +1173,9 @@ void CheckInput(float _deltaTime, float _currentTime)
 	}
 }
 
+/// <summary>
+/// Gets the terrain height at the given x and z position, of the given terrain
+/// </summary>
 float GetTerrainHeight(CShape* floor,float _worldX, float _worldZ) {
 	if (floor) {
 		CMesh* mesh = floor->GetMesh();
@@ -1329,15 +1220,13 @@ void Render()
 	GLint polygonMode[2];
 	glGetIntegerv(GL_POLYGON_MODE, polygonMode);
 
-
+	//Only enable frame buffer if not on wireframe mode, as buffer hides all other wireframes
 	if (polygonMode[0] == GL_FILL) {
 		//bind framebuffer, enable depth test, and clear screen 
 		glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer);
 		glEnable(GL_DEPTH_TEST);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	}
-	
-
 
 	//Enable blending for textures with opacity
 	glEnable(GL_BLEND);
@@ -1385,6 +1274,7 @@ void Render()
 
 	DrawCirlce(0.01f, glm::vec3(0,0,0));
 
+	//Render buffer if wireframe mode is not on
 	if (polygonMode[0] == GL_FILL) {
 		//unbind framebuffer 
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -1398,6 +1288,13 @@ void Render()
 	glfwSwapBuffers(g_window);
 }
 
+/// <summary>
+/// Draws a circle on the screen
+/// </summary>
+/// <param name="floor"></param>
+/// <param name="_worldX"></param>
+/// <param name="_worldZ"></param>
+/// <returns></returns>
 void DrawCirlce(float _rad, glm::vec3 _screenPos, glm::vec3 _colour, int _points) {
 	glShadeModel(GL_FLAT);    // as opposed to GL_FLAT
 	glBegin(GL_LINE_LOOP);
@@ -1418,6 +1315,13 @@ void DrawCirlce(float _rad, glm::vec3 _screenPos, glm::vec3 _colour, int _points
 	glEnd();
 }
 
+/// <summary>
+/// Renders outline of sphere
+/// </summary>
+/// <param name="floor"></param>
+/// <param name="_worldX"></param>
+/// <param name="_worldZ"></param>
+/// <returns></returns>
 void RenderOutline()
 {
 	//Render scaled up and colour only sphere
