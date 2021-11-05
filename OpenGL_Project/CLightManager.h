@@ -46,14 +46,14 @@ private:
 
 	static PointLight PointLights[MAX_POINT_LIGHTS];
 
-	static DirectionalLight directionalLight;
-
 	static int currentLightNum;
 
 
 	static const int MAX_SPHERES = 20;
 
 public:
+	static DirectionalLight directionalLight;
+
 	static void AddLight(glm::vec3 _pos, glm::vec3 _col, float _ambientStrength, float _specularStrength, float _attenDist);
 	static void UpdateUniforms(GLuint _program);
 

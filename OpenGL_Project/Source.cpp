@@ -36,7 +36,13 @@
 #pragma region Function Headers
 void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
+void ResetAll();
+
 void MouseCallback(GLFWwindow* window, int button, int action, int mods);
+
+void DoClothClicking(glm::vec3 worldRay);
+
+void DoCubeClicking(const glm::vec3& worldRay);
 
 void TextInput(GLFWwindow* window, unsigned int codePoint);
 
@@ -55,8 +61,6 @@ void GenTexture(GLuint& texture, const char* texPath);
 void GenCubemap(GLuint& texture, std::string texPath[6]);
 
 void Update();
-void DoClothTest();
-void CreateVertex(std::vector<float>& row, float x, float y, float z);
 void CheckInput(float _deltaTime, float _currentTime);
 void Render();
 void RenderObjects();
@@ -67,6 +71,8 @@ void SlowPrint(int x, int y, std::string _message, int effect, int _wait);
 void GotoXY(int x, int y);
 
 #pragma endregion
+
+#define STEP double(1.0 / 60.0)
 
 glm::vec2 utils::mousePos = glm::vec2();
 float utils::currentTime = 0.0f;
@@ -98,6 +104,7 @@ GLuint Texture_Frac;
 GLuint Texture_Floor;
 GLuint Texture_Crate;
 GLuint Texture_Water;
+GLuint Texture_Fabric;
 
 GLuint Texture_Cubemap;
 
@@ -115,12 +122,19 @@ int main() {
 	//Setup project specific settings
 	InitialSetup();
 
+	double lasttime = glfwGetTime();
 	//Main Loop
 	while (!glfwWindowShouldClose(g_window)) {
-		glfwPollEvents();
 
 		//Update all objects and run processes
 		Update();
+
+		while (glfwGetTime() < lasttime + STEP) {
+			// TODO: Put the thread to sleep, yield, or simply do nothing
+		}
+		lasttime += STEP;
+
+		glfwPollEvents();
 
 		//Render all the objects
 		Render();
@@ -236,6 +250,11 @@ void InitialSetup()
 	//Set up shapes
 	InitShapes();
 
+	g_camera->SetCameraPos({ 10,20,20 });
+	g_camera->SetYaw(0);
+	g_camera->SetPitch(0);
+	g_camera->UpdateRotation();
+
 	system("CLS");
 
 	utils::previousTimeStep = float(glfwGetTime());
@@ -256,6 +275,7 @@ void TextureCreation()
 	GenTexture(Texture_Floor, "Resources/Textures/Floor.jpg");
 	GenTexture(Texture_Crate, "Resources/Textures/Crate.jpg");
 	GenTexture(Texture_Water, "Resources/Textures/Water.png");
+	GenTexture(Texture_Fabric, "Resources/Textures/Fabric.jpg");
 	GenTexture(Texture_CrateReflectionMap, "Resources/Textures/Crate-Reflection.png");
 
 	std::string cubemapPaths[6] = {
@@ -627,7 +647,7 @@ void InitShapes()
 	//Set program and add uniforms to Cube
 	if (_shape = CObjectManager::GetShape("cloth")) {
 		_shape->SetProgram(ShaderLoader::GetProgram("3DLight")->m_id);
-		_shape->AddUniform(new ImageUniform(Texture_Rayman, "ImageTexture"));
+		_shape->AddUniform(new ImageUniform(Texture_Fabric, "ImageTexture"));
 		_shape->AddUniform(new IntUniform(0, "frameCount"));
 		_shape->AddUniform(new FloatUniform(0, "offset"));
 		_shape->AddUniform(new CubemapUniform(Texture_Cubemap, "Skybox"));
@@ -647,6 +667,8 @@ void InitShapes()
 		_shape->AddUniform(new FloatUniform(0, "CurrentTime"));
 		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM(), "PVMMat"));
 	}
+
+	g_cloth->Reset();
 }
 #pragma endregion
 
@@ -681,17 +703,7 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 
 	//Change line mode (fill or line) with F
 	if (key == GLFW_KEY_R && action == GLFW_PRESS) {
-		CObjectManager::DeleteAll();
-
-		//Create objects
-		ObjectCreation();
-		//Set up shapes
-		InitShapes();
-
-		g_camera->SetCameraPos({ 0,0,0 });
-		g_camera->SetYaw(0);
-		g_camera->SetPitch(0);
-		g_camera->UpdateRotation();
+		ResetAll();
 	}
 
 	//Change line mode (fill or line) with F
@@ -707,6 +719,21 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 
 		glfwSetInputMode(window,  GLFW_CURSOR, (mode == GLFW_CURSOR_NORMAL ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL));
 	}
+}
+
+void ResetAll()
+{
+	CObjectManager::DeleteAll();
+
+	//Create objects
+	ObjectCreation();
+	//Set up shapes
+	InitShapes();
+
+	g_camera->SetCameraPos({ 10,20,20 });
+	g_camera->SetYaw(0);
+	g_camera->SetPitch(0);
+	g_camera->UpdateRotation();
 }
 
 /// <summary>
@@ -728,106 +755,7 @@ void MouseCallback(GLFWwindow* window, int button, int action, int mods) {
 
 	//If left clicking
 	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
-
-		//Get shape to move/compare
-		CShape* _shape = CObjectManager::GetShape("cube1");
-
-		//Make list of directions to check (supposed to get local orientation, so that the following works with roations, but not yet implimented/needed)
-		std::vector<glm::vec3> dirsToCheck = { _shape->Up() , -_shape->Up(),  _shape->Forward(), -_shape->Forward(), _shape->Right() ,-_shape->Right()};
-
-		//store bool for if intersection occurs
-		bool doesIntersect = false;
-
-		//store point of intersection
-		glm::vec3 intersectPoint = glm::vec3(0, 0, 0);
-
-		//make copy of ray to make more sense
-		glm::vec3 lineDirection = worldRay;
-
-		//Look through all directions/faces of cube, and check intersections
-		for (const glm::vec3& _dir : dirsToCheck) {
-
-			//get plane normal (face direction)
-			glm::vec3 pn = _dir;
-			//line starting point
-			glm::vec3 lpa = g_camera->GetCameraPos();
-			//line ending point
-			glm::vec3 lpb = g_camera->GetCameraPos() + lineDirection * 1000.0f;
-
-			//Get dot between line and face dir
-			float dot = glm::dot(lineDirection, pn);
-
-			//If dot is not valid (aka cannot see front of face), discard, else check collision point
-			if (dot >= 0) {
-				doesIntersect = false;
-			}
-			else {
-				//store values for later usage
-				float f1 = 0.5f;
-				float f2 = 0.5f;
-				float distScale = 0.5f;
-
-				//Check which direction it is, and assign specific values based on that info
-				if (glm::abs(_dir) == _shape->Up()) {
-					f1 = _shape->GetScale().z / 2.0f;
-					f2 = _shape->GetScale().x / 2.0f;
-					distScale = _shape->GetScale().y/2;
-				}
-				else if (glm::abs(_dir) == _shape->Forward()) {
-					f1 = _shape->GetScale().y / 2.0f;
-					f2 = _shape->GetScale().x / 2.0f;
-					distScale = _shape->GetScale().z/2;
-				}
-				else if (glm::abs(_dir) == _shape->Right()) {
-					f1 = _shape->GetScale().y / 2.0f;
-					f2 = _shape->GetScale().z / 2.0f;
-					distScale = _shape->GetScale().x/2;
-				}
-
-				//Calc distance from camera to point hit
-				float distance = glm::dot(_shape->GetPosition() + (pn * distScale) - lpa, pn) / glm::dot(lineDirection, pn);
-
-				//max hit distance
-				float lineDistance = 1000.0f;
-
-				//If distance is within max hit distance, proceed to check specific quad values
-				if (distance <= lineDistance) {
-
-					//Does intersect at some point, might not be within values of quad
-					doesIntersect = true;
-
-					//calc actual intersect point in world
-					intersectPoint = lpa + (lineDirection * distance);
-
-					//Print in console
-					Print(5, 15, "Int Position (y: " + std::to_string(intersectPoint.y) + " z:" + std::to_string(intersectPoint.z) + ")    ", 15);
-
-					//Store max value for tangent directions (e.g. if face is forward, store up and right max)
-					float v1 = 0.0f;
-					float v2 = 0.0f;
-					if (glm::abs(_dir) == _shape->Up()) {
-						v1 = abs(intersectPoint.z - _shape->GetPosition().z);
-						v2 = abs(intersectPoint.x - _shape->GetPosition().x);
-					}
-					else if (glm::abs(_dir) == _shape->Forward()) {
-						v1 = abs(intersectPoint.y - _shape->GetPosition().y);
-						v2 = abs(intersectPoint.x - _shape->GetPosition().x);
-					}
-					else if (glm::abs(_dir) == _shape->Right()){
-						v1 = abs(intersectPoint.y - _shape->GetPosition().y);
-						v2 = abs(intersectPoint.z - _shape->GetPosition().z);
-					}
-
-					//Check if point lies within max values of quad
-					if (v1 <= f1 && v2 <= f2) { _shape->SetPosition(_shape->GetPosition() - _dir); }
-				}
-				else {
-					doesIntersect = false;
-				}
-			}
-
-		}
-
+		//click
 	}
 }
 
@@ -921,9 +849,6 @@ void GenCubemap(GLuint& texture, std::string texPath[6])
 	glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 }
 
-glm::vec2 rand1 = glm::vec2(rand() % 20, rand() % 20);
-bool dorand = false;
-
 /// <summary>
 /// Called every frame
 /// </summary>
@@ -931,7 +856,7 @@ void Update()
 {
 	//Get current time and calc delta time
 	utils::currentTime = (float)glfwGetTime();
-	utils::deltaTime = utils::currentTime - utils::previousTimeStep;
+	utils::deltaTime = STEP;
 	utils::previousTimeStep = utils::currentTime;
 
 	//DoClothTest();
@@ -952,114 +877,6 @@ void Update()
 	CheckInput(utils::deltaTime, utils::currentTime);
 
 	CLightManager::UpdateUniforms(ShaderLoader::GetProgram("3DLight")->m_id);
-}
-
-void DoClothTest()
-{
-	//get cloth shape
-	CMesh* mesh = CObjectManager::GetShape("cloth")->GetMesh();
-	//create a vector of vertices to be used as the cloth vertices
-	std::vector< std::vector<float> > verticies = {};
-	//create a vector of indicies to be used as the cloth indicies
-	std::vector< int > indices = {};
-
-	if (int(utils::currentTime) % 2 == 0) {
-		if (dorand) {
-			rand1 = glm::vec2(rand() % 20, rand() % 20);
-			dorand = false;
-		}
-	}
-	else {
-		dorand = true;
-	}
-
-	int rows = 20 - (int(utils::currentTime) % 15);
-
-	std::vector < glm::vec2 > holes = { glm::vec2(int(utils::currentTime) % 20 , 1 + (int(utils::currentTime) % (10 * 10)) / 5) , glm::vec2(5,5), rand1, rand1 + glm::vec2(1,0),rand1 + glm::vec2(0,1) };
-
-	int index = 0;
-	//fill the verticies vector with the verticies of the cloth
-	for (int y = rows; y > 1; y--) {
-		std::vector<float> row = {};
-		for (int x = 20; x > 1; x--) {
-			CreateVertex(row, x, y, sin(utils::currentTime + y));
-			CreateVertex(row, x, y + 1, sin(utils::currentTime + y + 1));
-			CreateVertex(row, x + 1, y, sin(utils::currentTime + y));
-
-			bool anyHole = false;
-			for (glm::vec2 _hole : holes) {
-				if (x == _hole.x && y == _hole.y) {
-					indices.push_back(0);
-					indices.push_back(0);
-					indices.push_back(0);
-					index++; index++; index++;
-					anyHole = true;
-					break;
-				}
-			}
-			if (!anyHole) {
-				indices.push_back(index++);
-				indices.push_back(index++);
-				indices.push_back(index++);
-			}
-
-
-			CreateVertex(row, x + 1, y, sin(utils::currentTime + y));
-			CreateVertex(row, x, y + 1, sin(utils::currentTime + y + 1));
-			CreateVertex(row, x + 1, y + 1, sin(utils::currentTime + y + 1));
-
-			anyHole = false;
-			for (glm::vec2 _hole : holes) {
-				if (x == _hole.x && y == _hole.y - 1) {
-					indices.push_back(0);
-					indices.push_back(0);
-					indices.push_back(0);
-					index++; index++; index++;
-					anyHole = true;
-					break;
-				}
-			}
-			if (!anyHole) {
-				indices.push_back(index++);
-				indices.push_back(index++);
-				indices.push_back(index++);
-			}
-		}
-		verticies.push_back(row);
-	}
-
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->GetEBO());
-	int* ind = &indices[0];
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(int), ind, GL_DYNAMIC_DRAW);
-
-	//create a vector of floats to be used as the vertex data, then fill it with the verticies create above
-	std::vector<float> vertexData = {};
-	for (int i = 0; i < verticies.size(); i++) {
-		for (int j = 0; j < verticies[i].size(); j++) {
-			vertexData.push_back(verticies[i][j]);
-		}
-	}
-
-
-	glBindBuffer(GL_ARRAY_BUFFER, mesh->GetVBO());
-	float* verts = &vertexData[0];
-	glBufferData(GL_ARRAY_BUFFER, vertexData.size() * sizeof(float), verts, GL_DYNAMIC_DRAW);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-}
-
-void CreateVertex(std::vector<float>& row, float x, float y, float z)
-{
-	row.push_back(float(x));										//x POS
-	row.push_back(float(y));										//y
-	row.push_back(z);												//z
-
-	row.push_back(float(x) / 20.0f);								//x TEX
-	row.push_back(float(y) / 20.0f);								//y
-
-	row.push_back(0);												//x NORM
-	row.push_back(0);												//y	
-	row.push_back(1);												//z
 }
 
 /// <summary>
@@ -1182,9 +999,35 @@ void RenderGUI()
 
 	ImGui::Text("General Controls:");
 
+	if (ImGui::Button("Reset Scene")) {
+		ResetAll();
+	}
+
 	ImGui::Checkbox("Wireframe Mode", &bWireFrameMode);
 
 	ImGui::Combo("Mouse Mode", &g_cloth->selectedCollision, g_cloth->mouseModeItems, IM_ARRAYSIZE(g_cloth->mouseModeItems));
+
+	static float sunPitch = 210.0f;
+	static float sunYaw = 45.0f;
+	static bool sunAngleChanged = true;
+
+	if (ImGui::SliderFloat("Sun Pitch", &sunPitch, 0.0f, 360.0f)) {
+		sunAngleChanged = true;
+	}
+	if (ImGui::SliderFloat("Sun Yaw", &sunYaw, 0.0f, 360.0f)) {
+		sunAngleChanged = true;
+	}
+
+	if (sunAngleChanged) {
+		//calculate the new direction of the sun based on the Pitch and Yaw
+		glm::vec3 sunDir = glm::vec3(glm::cos(glm::radians(sunPitch)) * glm::cos(glm::radians(sunYaw)),
+			glm::sin(glm::radians(sunPitch)),
+			glm::cos(glm::radians(sunPitch)) * glm::sin(glm::radians(sunYaw)));
+
+		CLightManager::directionalLight.Direction = sunDir;
+		
+		sunAngleChanged = false;
+	}
 
 
 
@@ -1202,7 +1045,11 @@ void RenderGUI()
 
 	if (ImGui::SliderFloat("Hook Distance", &g_cloth->hookDistance, 0.0f, 50.0f));
 
+	if (ImGui::SliderFloat("Particle Dampening (more is less)", &g_cloth->clothDampening, 0.0f, 1.0f));
+
 	if (ImGui::SliderFloat("Cloth Stiffness", &g_cloth->clothStiffness, 0.0f, 1.0f));
+
+	if (ImGui::Checkbox("Smooth Normals", &g_cloth->smoothNormals));
 
 	if (ImGui::Button("Drop")) {
 
@@ -1228,16 +1075,14 @@ void RenderGUI()
 	ImGui::Text("Object Interation:");
 	ImGui::Combo("Selected Object: ", &g_cloth->selectedCollision, g_cloth->collisionItems, IM_ARRAYSIZE(g_cloth->collisionItems));
 
-
-
 	ImGui::Text("Wind:");
 	ImGui::SliderFloat("Wind Direction (Degrees):", &g_cloth->windDirection, 0.0f, 360.0f);
 	ImGui::SliderFloat("Wind Strength:", &g_cloth->windStrength, 0.0f, 100.0f);
 
 
 	if (ImGui::Button("Reset Wind")) {
-		g_cloth->windDirection = 270.0f;
-		g_cloth->windStrength = 10.0f;
+		g_cloth->windDirection = 90.0f;
+		g_cloth->windStrength = 5.0f;
 	}
 
 	// Closes the window

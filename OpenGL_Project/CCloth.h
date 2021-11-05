@@ -1,3 +1,14 @@
+// Bachelor of Software Engineering
+// Media Design School
+// Auckland
+// New Zealand
+// (c) 2021 Media Design School
+//
+// File Name   : CCloth.h
+// Description : Manages all of the relevant data and classes to make a cloth
+// Author      : Keane Carotenuto
+// Mail        : KeaneCarotenuto@gmail.com
+
 #pragma once
 #include "Utility.h"
 #include "CShape.h"
@@ -5,6 +16,9 @@
 class CConstraint;
 class CCloth;
 
+/// <summary>
+/// The particles of the cloth, they manage movement, weight, and most interactions
+/// </summary>
 class CParticle
 {
 private:
@@ -19,7 +33,7 @@ private:
     glm::vec2 m_textureCoord = glm::vec2(0.0f, 0.0f);
 
     float m_mass = 1.0f;
-    float m_damping = 0.91f;
+    float m_damping = 0.99f;
 
     std::vector<CConstraint*> m_constraints;
 
@@ -41,6 +55,8 @@ public:
     void update(float _deltaTime);
     void addForce(glm::vec3 _force) { m_acceleration += _force / m_mass; };
     void resetForce() { m_acceleration = glm::vec3(0.0f, 0.0f, 0.0f); };
+
+    void CalculateNormal(int _x, int _y);
 
     CCloth* GetClothParent() { return m_parentCloth; };
     glm::vec3 GetPosition() { return m_position; }
@@ -75,6 +91,9 @@ public:
 
 };
 
+/// <summary>
+/// The constraints of the cloth, manages how particles interact with eacother, and keeps the cloth together, behaving like cloth
+/// </summary>
 class CConstraint
 {
 private:
@@ -127,6 +146,9 @@ public:
     void SetForce(glm::vec3 _force) { m_force = _force; }
 };
 
+/// <summary>
+/// The actual cloth object that keeps track of particles, constraints, and most global variables
+/// </summary>
 class CCloth
 {
 private:
@@ -150,10 +172,12 @@ public:
     float clothWidth = 20.0f;
     int clothWidthDivisions = 20;
     int clothHeightDivisions = 20;
+    bool smoothNormals = true;
 
     int numberOfHooks = 3;
     float hookDistance = 10.0f;
     float clothStiffness = 0.5f;
+    float clothDampening = 0.99f;
 
     const char* mouseModeItems[5]{ "Pull", "Push", "Tear", "Fire", "Pin" };
     int selectedMouseMode = 0;
@@ -161,8 +185,8 @@ public:
     const char* collisionItems[4]{ "No Object", "Sphere", "Capsule", "Pyramid" };
     int selectedCollision = 0;
 
-    float windDirection = 270.0f;
-    float windStrength = 10.0f;
+    float windDirection = 90.0f;
+    float windStrength = 5.0f;
 
     void Rebind();
     void AddVertexData(std::vector<float>& vertexData, CParticle* particle);
@@ -189,6 +213,8 @@ public:
     std::vector<std::vector<CParticle*>> GetParticles() { return m_particles; };
     std::vector<CConstraint*> GetConstraints() { return m_constraints; };
 
+    CParticle* GetParticle(int _x, int _y);
+
     int GetWidth() { return clothWidthDivisions; };
     int GetHeight() { return clothHeightDivisions; };
 
@@ -200,6 +226,4 @@ public:
 
     void SetParticles(std::vector<std::vector<CParticle*>> particles);
     void SetConstraints(std::vector<CConstraint*> constraints);
-
-    //void SetParticle(int x, int y, CParticle* particle);
 };

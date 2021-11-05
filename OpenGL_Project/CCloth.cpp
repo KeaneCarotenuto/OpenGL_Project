@@ -1,28 +1,45 @@
 #include "CCloth.h"
 
 
-glm::vec3 CCloth::g_gravity = glm::vec3(0.0f, -9.81f, 0.0f) ;
+glm::vec3 CCloth::g_gravity = glm::vec3(0.0f, -9.81f, 0.0f);
 glm::vec3 CCloth::g_wind = glm::vec3(0.0f, 0.0f, 0.0f) ;
 
-//CParticle Constructor
+/// <summary>
+/// Particle Constructor
+/// </summary>
+/// <param name="_position"></param>
 CParticle::CParticle(glm::vec3 _position) {
     m_position = _position;
     m_prevPosition = _position;
 }
 
+/// <summary>
+/// Particle constructor
+/// </summary>
+/// <param name="_x"></param>
+/// <param name="_y"></param>
+/// <param name="_z"></param>
 CParticle::CParticle(float _x, float _y, float _z) : CParticle(glm::vec3(_x, _y, _z)) {}
 
+/// <summary>
+/// Particle deconstructor
+/// </summary>
 CParticle::~CParticle()
 {
 }
 
+/// <summary>
+/// The main update function of the particles, manages the forces being applied to the particles,a s well as the verlet integration
+/// </summary>
+/// <param name="_deltaTime"></param>
 void CParticle::update(float _deltaTime)
 {
     if (m_isFixed) return;
 
     //add gravity force
-    addForce(m_parentCloth->GetGravity());
-    addForce(m_parentCloth->GetWind());
+    addForce(m_parentCloth->GetGravity() * m_mass);
+    //add wind force, and multiply by random float between 0.75 and 1.5
+    addForce(m_parentCloth->GetWind() * (0.75f + (rand() % 50) / 100.0f));
 
     //add damping force
     addForce(-m_velocity * m_damping);
@@ -55,6 +72,58 @@ void CParticle::update(float _deltaTime)
     m_acceleration = glm::vec3(0.0f, 0.0f, 0.0f);
 }
 
+/// <summary>
+/// Calculates the normal of the partcile, based on the connected triangles (Smooth Normals)
+/// </summary>
+/// <param name="_x"></param>
+/// <param name="_y"></param>
+void CParticle::CalculateNormal(int _x, int _y)
+{
+    if (!m_parentCloth){
+        m_normal = glm::vec3(0.0f, 0.0f, 1.0f);
+        return;
+    }
+
+    //Getting all connected particles to the current particle
+    CParticle* middle =         m_parentCloth->GetParticle(_x, _y);
+    CParticle* topLeft =        m_parentCloth->GetParticle(_x - 1, _y - 1);
+    CParticle* top =            m_parentCloth->GetParticle(_x, _y - 1);
+    CParticle* topRight =       m_parentCloth->GetParticle(_x + 1, _y - 1);
+    CParticle* right =          m_parentCloth->GetParticle(_x + 1, _y);
+    CParticle* bottomRight =    m_parentCloth->GetParticle(_x + 1, _y + 1);
+    CParticle* bottom =         m_parentCloth->GetParticle(_x, _y + 1);
+    CParticle* bottomLeft =     m_parentCloth->GetParticle(_x - 1, _y + 1);
+    CParticle* left =           m_parentCloth->GetParticle(_x - 1, _y);
+
+    //If midle is not valid, exit
+    if (!middle)
+    {
+        m_normal = glm::vec3(0.0f, 0.0f, 1.0f);
+        return;
+    }
+
+    //calculate the normal of each triangle connected to the current particle
+    glm::vec3 normal1 = (topLeft && top) ? glm::normalize(glm::cross(middle->m_position - topLeft->m_position, middle->m_position - top->m_position)) : glm::vec3(0.0f, 0.0f, 0.0f);
+    glm::vec3 normal2 = (top && topRight) ? glm::normalize(glm::cross(middle->m_position - top->m_position, middle->m_position - topRight->m_position)) : glm::vec3(0.0f, 0.0f, 0.0f);
+    glm::vec3 normal3 = (topRight && right) ? glm::normalize(glm::cross(middle->m_position - topRight->m_position, middle->m_position - right->m_position)) : glm::vec3(0.0f, 0.0f, 0.0f);
+    glm::vec3 normal4 = (right && bottomRight) ? glm::normalize(glm::cross(middle->m_position - right->m_position, middle->m_position - bottomRight->m_position)) : glm::vec3(0.0f, 0.0f, 0.0f);
+    glm::vec3 normal5 = (bottomRight && bottom) ? glm::normalize(glm::cross(middle->m_position - bottomRight->m_position, middle->m_position - bottom->m_position)) : glm::vec3(0.0f, 0.0f, 0.0f);
+    glm::vec3 normal6 = (bottom && bottomLeft) ? glm::normalize(glm::cross(middle->m_position - bottom->m_position, middle->m_position - bottomLeft->m_position)) : glm::vec3(0.0f, 0.0f, 0.0f);
+    glm::vec3 normal7 = (bottomLeft && left) ? glm::normalize(glm::cross(middle->m_position - bottomLeft->m_position, middle->m_position - left->m_position)) : glm::vec3(0.0f, 0.0f, 0.0f);
+    glm::vec3 normal8 = (left && topLeft) ? glm::normalize(glm::cross(middle->m_position - left->m_position, middle->m_position - topLeft->m_position)) : glm::vec3(0.0f, 0.0f, 0.0f);
+
+    //add all the normals together
+    m_normal = normal1 + normal2 + normal3 + normal4 + normal5 + normal6 + normal7 + normal8;
+
+    //normalize the normal
+    m_normal = glm::normalize(-m_normal);
+}
+
+/// <summary>
+/// Constraint constructor
+/// </summary>
+/// <param name="_pParticle1"></param>
+/// <param name="_pParticle2"></param>
 CConstraint::CConstraint(CParticle* _pParticle1, CParticle* _pParticle2){
     m_pParticle1 = _pParticle1;
     m_pParticle2 = _pParticle2;
@@ -62,10 +131,17 @@ CConstraint::CConstraint(CParticle* _pParticle1, CParticle* _pParticle2){
     m_restLength = glm::distance(m_pParticle1->GetPosition(), m_pParticle2->GetPosition());
 }
 
+/// <summary>
+/// Constraint Deconstructor
+/// </summary>
 CConstraint::~CConstraint()
 {
 }
 
+/// <summary>
+/// Update function for constraints, applies movement to the connected particles
+/// </summary>
+/// <param name="_deltaTime"></param>
 void CConstraint::Update(float _deltaTime)
 {
     glm::vec3 delta = m_pParticle1->GetPosition() - m_pParticle2->GetPosition();
@@ -77,7 +153,12 @@ void CConstraint::Update(float _deltaTime)
     if (!m_pParticle2->GetIsFixed()) m_pParticle2->SetPosition(m_pParticle2->GetPosition() - delta * (m2 / (m2 + m1)) * m_stiffness * difference);
 }
 
-//Cloth constructor that takes in the position of the cloth in the world, as well as the number of rows and columns of the cloth
+/// <summary>
+/// Basic cloth constructor, takes in width and height divisions, and builds a cloth mesh.
+/// </summary>
+/// <param name="_shape"></param>
+/// <param name="_width"></param>
+/// <param name="_height"></param>
 CCloth::CCloth(CShape* _shape, int _width, int _height)
 {
     m_shape = _shape;
@@ -87,16 +168,31 @@ CCloth::CCloth(CShape* _shape, int _width, int _height)
     Rebuild();
 }
 
+/// <summary>
+/// Rebinds all verticies and indicies to the Vertex Buffer and Element Buffer
+/// </summary>
 void CCloth::Rebind()
 {
+    //Get mesh being used
     CMesh* mesh = m_shape->GetMesh();
 
     //create a vector of floats to be used as the vertex data, then fill it with the verticies create above
     std::vector<float> vertexData = {};
-
     std::vector< int > indices = {};
+
+    //Calculate Smooth Normals
+    if (smoothNormals) {
+        for (int y = 0; y < clothHeightDivisions; y++)
+        {
+            for (int x = 0; x < clothWidthDivisions; x++)
+            {
+                m_particles[y][x]->CalculateNormal(x, y);
+            }
+        }
+    }
     
     int index = 0;
+    //Loop through each particle
 	for (int y = 0; y < clothHeightDivisions - 1; y++) {
 		for (int x = 0; x < clothWidthDivisions - 1; x++) {
             //Top Left Half of quad
@@ -105,12 +201,15 @@ void CCloth::Rebind()
             CParticle* p3 = m_particles[y][x + 1];
 
             //calculate the normal of the triangle formed by the three verticies
-            glm::vec3 normal1 = glm::normalize(glm::cross(p2->GetPosition() - p1->GetPosition(), p3->GetPosition() - p1->GetPosition()));
+            if (!smoothNormals) {
+                glm::vec3 normal1 = glm::normalize(glm::cross(p2->GetPosition() - p1->GetPosition(), p3->GetPosition() - p1->GetPosition()));
 
-            p1->SetNormal(normal1);
-            p2->SetNormal(normal1);
-            p3->SetNormal(normal1);
+                p1->SetNormal(normal1);
+                p2->SetNormal(normal1);
+                p3->SetNormal(normal1);
+            }
 
+            //Add data to buffer
             AddVertexData(vertexData, p1);
             AddVertexData(vertexData, p2);
             AddVertexData(vertexData, p3);
@@ -125,11 +224,13 @@ void CCloth::Rebind()
             CParticle* p6 = m_particles[y + 1][x + 1];
 
             //calculate the normal of the triangle formed by the three verticies
-            glm::vec3 normal2 = glm::normalize(glm::cross(p5->GetPosition() - p4->GetPosition(), p6->GetPosition() - p4->GetPosition()));
+            if (!smoothNormals) {
+                glm::vec3 normal2 = glm::normalize(glm::cross(p5->GetPosition() - p4->GetPosition(), p6->GetPosition() - p4->GetPosition()));
 
-            p4->SetNormal(normal2);
-            p5->SetNormal(normal2);
-            p6->SetNormal(normal2);
+                p4->SetNormal(normal2);
+                p5->SetNormal(normal2);
+                p6->SetNormal(normal2);
+            }
 
             AddVertexData(vertexData, p4);
             AddVertexData(vertexData, p5);
@@ -143,11 +244,13 @@ void CCloth::Rebind()
 
     mesh->SetIndices(indices);
 
+    //Update EBO
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->GetEBO());
     int* ind = &indices[0];
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(int), nullptr, GL_DYNAMIC_DRAW);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(int), ind, GL_DYNAMIC_DRAW);
 
+    //Update VBO
     glBindBuffer(GL_ARRAY_BUFFER, mesh->GetVBO());
     float* verts = &vertexData[0];
     glBufferData(GL_ARRAY_BUFFER, vertexData.size() * sizeof(float), nullptr, GL_DYNAMIC_DRAW);
@@ -155,6 +258,11 @@ void CCloth::Rebind()
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
+/// <summary>
+/// Add the current particle to the vertex data
+/// </summary>
+/// <param name="vertexData"></param>
+/// <param name="particle"></param>
 void CCloth::AddVertexData(std::vector<float>& vertexData, CParticle* particle)
 {
     //position data (x,y,z)
@@ -172,10 +280,17 @@ void CCloth::AddVertexData(std::vector<float>& vertexData, CParticle* particle)
     vertexData.push_back(particle->GetNormal().z);
 }
 
+/// <summary>
+/// Cloth deconstructor
+/// </summary>
 CCloth::~CCloth()
 {
 }
 
+/// <summary>
+/// Main update function for cloth, updates all particles and constraints, then rebinds
+/// </summary>
+/// <param name="deltaTime"></param>
 void CCloth::Update(float deltaTime)
 {
     //calcualte the wind vector based on the wind direction and strength
@@ -183,18 +298,20 @@ void CCloth::Update(float deltaTime)
     g_wind.y = 0;
     g_wind.z = sin(glm::radians(windDirection)) * windStrength;
 
-    
-    
+    //Update all particles
     for (int y = 0; y <= clothHeightDivisions - 1; y++) {
         int hookNum = 0;
         for (int x = 0; x <= clothWidthDivisions - 1; x++) {
             //Top Left Half of quad
             CParticle* part = m_particles[y][x];
 
+            //Update hook positions
             if (part->GetIsFixed()) {
                 part->SetPosition(glm::vec3(hookNum * hookDistance, part->GetPosition().y, part->GetPosition().z));
                 hookNum++;
             }
+
+            part->SetDamping(clothDampening);
 
             part->update(deltaTime);
         }
@@ -220,11 +337,17 @@ void CCloth::Update(float deltaTime)
     Rebind();
 }
 
+/// <summary>
+/// Renders Mesh
+/// </summary>
 void CCloth::Render()
 {
     m_shape->Render();
 }
 
+/// <summary>
+/// Resets to normal settings
+/// </summary>
 void CCloth::Reset()
 {
     clothLength = 20.0f;
@@ -239,6 +362,9 @@ void CCloth::Reset()
     Rebuild();
 }
 
+/// <summary>
+/// Removes all fixed points (Drop)
+/// </summary>
 void CCloth::UnFixAll()
 {
     //loop through all fixed particles (m_fixedParts) and set them to not fixed
@@ -247,6 +373,25 @@ void CCloth::UnFixAll()
     }
 }
 
+/// <summary>
+/// Returns a specific particle
+/// </summary>
+/// <param name="_x"></param>
+/// <param name="_y"></param>
+/// <returns></returns>
+CParticle* CCloth::GetParticle(int _x, int _y)
+{
+    //check if the x and y are within the bounds of the cloth
+    if (_x < 0 || _x >= clothWidthDivisions || _y < 0 || _y >= clothHeightDivisions) {
+        return nullptr;
+    }
+
+    return m_particles[_y][_x];
+}
+
+/// <summary>
+/// Clears all particles, and creates new ones based on cloth parameters
+/// </summary>
 void CCloth::Rebuild() {
 
     //loop through each particle and delete it
@@ -355,6 +500,7 @@ void CCloth::Rebuild() {
     m_fixedParts.clear();
     for (int i = 0; i < numberOfHooks; i++) {
         CParticle* part = m_particles[0][int(i * hookSpace)];
+        part->SetPosition(part->GetPosition() + glm::vec3(0, 0, i % 2 == 0 ? 0.5f: - 0.5f));
         part->SetIsFixed(true);
         m_fixedParts.push_back(part);
     }

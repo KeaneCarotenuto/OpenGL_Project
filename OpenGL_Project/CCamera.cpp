@@ -22,6 +22,9 @@ glm::vec3 CCamera::GetWorldRay()
 	return ray_wor;
 }
 
+/// <summary>
+/// Updates rotation of camera bsed on Pitch and Yaw
+/// </summary>
 void CCamera::UpdateRotation()
 {
 	//Reset yaw as to not infinitely increase
