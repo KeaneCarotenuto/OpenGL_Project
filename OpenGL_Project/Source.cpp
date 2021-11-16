@@ -555,7 +555,7 @@ void ObjectCreation()
 	CObjectManager::AddShape("floor", new CShape("floor-squareNorm", glm::vec3(0.0f, -0.5f, 0.0f), 0.0f, glm::vec3(100.0f, 1.0f, 100.0f), false));
 	CObjectManager::GetShape("floor")->SetCamera(g_camera);
 
-	CObjectManager::AddShape("sphere1", new CShape("sphere", glm::vec3(0.0f, 0.0f, 0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), false));
+	CObjectManager::AddShape("sphere1", new CShape("sphere", glm::vec3(10.0f, 25.0f, 10.0f), 0.0f, glm::vec3(5.0f, 5.0f, 5.0f), false));
 	CObjectManager::GetShape("sphere1")->SetCamera(g_camera);
 
 	CObjectManager::AddShape("cube1", new CShape("cubeNorm", glm::vec3(5.0f, 0.0f, 0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), false));
@@ -864,7 +864,8 @@ void Update()
 	g_cloth->Update(utils::deltaTime);
 
 	//Move shapes around world origin in circle
-	//CObjectManager::GetShape("sphere1")->SetPosition(glm::vec3(sin(utils::currentTime + glm::pi<float>())*2, 0, cos(utils::currentTime + glm::pi<float>())*2));
+	CShape* sphere = CObjectManager::GetShape("sphere1");
+	sphere->SetPosition(glm::vec3(sphere->GetPosition().x, sphere->GetPosition().y, cos(utils::currentTime / 3.0f)*20));
 
 	//Update all shapes
 	CObjectManager::UpdateAll(utils::deltaTime, utils::currentTime);

@@ -1,4 +1,5 @@
 #include "CCloth.h"
+#include "CObjectManager.h"
 
 
 glm::vec3 CCloth::g_gravity = glm::vec3(0.0f, -9.81f, 0.0f);
@@ -32,33 +33,17 @@ CParticle::~CParticle()
 /// The main update function of the particles, manages the forces being applied to the particles,a s well as the verlet integration
 /// </summary>
 /// <param name="_deltaTime"></param>
-void CParticle::update(float _deltaTime)
+void CParticle::Update(float _deltaTime)
 {
     if (m_isFixed) return;
 
     //add gravity force
-    addForce(m_parentCloth->GetGravity() * m_mass);
+    AddForce(m_parentCloth->GetGravity() * m_mass);
     //add wind force, and multiply by random float between 0.75 and 1.5
-    addForce(m_parentCloth->GetWind() * (0.75f + (rand() % 50) / 100.0f));
+    AddForce(m_parentCloth->GetWind() * (0.75f + (rand() % 50) / 100.0f));
 
     //add damping force
-    addForce(-m_velocity * m_damping);
-
-    //calcualte the world position of the particle based on the parent cloth object position
-    glm::vec3 worldPos = m_parentCloth->GetPosition() + m_position;
-    glm::vec3 floorPos = m_parentCloth->GetFloorShape()->GetPosition();
-    float thickness = 0.01f;
-
-    //check if the world position is below the ground plane and if so, set the position to the ground plane position and set the acceleration to zero
-    if (worldPos.y < floorPos.y + thickness)
-    {
-        //Normal Force
-        addForce(glm::vec3(0, -m_acceleration.y * m_mass, 0));
-
-        //But also set the position to avoid clipping
-        m_position.y = (floorPos.y + thickness - m_parentCloth->GetPosition()).y;
-        m_prevPosition = m_position;
-    }
+    AddForce(-m_velocity * m_damping);
 
     //Update position using Verlet integration method, using acceleration and damping 
     glm::vec3 temp = m_position;
@@ -70,6 +55,45 @@ void CParticle::update(float _deltaTime)
 
     //clear the acceleration
     m_acceleration = glm::vec3(0.0f, 0.0f, 0.0f);
+}
+
+void CParticle::CheckCollisions() {
+    //calcualte the world position of the particle based on the parent cloth object position
+    glm::vec3 worldPos = m_parentCloth->GetPosition() + m_position;
+    glm::vec3 nextPos = worldPos + m_velocity;
+    glm::vec3 floorPos = m_parentCloth->GetFloorShape()->GetPosition();
+    float thickness = 0.01f;
+
+    //check if the world position is below the ground plane and if so, set the position to the ground plane position and set the acceleration to zero
+    if (worldPos.y < floorPos.y + thickness)
+    {
+        //Normal Force
+        AddForce(glm::vec3(0, -m_acceleration.y * m_mass, 0));
+
+        //But also set the position to avoid clipping
+        m_position.y = (floorPos.y + thickness - m_parentCloth->GetPosition()).y;
+        m_prevPosition = m_position;
+    }
+
+    //get sphere
+    CShape* sphere = CObjectManager::GetShape("sphere1");
+    float padding = 0.3f;
+
+    //check if the particle is within the sphere radius
+    if (glm::distance(worldPos, sphere->GetPosition()) < (sphere->GetScale().x / 2 + padding))
+    {
+        //calcualte the normal
+        glm::vec3 normal = glm::normalize(worldPos - sphere->GetPosition());
+
+        //add the normal force 
+        m_acceleration = glm::vec3(0, 0, 0);
+        AddForce(normal * m_mass);
+
+        //set the position to the edge of the sphere using normal
+        glm::vec3 newWorldPos = sphere->GetPosition() + normal * (sphere->GetScale().x / 2 + padding);
+        m_position = newWorldPos - m_parentCloth->GetPosition();
+        m_prevPosition = m_position;
+    }
 }
 
 /// <summary>
@@ -119,6 +143,23 @@ void CParticle::CalculateNormal(int _x, int _y)
     m_normal = glm::normalize(-m_normal);
 }
 
+bool CParticle::GetIsBroken()
+{
+    bool isBroken = false;
+    //loop through all constraints
+    for (int i = 0; i < m_constraints.size(); i++)
+    {
+        //if the constraint is broken, set the bool to true
+        if (m_constraints[i]->GetIsBroken())
+        {
+            isBroken = true;
+            break;
+        }
+    }
+
+    return isBroken;
+}
+
 /// <summary>
 /// Constraint constructor
 /// </summary>
@@ -129,6 +170,9 @@ CConstraint::CConstraint(CParticle* _pParticle1, CParticle* _pParticle2){
     m_pParticle2 = _pParticle2;
 
     m_restLength = glm::distance(m_pParticle1->GetPosition(), m_pParticle2->GetPosition());
+
+    //add the constraint to the particle
+    m_pParticle1->AddConstraint(this);
 }
 
 /// <summary>
@@ -144,6 +188,15 @@ CConstraint::~CConstraint()
 /// <param name="_deltaTime"></param>
 void CConstraint::Update(float _deltaTime)
 {
+    if (m_isBroken) return;
+
+    //if distance between particles is greater than the rest length, break
+    if (glm::distance(m_pParticle1->GetPosition(), m_pParticle2->GetPosition()) > m_restLength * 2)
+    {
+        this->Break();
+        return;
+    }
+
     glm::vec3 delta = m_pParticle1->GetPosition() - m_pParticle2->GetPosition();
     float deltaLength = glm::length(delta);
     float difference = (m_restLength - deltaLength) / deltaLength;
@@ -151,6 +204,16 @@ void CConstraint::Update(float _deltaTime)
     float m2 = 1.0f / m_pParticle2->GetMass();
     if (!m_pParticle1->GetIsFixed()) m_pParticle1->SetPosition(m_pParticle1->GetPosition() + delta * (m1 / (m1 + m2)) * m_stiffness * difference);
     if (!m_pParticle2->GetIsFixed()) m_pParticle2->SetPosition(m_pParticle2->GetPosition() - delta * (m2 / (m2 + m1)) * m_stiffness * difference);
+}
+
+void CConstraint::Break(){
+    if (m_isBroken) return;
+
+    m_isBroken = true;
+    //loop through first particle's constraints and break them all
+    for (int i = 0; i < m_pParticle1->GetConstraints().size(); i++){
+        m_pParticle1->GetConstraints()[i]->Break();
+    }
 }
 
 /// <summary>
@@ -200,45 +263,75 @@ void CCloth::Rebind()
             CParticle* p2 = m_particles[y + 1][x];
             CParticle* p3 = m_particles[y][x + 1];
 
-            //calculate the normal of the triangle formed by the three verticies
-            if (!smoothNormals) {
-                glm::vec3 normal1 = glm::normalize(glm::cross(p2->GetPosition() - p1->GetPosition(), p3->GetPosition() - p1->GetPosition()));
+            //check if the particle constraints are broken
+            if (p1->GetIsBroken() || p2->GetIsBroken() || p3->GetIsBroken()){
+                //Add data to buffer
+                //AddVertexData(vertexData, p1);
+                //AddVertexData(vertexData, p2);
+                //AddVertexData(vertexData, p3);
 
-                p1->SetNormal(normal1);
-                p2->SetNormal(normal1);
-                p3->SetNormal(normal1);
+                //indices.push_back(0);
+                //indices.push_back(0);
+                //indices.push_back(0);
+
             }
+            else{
+                //calculate the normal of the triangle formed by the three verticies
+                if (!smoothNormals) {
+                    glm::vec3 normal1 = glm::normalize(glm::cross(p2->GetPosition() - p1->GetPosition(), p3->GetPosition() - p1->GetPosition()));
 
-            //Add data to buffer
-            AddVertexData(vertexData, p1);
-            AddVertexData(vertexData, p2);
-            AddVertexData(vertexData, p3);
+                    p1->SetNormal(normal1);
+                    p2->SetNormal(normal1);
+                    p3->SetNormal(normal1);
+                }
 
-            indices.push_back(index++);
-            indices.push_back(index++);
-            indices.push_back(index++);
+                //Add data to buffer
+                AddVertexData(vertexData, p1);
+                AddVertexData(vertexData, p2);
+                AddVertexData(vertexData, p3);
+
+                indices.push_back(index++);
+                indices.push_back(index++);
+                indices.push_back(index++);
+            }
 
             //Bottom Right Half of quad
             CParticle* p4 = m_particles[y][x + 1];
             CParticle* p5 = m_particles[y + 1][x];
             CParticle* p6 = m_particles[y + 1][x + 1];
 
-            //calculate the normal of the triangle formed by the three verticies
-            if (!smoothNormals) {
-                glm::vec3 normal2 = glm::normalize(glm::cross(p5->GetPosition() - p4->GetPosition(), p6->GetPosition() - p4->GetPosition()));
+            //check if the particle constraints are broken
+            if (p4->GetIsBroken() || p5->GetIsBroken() || p6->GetIsBroken()){
+                //Add data to buffer
+                //AddVertexData(vertexData, p4);
+                //AddVertexData(vertexData, p5);
+                //AddVertexData(vertexData, p6);
 
-                p4->SetNormal(normal2);
-                p5->SetNormal(normal2);
-                p6->SetNormal(normal2);
+                //indices.push_back(0);
+                //indices.push_back(0);
+                //indices.push_back(0);
+
+            }
+            else{
+                //calculate the normal of the triangle formed by the three verticies
+                if (!smoothNormals) {
+                    glm::vec3 normal2 = glm::normalize(glm::cross(p5->GetPosition() - p4->GetPosition(), p6->GetPosition() - p4->GetPosition()));
+
+                    p4->SetNormal(normal2);
+                    p5->SetNormal(normal2);
+                    p6->SetNormal(normal2);
+                }
+
+                AddVertexData(vertexData, p4);
+                AddVertexData(vertexData, p5);
+                AddVertexData(vertexData, p6);
+
+                indices.push_back(index++);
+                indices.push_back(index++);
+                indices.push_back(index++);
             }
 
-            AddVertexData(vertexData, p4);
-            AddVertexData(vertexData, p5);
-            AddVertexData(vertexData, p6);
 
-            indices.push_back(index++);
-            indices.push_back(index++);
-            indices.push_back(index++);
 		}
 	}
 
@@ -313,7 +406,7 @@ void CCloth::Update(float deltaTime)
 
             part->SetDamping(clothDampening);
 
-            part->update(deltaTime);
+            part->Update(deltaTime);
         }
     }
 
@@ -326,12 +419,26 @@ void CCloth::Update(float deltaTime)
     //    tempConstraints.erase(tempConstraints.begin() + index);
     //}
 
-    //loop through the constraints and update them
-    for (int i = 0; i < m_constraints.size(); i++) {
-        CConstraint* c = m_constraints[i];
-        c->SetStiffness(clothStiffness * (c->GetType() == CConstraint::Type::BEND ? 0.15f : 1.0f));
-        c->Update(deltaTime);
+    float m_iterations = 4;
+    //perform the following code x times
+    for (int i = 0; i < m_iterations; i++)
+    {
+        //for every partcile in the cloth, check collisions
+        for (int y = 0; y <= clothHeightDivisions - 1; y++) {
+            for (int x = 0; x <= clothWidthDivisions - 1; x++) {
+                CParticle* part = m_particles[y][x];
+                part->CheckCollisions();
+            }
+        }
+
+        //loop through the constraints and update them
+        for (int i = 0; i < m_constraints.size(); i++) {
+            CConstraint* c = m_constraints[i];
+            c->SetStiffness(clothStiffness * (c->GetType() == CConstraint::Type::BEND ? 0.15f : 1.0f));
+            c->Update(deltaTime / m_iterations);
+        }
     }
+
     
 
     Rebind();

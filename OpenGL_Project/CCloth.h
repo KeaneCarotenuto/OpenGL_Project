@@ -52,9 +52,10 @@ public:
     CParticle(float _x, float _y, float _z);
     ~CParticle();
 
-    void update(float _deltaTime);
-    void addForce(glm::vec3 _force) { m_acceleration += _force / m_mass; };
-    void resetForce() { m_acceleration = glm::vec3(0.0f, 0.0f, 0.0f); };
+    void Update(float _deltaTime);
+    void CheckCollisions();
+    void AddForce(glm::vec3 _force) { m_acceleration += _force / m_mass; };
+    void ResetForce() { m_acceleration = glm::vec3(0.0f, 0.0f, 0.0f); };
 
     void CalculateNormal(int _x, int _y);
 
@@ -72,6 +73,7 @@ public:
     bool GetIsFixed() { return m_isFixed; }
     bool GetIsSelected() { return m_isSelected; }
     bool GetIsColliding() { return m_isColliding; }
+    bool GetIsBroken();
 
     void SetClothParent(CCloth* _parentCloth) { m_parentCloth = _parentCloth; };
     void SetPosition(glm::vec3 _position) { m_position = _position; }
@@ -89,6 +91,8 @@ public:
     void SetIsSelected(bool _isSelected) { m_isSelected = _isSelected; }
     void SetIsColliding(bool _isColliding) { m_isColliding = _isColliding; }
 
+    void AddConstraint(CConstraint* _constraint) { m_constraints.push_back(_constraint); };
+
 };
 
 /// <summary>
@@ -105,6 +109,8 @@ private:
     float m_restLength = 1.0f;
     float m_stiffness = 0.8f;
     float m_damping = 0.99f;
+
+    bool m_isBroken = false;
 
     CConstraint::Type m_type = CConstraint::Type::STRUCTURAL;
 
@@ -139,6 +145,9 @@ public:
     void SetStiffness(float _stiffness) { m_stiffness = _stiffness; }
     void SetDamping(float _damping) { m_damping = _damping; }
     void SetType(CConstraint::Type _type) { m_type = _type; }
+
+    bool GetIsBroken() { return m_isBroken; }
+    void Break();
 
     glm::vec3 GetNormal() { return m_normal; }
     glm::vec3 GetForce() { return m_force; }
