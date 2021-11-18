@@ -96,6 +96,9 @@ bool doInput = false;
 
 bool cursorLocked = false;
 
+CParticle* particleHeld = nullptr;
+float distanceHeld = 0;
+
 //Textures
 GLuint Texture_Rayman;
 GLuint Texture_Grass;
@@ -866,9 +869,6 @@ void CheckInput(float _deltaTime, float _currentTime)
 		g_camera->UpdateRotation();
 	}
 
-	static CParticle* particleHeld = nullptr;
-	static float distanceHeld = 0;
-
 	//if left click is down, do mouse action
 	if (glfwGetMouseButton(g_window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
 		//get mouse ray from camera
@@ -1114,6 +1114,8 @@ void RenderGUI()
 	ImGui::PopStyleColor(3);
 
 	if (doRebuild) {
+		particleHeld = nullptr;
+		distanceHeld = 0;
 		g_cloth->Rebuild();
 	}
 
