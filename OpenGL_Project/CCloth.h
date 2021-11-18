@@ -27,6 +27,8 @@ private:
     glm::vec3 m_position = glm::vec3(0.0f, 0.0f, 0.0f);
     glm::vec3 m_prevPosition = glm::vec3(0.0f, 0.0f, 0.0f);
 
+    glm::vec2 m_indexPos = { 0,0 };
+
     glm::vec3 m_velocity = glm::vec3(0.0f, 0.0f, 0.0f);
     glm::vec3 m_acceleration = glm::vec3(0.0f, 0.0f, 0.0f);
 
@@ -36,12 +38,15 @@ private:
     float m_damping = 0.99f;
 
     std::vector<CConstraint*> m_constraints;
+    std::vector<CConstraint*> m_secondConstraints;
 
     glm::vec3 m_normal = glm::vec3(0.0f, 0.0f, 0.0f);
 
     glm::vec3 m_color = glm::vec3(0.0f, 0.0f, 0.0f);
 
     bool m_isFixed = false;
+
+    bool m_isBroken = false;
 
     bool m_isSelected = false;
 
@@ -61,6 +66,7 @@ public:
 
     CCloth* GetClothParent() { return m_parentCloth; };
     glm::vec3 GetPosition() { return m_position; }
+    glm::vec2 GetIndexPos() { return m_indexPos; }
     glm::vec3 GetPrevPosition() { return m_prevPosition; }
     glm::vec3 GetVelocity() { return m_velocity; }
     glm::vec3 GetAcceleration() { return m_acceleration; }
@@ -68,16 +74,18 @@ public:
     float GetMass() { return m_mass; }
     float GetDamping() { return m_damping; }
     std::vector<CConstraint*> GetConstraints() { return m_constraints; }
+    std::vector<CConstraint*> GetSecondConstraints() { return m_secondConstraints; }
     glm::vec3 GetNormal() { return m_normal; }
     glm::vec3 GetColor() { return m_color; }
     bool GetIsFixed() { return m_isFixed; }
     bool GetIsSelected() { return m_isSelected; }
     bool GetIsColliding() { return m_isColliding; }
-    bool GetIsBroken();
+    bool GetIsBroken() { return m_isBroken; }
 
     void SetClothParent(CCloth* _parentCloth) { m_parentCloth = _parentCloth; };
     void SetPosition(glm::vec3 _position) { m_position = _position; }
     void SetPosition(float _x, float _y, float _z) { m_position = glm::vec3(_x, _y, _z); }
+    void SetIndexPos(glm::vec2 _pos) { m_indexPos = _pos; }
     void SetPrevPosition(glm::vec3 _prevPosition) { m_prevPosition = _prevPosition; }
     void SetVelocity(glm::vec3 _velocity) { m_velocity = _velocity; }
     void SetAcceleration(glm::vec3 _acceleration) { m_acceleration = _acceleration; }
@@ -85,13 +93,16 @@ public:
     void SetMass(float _mass) { m_mass = _mass; }
     void SetDamping(float _damping) { m_damping = _damping; }
     void SetConstraints(std::vector<CConstraint*> _constraints) { m_constraints = _constraints; }
+    void SetSecondConstraints(std::vector<CConstraint*> _secondConstraints) { m_secondConstraints = _secondConstraints; }
     void SetNormal(glm::vec3 _normal) { m_normal = _normal; }
     void SetColor(glm::vec3 _color) { m_color = _color; }
     void SetIsFixed(bool _isFixed) { m_isFixed = _isFixed; }
     void SetIsSelected(bool _isSelected) { m_isSelected = _isSelected; }
     void SetIsColliding(bool _isColliding) { m_isColliding = _isColliding; }
+    void Break();
 
     void AddConstraint(CConstraint* _constraint) { m_constraints.push_back(_constraint); };
+    void AddSecondConstraint(CConstraint* _constraint) { m_secondConstraints.push_back(_constraint); };
 
 };
 
@@ -169,7 +180,7 @@ private:
     static glm::vec3 g_wind;
 
     std::vector<std::vector<CParticle*>> m_particles;
-    std::vector<CParticle*> m_fixedParts;
+    std::vector<CParticle*> m_hooks;
     std::vector<CConstraint*> m_constraints;
 
 public:
@@ -188,7 +199,7 @@ public:
     float clothStiffness = 0.5f;
     float clothDampening = 0.99f;
 
-    const char* mouseModeItems[5]{ "Pull", "Push", "Tear", "Fire", "Pin" };
+    const char* mouseModeItems[6]{ "Grab", "Pull", "Push", "Tear", "Fire", "Pin" };
     int selectedMouseMode = 0;
 
     const char* collisionItems[4]{ "No Object", "Sphere", "Capsule", "Pyramid" };
@@ -198,6 +209,7 @@ public:
     float windStrength = 5.0f;
 
     void Rebind();
+    void CreateTri(CParticle* p1, CParticle* p2, CParticle* p3, std::vector<float>& vertexData, std::vector<int>& indices, int& index);
     void AddVertexData(std::vector<float>& vertexData, CParticle* particle);
 
     void Update(float deltaTime);
@@ -209,6 +221,7 @@ public:
     void Rebuild();
     void Reset();
 
+    void AutoDistanceHooks();
     void UnFixAll();
 
     CShape* GetFloorShape() { return m_floor; };
@@ -224,14 +237,19 @@ public:
 
     CParticle* GetParticle(int _x, int _y);
 
-    int GetWidth() { return clothWidthDivisions; };
-    int GetHeight() { return clothHeightDivisions; };
+    int GetWidth() { return clothWidth; };
+    void SetWidth(float _height) { clothWidth = _height; };
+    int GetLength() { return clothLength; };
+    void SetLength(float _Length) { clothLength = _Length; };
+
+    int GetWidthDivisions() { return clothWidthDivisions; };
+    int GetHeightDivisions() { return clothHeightDivisions; };
 
     glm::vec3 GetPosition() { return m_shape->GetPosition(); };
     void SetPosition(glm::vec3 position) { m_shape->SetPosition(position); };
 
-    void SetWidth(int width) { clothWidthDivisions = width; };
-    void SetHeight(int height) { clothHeightDivisions = height; };
+    void SetWidthDivisions(int width) { clothWidthDivisions = width; };
+    void SetHeightDivisions(int height) { clothHeightDivisions = height; };
 
     void SetParticles(std::vector<std::vector<CParticle*>> particles);
     void SetConstraints(std::vector<CConstraint*> constraints);

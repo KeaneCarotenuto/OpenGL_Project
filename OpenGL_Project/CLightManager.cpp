@@ -8,8 +8,8 @@ const int CLightManager::MAX_SPHERES;
 DirectionalLight CLightManager::directionalLight = {
 	glm::vec3(-1,-1,-1),
 	glm::vec3(1,1,1),
-	0.1f,
-	0.5f
+	0.4f,
+	0.1f
 };
 
 int CLightManager::currentLightNum = 0;

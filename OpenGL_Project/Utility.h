@@ -6,6 +6,7 @@
 #include <gtc/matrix_transform.hpp>
 #include <gtc/type_ptr.hpp>
 #include <gtx/rotate_vector.hpp>
+#include <gtx/closest_point.hpp>
 
 #include <fmod.hpp>
 

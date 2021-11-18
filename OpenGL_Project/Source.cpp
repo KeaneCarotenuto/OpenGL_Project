@@ -98,21 +98,10 @@ bool cursorLocked = false;
 
 //Textures
 GLuint Texture_Rayman;
-GLuint Texture_Awesome;
-GLuint Texture_CapMan;
-GLuint Texture_Frac;
-GLuint Texture_Floor;
-GLuint Texture_Crate;
-GLuint Texture_Water;
+GLuint Texture_Grass;
 GLuint Texture_Fabric;
 
 GLuint Texture_Cubemap;
-
-GLuint Texture_CrateReflectionMap;
-
-//Text objects
-TextLabel* Text_Message;
-TextLabel* Text_Message2;
 
 int main() {
 
@@ -269,22 +258,16 @@ void TextureCreation()
 {
 	//Create all textures and bind them
 	GenTexture(Texture_Rayman, "Resources/Textures/Rayman.jpg");
-	GenTexture(Texture_Awesome, "Resources/Textures/AwesomeFace.png");
-	GenTexture(Texture_CapMan, "Resources/Textures/Capguy_Walk.png");
-	GenTexture(Texture_Frac, "Resources/Textures/pal.png");
-	GenTexture(Texture_Floor, "Resources/Textures/Floor.jpg");
-	GenTexture(Texture_Crate, "Resources/Textures/Crate.jpg");
-	GenTexture(Texture_Water, "Resources/Textures/Water.png");
+	GenTexture(Texture_Grass, "Resources/Textures/Grass.jpg");
 	GenTexture(Texture_Fabric, "Resources/Textures/Fabric.jpg");
-	GenTexture(Texture_CrateReflectionMap, "Resources/Textures/Crate-Reflection.png");
 
 	std::string cubemapPaths[6] = {
-		"MountainOutpost/Right.jpg",
-		"MountainOutpost/Left.jpg",
-		"MountainOutpost/Top.jpg",
-		"MountainOutpost/Bottom.jpg",
-		"MountainOutpost/Back.jpg",
-		"MountainOutpost/Front.jpg",
+		"Clouds/Right.jpg",
+		"Clouds/Left.jpg",
+		"Clouds/Top.jpg",
+		"Clouds/Bottom.jpg",
+		"Clouds/Back.jpg",
+		"Clouds/Front.jpg",
 	};
 	GenCubemap(Texture_Cubemap, cubemapPaths);
 }
@@ -527,10 +510,10 @@ void MeshCreation()
 		{
 			// Index        // Position				//Texture Coords
 			//Front Quad
-			/* 00 */        -0.5f,  0.0f,  0.5f,	0.0f, 50.0f,			0.0f,  1.0f,  0.0f,             /* 00 */
+			/* 00 */        -0.5f,  0.0f,  0.5f,	0.0f, 10.0f,			0.0f,  1.0f,  0.0f,             /* 00 */
 			/* 01 */        -0.5f,  0.0f, -0.5f,	0.0f, 0.0f,				0.0f,  1.0f,  0.0f,            /* 01 */
-			/* 02 */         0.5f,  0.0f, -0.5f,	50.0f, 0.0f,			0.0f,  1.0f,  0.0f,             /* 02 */
-			/* 03 */         0.5f,  0.0f,  0.5f,	50.0f, 50.0f,			0.0f,  1.0f,  0.0f,              /* 03 */
+			/* 02 */         0.5f,  0.0f, -0.5f,	10.0f, 0.0f,			0.0f,  1.0f,  0.0f,             /* 02 */
+			/* 03 */         0.5f,  0.0f,  0.5f,	10.0f, 10.0f,			0.0f,  1.0f,  0.0f,              /* 03 */
 		},
 		{
 			0, 2, 1, // Front Tri 1
@@ -555,11 +538,8 @@ void ObjectCreation()
 	CObjectManager::AddShape("floor", new CShape("floor-squareNorm", glm::vec3(0.0f, -0.5f, 0.0f), 0.0f, glm::vec3(100.0f, 1.0f, 100.0f), false));
 	CObjectManager::GetShape("floor")->SetCamera(g_camera);
 
-	CObjectManager::AddShape("sphere1", new CShape("sphere", glm::vec3(10.0f, 25.0f, 10.0f), 0.0f, glm::vec3(5.0f, 5.0f, 5.0f), false));
+	CObjectManager::AddShape("sphere1", new CShape("sphere", glm::vec3(10.0f, 05.0f, 10.0f), 0.0f, glm::vec3(5.0f, 5.0f, 5.0f), false));
 	CObjectManager::GetShape("sphere1")->SetCamera(g_camera);
-
-	CObjectManager::AddShape("cube1", new CShape("cubeNorm", glm::vec3(5.0f, 0.0f, 0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), false));
-	CObjectManager::GetShape("cube1")->SetCamera(g_camera);
 
 	CObjectManager::AddShape("cloth", new CShape("cloth", glm::vec3(0.0f, 35.0f, 0.0f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f), false));
 	CObjectManager::GetShape("cloth")->SetCamera(g_camera);
@@ -598,7 +578,7 @@ void InitShapes()
 	//Set program and add uniforms to Rectangle
 	if (_shape = CObjectManager::GetShape("floor")) {
 		_shape->SetProgram(ShaderLoader::GetProgram("3DLight")->m_id);
-		_shape->AddUniform(new ImageUniform(Texture_Floor, "ImageTexture"));
+		_shape->AddUniform(new ImageUniform(Texture_Grass, "ImageTexture"));
 		_shape->AddUniform(new IntUniform(0, "frameCount"));
 		_shape->AddUniform(new FloatUniform(0, "offset"));
 		_shape->AddUniform(new CubemapUniform(Texture_Cubemap, "Skybox"));
@@ -618,23 +598,6 @@ void InitShapes()
 		_shape->AddUniform(new FloatUniform(0, "offset"));
 		_shape->AddUniform(new CubemapUniform(Texture_Cubemap, "Skybox"));
 		_shape->AddUniform(new FloatUniform(0.5f, "Reflectivity"));
-		_shape->AddUniform(new BoolUniform(false, "hasRefMap"));
-		_shape->AddUniform(new FloatUniform(5, "RimExponent"));
-		_shape->AddUniform(new Vec3Uniform(glm::vec3(1.0f, 0.0f, 0.0f), "RimColour"));
-		_shape->AddUniform(new Vec3Uniform(glm::vec3(1.0f, 0.0f, 0.0f), "Colour"));
-		_shape->AddUniform(new FloatUniform(0, "CurrentTime"));
-		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM(), "PVMMat"));
-		_shape->AddUniform(new Mat4Uniform(_shape->GetPVM(), "Model"));
-	}
-
-	//Set program and add uniforms to Cube
-	if (_shape = CObjectManager::GetShape("cube1")) {
-		_shape->SetProgram(ShaderLoader::GetProgram("3DLight")->m_id);
-		_shape->AddUniform(new ImageUniform(Texture_Rayman, "ImageTexture"));
-		_shape->AddUniform(new IntUniform(0, "frameCount"));
-		_shape->AddUniform(new FloatUniform(0, "offset"));
-		_shape->AddUniform(new CubemapUniform(Texture_Cubemap, "Skybox"));
-		_shape->AddUniform(new FloatUniform(0.0f, "Reflectivity"));
 		_shape->AddUniform(new BoolUniform(false, "hasRefMap"));
 		_shape->AddUniform(new FloatUniform(5, "RimExponent"));
 		_shape->AddUniform(new Vec3Uniform(glm::vec3(1.0f, 0.0f, 0.0f), "RimColour"));
@@ -749,14 +712,6 @@ void MouseCallback(GLFWwindow* window, int button, int action, int mods) {
 	double yPos;
 	glfwGetCursorPos(g_window, &xPos, &yPos);
 	utils::mousePos = glm::vec2(xPos, utils::windowHeight - yPos);
-
-	//get mouse ray from camera
-	glm::vec3 worldRay = g_camera->GetWorldRay();
-
-	//If left clicking
-	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
-		//click
-	}
 }
 
 /// <summary>
@@ -863,9 +818,14 @@ void Update()
 
 	g_cloth->Update(utils::deltaTime);
 
-	//Move shapes around world origin in circle
+	//Move circle back and forth, and if it is selected,s ets height to collide with cloth
 	CShape* sphere = CObjectManager::GetShape("sphere1");
-	sphere->SetPosition(glm::vec3(sphere->GetPosition().x, sphere->GetPosition().y, cos(utils::currentTime / 3.0f)*20));
+	if (g_cloth->collisionItems[g_cloth->selectedCollision] == "Sphere") {
+		sphere->SetPosition(glm::vec3(10, 25, cos(utils::currentTime / 3.0f) * 20));
+	}
+	else {
+		sphere->SetPosition(glm::vec3(10, 2.5, 10));
+	}
 
 	//Update all shapes
 	CObjectManager::UpdateAll(utils::deltaTime, utils::currentTime);
@@ -904,6 +864,63 @@ void CheckInput(float _deltaTime, float _currentTime)
 		Print(5, 10, "Mouse rotation (yaw: " + std::to_string((int)glm::degrees(g_camera->GetYaw())) + " pitch:" + std::to_string((int)glm::degrees(g_camera->GetPitch())) + ")    ", 15);
 
 		g_camera->UpdateRotation();
+	}
+
+	static CParticle* particleHeld = nullptr;
+	static float distanceHeld = 0;
+
+	//if left click is down, do mouse action
+	if (glfwGetMouseButton(g_window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+		//get mouse ray from camera
+		glm::vec3 worldRay = g_camera->GetWorldRay();
+
+		if (particleHeld) {
+			glm::vec3 newpos = g_camera->GetCameraPos() + glm::normalize(worldRay) * distanceHeld - g_cloth->GetPosition();
+			particleHeld->SetPosition(newpos);
+			particleHeld->SetPrevPosition(newpos);
+			particleHeld->SetAcceleration(glm::vec3(0, 0, 0));
+		}
+		else {
+			//get all g_cloth particles
+			std::vector<std::vector<CParticle*>> particles = g_cloth->GetParticles();
+
+			//for each particle
+			for (int i = 0; i < particles.size(); i++) {
+				for (int j = 0; j < particles[i].size(); j++) {
+					if (particleHeld) break;
+
+					CParticle* particle = particles[i][j];
+					//get particle position
+					glm::vec3 particlePos = particle->GetPosition() + g_cloth->GetPosition();
+
+					//get closest point on ray to particle
+					glm::vec3 linePoint = glm::closestPointOnLine(particlePos, g_camera->GetCameraPos(), g_camera->GetCameraPos() + worldRay * 100.0f);
+
+					float distToLine = glm::distance(particlePos, linePoint);
+
+					//perform mode specific actions
+					if (distToLine < 0.5f && g_cloth->mouseModeItems[g_cloth->selectedMouseMode] == "Grab") { // Grabbing particle
+						particleHeld = particle;
+						distanceHeld = glm::distance(g_camera->GetCameraPos(), particle->GetPosition() + g_cloth->GetPosition());
+						break;
+					}
+					if (distToLine < 1.5f && g_cloth->mouseModeItems[g_cloth->selectedMouseMode] == "Pull") { // Pushing particles
+						glm::vec3 newpos = (particle->GetPosition() - glm::normalize(worldRay) * _deltaTime * 6.0f);
+						particle->SetPosition(newpos);
+					}
+					if (distToLine < 1.5f && g_cloth->mouseModeItems[g_cloth->selectedMouseMode] == "Push") { // Pulling Particles
+						glm::vec3 newpos = (particle->GetPosition() + glm::normalize(worldRay) * _deltaTime * 6.0f);
+						particle->SetPosition(newpos);
+					}
+					if (distToLine < 0.3f && g_cloth->mouseModeItems[g_cloth->selectedMouseMode] == "Tear") particle->Break(); // Tearing
+					if (distToLine < 0.5f && g_cloth->mouseModeItems[g_cloth->selectedMouseMode] == "Pin") particle->SetIsFixed(true); // Pinning
+				}
+			}
+		}
+	}
+	else {
+		particleHeld = nullptr;
+		distanceHeld = 0;
 	}
 	
 
@@ -977,7 +994,6 @@ void RenderObjects()
 	//Render normal objects
 	CObjectManager::GetShape("skybox")->Render();
 	CObjectManager::GetShape("floor")->Render();
-	CObjectManager::GetShape("cube1")->Render();
 	CObjectManager::GetShape("sphere1")->Render();
 
 	//Render water with backface enabled
@@ -1006,7 +1022,7 @@ void RenderGUI()
 
 	ImGui::Checkbox("Wireframe Mode", &bWireFrameMode);
 
-	ImGui::Combo("Mouse Mode", &g_cloth->selectedCollision, g_cloth->mouseModeItems, IM_ARRAYSIZE(g_cloth->mouseModeItems));
+	ImGui::Combo("Mouse Mode", &g_cloth->selectedMouseMode, g_cloth->mouseModeItems, IM_ARRAYSIZE(g_cloth->mouseModeItems));
 
 	static float sunPitch = 210.0f;
 	static float sunYaw = 45.0f;
@@ -1030,8 +1046,7 @@ void RenderGUI()
 		sunAngleChanged = false;
 	}
 
-
-
+	//Cloth related buttons
 	ImGui::Text("Cloth Shape:");
 
 	if (ImGui::SliderFloat("Cloth Length", &g_cloth->clothLength, 1.0f, 200.0f)) doRebuild = true;
@@ -1046,6 +1061,13 @@ void RenderGUI()
 
 	if (ImGui::SliderFloat("Hook Distance", &g_cloth->hookDistance, 0.0f, 50.0f));
 
+	if (ImGui::Button("Auto Distance")) {
+
+		g_cloth->AutoDistanceHooks();
+
+		doRebuild = true;
+	}
+
 	if (ImGui::SliderFloat("Particle Dampening (more is less)", &g_cloth->clothDampening, 0.0f, 1.0f));
 
 	if (ImGui::SliderFloat("Cloth Stiffness", &g_cloth->clothStiffness, 0.0f, 1.0f));
@@ -1057,17 +1079,39 @@ void RenderGUI()
 		g_cloth->UnFixAll();
 	}
 
-	if (ImGui::Button("Reset Cloth")) {
+	if (ImGui::Button("Rebuild")) {
+
+		doRebuild = true;
+	}
+
+	//Makes cloth high quality!
+	ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::HSV(1.2f, 1.0f, 0.6f));
+	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV(1.2f, 1.0f, 0.6f));
+	ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV(1.2f, 1.0f, 0.6f));
+	if (ImGui::Button("High Quality")) {
+
+		g_cloth->clothHeightDivisions = 50;
+		g_cloth->clothWidthDivisions = 100;
+		g_cloth->numberOfHooks = 20;
+		g_cloth->clothStiffness = 1.0f;
+		g_cloth->smoothNormals = true;
+		g_cloth->Rebuild();
+		g_cloth->AutoDistanceHooks();
+
+		doRebuild = true;
+	}
+	ImGui::PopStyleColor(3);
+
+	ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::HSV(1.0f, 0.6f, 0.6f));
+	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV(1.0f, 0.7f, 0.7f));
+	ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV(1.0f, 0.8f, 0.8f));
+	if (ImGui::Button("Reset Cloth!")) {
 
 		g_cloth->Reset();
 
 		doRebuild = true;
 	}
-
-	if (ImGui::Button("Rebuild")) {
-
-		doRebuild = true;
-	}
+	ImGui::PopStyleColor(3);
 
 	if (doRebuild) {
 		g_cloth->Rebuild();
@@ -1077,7 +1121,7 @@ void RenderGUI()
 	ImGui::Combo("Selected Object: ", &g_cloth->selectedCollision, g_cloth->collisionItems, IM_ARRAYSIZE(g_cloth->collisionItems));
 
 	ImGui::Text("Wind:");
-	ImGui::SliderFloat("Wind Direction (Degrees):", &g_cloth->windDirection, 0.0f, 360.0f);
+	ImGui::SliderFloat("Wind Direction (Degrees)", &g_cloth->windDirection, 0.0f, 360.0f);
 	ImGui::SliderFloat("Wind Strength:", &g_cloth->windStrength, 0.0f, 100.0f);
 
 
