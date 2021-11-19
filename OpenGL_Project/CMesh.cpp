@@ -1,5 +1,6 @@
 #include "CMesh.h"
 #include <stb_image.h>
+#include "Utility.h"
 
 std::map<std::string, CMesh*> CMesh::meshMap;
 
@@ -260,54 +261,8 @@ void CMesh::NewCMesh(std::string _name, float _radius, int _fidelity)
 	delete[] Indices;
 }
 
-//struct to store RGBA
-struct Color
-{
-	float r, g, b, a;
-};
-
-//use stbi to load image data and return the Color struct for a pixel at x,y in the image
-Color GetPixel(int x, int y, const char* filename)
-{
-	//load image data
-	int width, height, channels;
-	unsigned char* image = stbi_load(filename, &width, &height, &channels, 0);
-
-	//create color struct
-	Color color;
-
-	//get pixel data
-	color.r = image[(y * width + x) * channels + 0] / 255.0f;
-	color.g = image[(y * width + x) * channels + 1] / 255.0f;
-	color.b = image[(y * width + x) * channels + 2] / 255.0f;
-	color.a = image[(y * width + x) * channels + 3] / 255.0f;
-
-	//free image data
-	stbi_image_free(image);
-
-	//return color struct
-	return color;
-}
-
-//calculate the normal of a quad given the 4 points of the quad
-glm::vec3 CalculateNormal(glm::vec3 p1, glm::vec3 p2, glm::vec3 p3)
-{
-	//calculate the vectors of the two edges of the quad
-	glm::vec3 v1 = p2 - p1;
-	glm::vec3 v2 = p3 - p1;
-
-	//calculate the normal of the quad
-	glm::vec3 normal = glm::cross(v1, v2);
-
-	//normalize the normal
-	normal = glm::normalize(normal);
-
-	//return the normal
-	return normal;
-}
-
 /// <summary>
-/// Create a terrain mesh with given size and divisions
+/// Create a terrain mesh with given size and divisions, using perlin noise
 /// </summary>
 /// <param name="_name"></param>
 /// <param name="_width"></param>
@@ -332,63 +287,61 @@ void CMesh::NewPlane(std::string _name, float _width, float _length, int _divW, 
 	float widthDiv = _width / _divW;
 	float lengthDiv = _length / _divL;
 
-	//load image data
-	int widthH, heightH, channelsH;
-	unsigned char* heightMap = stbi_load("Resources/Textures/Terrain_Alpha.png", &widthH, &heightH, &channelsH, 0);
-
-	//load image data
-	int widthN, heightN, channelsN;
-	unsigned char* normalMap = stbi_load("Resources/Textures/NormalMap.png", &widthN, &heightN, &channelsN, 0);
+	int seed = std::rand() % 100;
 
 	//Loop through each division
 	for (int i = 0; i <= _divL; i++)
 	{
 		for (int j = 0; j <= _divW; j++)
 		{
-			//create color struct
-			glm::vec3 heightColor;
-
-			//get pixel data
-			heightColor.r = heightMap[(int)floor(((widthH / _divW) * i * widthH + (heightH / _divL) * j)) * channelsH + 0] / 255.0f;
-			heightColor.g = heightMap[(int)floor(((widthH / _divW) * i * widthH + (heightH / _divL) * j)) * channelsH + 1] / 255.0f;
-			heightColor.b = heightMap[(int)floor(((widthH / _divW) * i * widthH + (heightH / _divL) * j)) * channelsH + 2] / 255.0f;
-
 			//Calculate the position of the current vertex
 			float x = j * widthDiv;
-			float y = 20.0f * heightColor.r;
 			float z = i * lengthDiv;
-
-			if (y <= 0.001f) {
-				y = -0.1f;
-			}
+			float y = utils::FinalNoise2D(x,z, seed, 8, 0.5, 100);
 
 			//Set the position of the current vertex
 			verts[(i * (_divW + 1) + j) * 8 + 0] = x;
 			verts[(i * (_divW + 1) + j) * 8 + 1] = y;
 			verts[(i * (_divW + 1) + j) * 8 + 2] = z;
 
+
 			//Set the texture coordinates of the current vertex
 			verts[(i * (_divW + 1) + j) * 8 + 3] = (float)j / (_divW + 10);
 			verts[(i * (_divW + 1) + j) * 8 + 4] = (float)i / (_divL + 10);
 
 
-			//create color struct
-			glm::vec3 normalColor;
+			//Getting all connected particles to the current vertex
+			glm::vec3 middle = glm::vec3(x, utils::FinalNoise2D(x, z, seed, 8, 0.5, 100), z);
+			glm::vec3 topLeft = glm::vec3(x - widthDiv, utils::FinalNoise2D(x - widthDiv, z - lengthDiv, seed, 8, 0.5, 100), z - lengthDiv);
+			glm::vec3 top = glm::vec3(x, utils::FinalNoise2D(x, z - lengthDiv, seed, 8, 0.5, 100), z - lengthDiv);
+			glm::vec3 topRight = glm::vec3(x + widthDiv, utils::FinalNoise2D(x + widthDiv, z - lengthDiv, seed, 8, 0.5, 100), z - lengthDiv);
+			glm::vec3 left = glm::vec3(x - widthDiv, utils::FinalNoise2D(x - widthDiv, z, seed, 8, 0.5, 100), z);
+			glm::vec3 right = glm::vec3(x + widthDiv, utils::FinalNoise2D(x + widthDiv, z, seed, 8, 0.5, 100), z);
+			glm::vec3 bottomLeft = glm::vec3(x - widthDiv, utils::FinalNoise2D(x - widthDiv, z + lengthDiv, seed, 8, 0.5, 100), z + lengthDiv);
+			glm::vec3 bottom = glm::vec3(x, utils::FinalNoise2D(x, z + lengthDiv, seed, 8, 0.5, 100), z + lengthDiv);
+			glm::vec3 bottomRight = glm::vec3(x + widthDiv, utils::FinalNoise2D(x + widthDiv, z + lengthDiv, seed, 8, 0.5, 100), z + lengthDiv);
 
-			//get pixel data
-			normalColor.r = normalMap[(int)floor(((widthH / _divW) * i * widthH + (heightH / _divL) * j)) * channelsN + 0] / 255.0f;
-			normalColor.g = (normalMap[(int)floor(((widthH / _divW) * i * widthH + (heightH / _divL) * j)) * channelsN + 1] / 255.0f);
-			normalColor.b = normalMap[(int)floor(((widthH / _divW) * i * widthH + (heightH / _divL) * j)) * channelsN + 2] / 255.0f;
+			//calculate the normal of each triangle connected to the current vertex
+			glm::vec3 normal1 = glm::normalize(glm::cross(middle - topLeft, middle - top));
+			glm::vec3 normal2 = glm::normalize(glm::cross(middle - top, middle - topRight));
+			glm::vec3 normal3 = glm::normalize(glm::cross(middle - topRight, middle - right));
+			glm::vec3 normal4 = glm::normalize(glm::cross(middle - right, middle - bottomRight));
+			glm::vec3 normal5 = glm::normalize(glm::cross(middle - bottomRight, middle - bottom));
+			glm::vec3 normal6 = glm::normalize(glm::cross(middle - bottom, middle - bottomLeft));
+			glm::vec3 normal7 = glm::normalize(glm::cross(middle - bottomLeft, middle - left));
+			glm::vec3 normal8 = glm::normalize(glm::cross(middle - left, middle - topLeft));
 
-			//normalColor = glm::normalize(normalColor);
+			//add all the normals together
+			glm::vec3 m_normal = normal1 + normal2 + normal3 + normal4 + normal5 + normal6 + normal7 + normal8;
 
-			//Set the normal of the current vertex 
-			//NOTE: Normal map is actually
-			//		R G B
-			//		X Z Y
-			verts[(i * (_divW + 1) + j) * 8 + 5] = (normalColor.r * 2.0f - 1.0f); //X
-			verts[(i * (_divW + 1) + j) * 8 + 6] = (normalColor.b * 2.0f - 1.0f); //Y
-			verts[(i * (_divW + 1) + j) * 8 + 7] = (normalColor.g * 2.0f - 1.0f); //Z
+			//normalize the normal
+			m_normal = glm::normalize(-m_normal);
+
+			//set the normal of the current vertex
+			verts[(i * (_divW + 1) + j) * 8 + 5] = m_normal.x;
+			verts[(i * (_divW + 1) + j) * 8 + 6] = m_normal.y;
+			verts[(i * (_divW + 1) + j) * 8 + 7] = m_normal.z;
+
 		}
 	}
 
@@ -432,11 +385,6 @@ void CMesh::NewPlane(std::string _name, float _width, float _length, int _divW, 
 	tempPointer->m_lengthDivs = _divL;
 
 	CMesh::meshMap[tempName] = tempPointer;
-
-
-	//free image data
-	stbi_image_free(heightMap);
-	stbi_image_free(normalMap);
 }
 
 			

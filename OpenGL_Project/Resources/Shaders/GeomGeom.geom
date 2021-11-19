@@ -1,69 +1,45 @@
 #version 430 core
 layout (points) in;
-layout (triangle_strip, max_vertices = 66) out;
+layout (triangle_strip, max_vertices = 4) out;
 
 out vec3 outColor;
 
-in VS_GS_VERTEX{
-	in vec4 position;
-	in vec3 color;
-	in mat4 PVMMat;
-}gs_in[];
+uniform mat4 vp;
+uniform vec3 vQuad1, vQuad2;
+uniform float CurrentTime;
 
-float rand(vec2 co){
-    return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
+out GS_FS_VERTEX{
+	vec2 texcoord;
+}gs_out;
+
+void buildQuad(float size, mat4 vp){
+	int spriteSheetFrames = 7;
+	float frameOffset = 1.0f / float(spriteSheetFrames);
+	int time = int(CurrentTime * 10);
+	int frameNum = time % spriteSheetFrames;
+	float leftXTexCoord = frameNum * frameOffset;
+	float rightXTexCoord = leftXTexCoord + frameOffset;
+
+
+	vec3 p1 = gl_in[0].gl_Position.xyz +(-vQuad1-vQuad2)* size;
+	gl_Position = vp * vec4(p1, 1.0f);
+	gs_out.texcoord = vec2(leftXTexCoord, 0.0f); EmitVertex();
+
+	vec3 p2 = gl_in[0].gl_Position.xyz + (-vQuad1+vQuad2)* size;
+	gl_Position = vp * vec4(p2, 1.0f);
+	gs_out.texcoord = vec2(leftXTexCoord, 1.0f); EmitVertex();
+
+	vec3 p3 = gl_in[0].gl_Position.xyz + (vQuad1-vQuad2)* size;
+	gl_Position = vp * vec4(p3, 1.0f);
+	gs_out.texcoord = vec2(rightXTexCoord, 0.0f); EmitVertex();
+
+	vec3 p4 = gl_in[0].gl_Position.xyz + (vQuad1+vQuad2)* size;
+	gl_Position = vp * vec4(p4, 1.0f);
+	gs_out.texcoord = vec2(rightXTexCoord, 1.0f); EmitVertex();
+
+	EndPrimitive();
 }
 
 void main() {
-
-	//make first half of star
-	//gl_Position = gs_in[0].position + gs_in[0].PVMMat * vec4(0, 0, 0.0f, 0.0f); EmitVertex();
-	//calculate the ten perimiter points of a five point star centered at the origin (0,0,0)
-	for (int i = 0; i < 33; i++) {
-		//find angle
-		float angle = i * 2.0f * 3.14159f / 10.0f + 0.279253f;
-
-		//calc pos and length based on angle
-		float length = mod(i, 2) == 0 ? 1.0f : 0.5f;
-		float x = cos(angle) * length;
-		float y = sin(angle) * length;
-		
-		//random colour
-		outColor = vec3(rand(vec2(i + 5,i * i)),rand(vec2(-i + 4,i * i)),rand(vec2(-i + 3,-i * i)));
-
-		//if third point, make it zero
-		if (mod(i,3) == 0){
-			gl_Position = gs_in[0].position + gs_in[0].PVMMat * vec4(0, 0, 0.3f, 0.0f); EmitVertex();
-			EndPrimitive();
-		}
-		else{
-			gl_Position = gs_in[0].position + gs_in[0].PVMMat * vec4(x, y, 0.0f, 0.0f); EmitVertex();
-		}
-	}
-	EndPrimitive();
-
-	//make another star, but flipped
-	//gl_Position = gs_in[0].position + gs_in[0].PVMMat * vec4(0, 0, 0.0f, 0.0f); EmitVertex();
-	//calculate the ten perimiter points of a five point star centered at the origin (0,0,0)
-	for (int i = 32; i >= 0; i--) {
-		//find angle
-		float angle = i * 2.0f * 3.14159f / 10.0f + 0.279253f;
-
-		//calc pos and length based on angle
-		float length = mod(i, 2) == 0 ? 1.0f : 0.5f;
-		float x = cos(angle) * length;
-		float y = sin(angle) * length;
-		
-		//random colour
-		outColor = vec3(rand(vec2(i + 2,i * i)),rand(vec2(-i + 1,i * i)),rand(vec2(-i + 0,-i * i)));
-
-		//if third point, make it zero
-		if (mod(i,3) == 0){
-			gl_Position = gs_in[0].position + gs_in[0].PVMMat * vec4(0, 0, -0.3f, 0.0f); EmitVertex();
-			EndPrimitive();
-		}
-		else{
-			gl_Position = gs_in[0].position + gs_in[0].PVMMat * vec4(x, y, 0.0f, 0.0f); EmitVertex();
-		}
-	}
+	buildQuad(0.1, vp);
 }
