@@ -1,5 +1,12 @@
 #include "CParticleSystem.h"
 
+/// <summary>
+/// Particle constructor
+/// </summary>
+/// <param name="_position"></param>
+/// <param name="_velocity"></param>
+/// <param name="_acceleration"></param>
+/// <param name="_lifeTime"></param>
 CParticle::CParticle(glm::vec3 _position, glm::vec3 _velocity, glm::vec3 _acceleration, float _lifeTime)
 {
     m_position = _position;
@@ -13,6 +20,11 @@ CParticle::~CParticle()
 {
 }
 
+
+/// <summary>
+/// Update method for particle, does movement and stuff
+/// </summary>
+/// <param name="_deltaTime"></param>
 void CParticle::Update(float _deltaTime)
 {
     //dampen the velocity
@@ -29,6 +41,10 @@ void CParticle::Update(float _deltaTime)
     }
 }
 
+
+/// <summary>
+/// Resets particle to start pos
+/// </summary>
 void CParticle::Reset()
 {
     m_position = m_parentSystem->GetPosition();
@@ -39,6 +55,14 @@ void CParticle::Reset()
     m_acceleration = glm::vec3(0, utils::RandomFloat(1.0f, 2.0f), 0);
 }
 
+/// <summary>
+/// Particle system constructor
+/// </summary>
+/// <param name="_position"></param>
+/// <param name="_texture"></param>
+/// <param name="_program"></param>
+/// <param name="_cam"></param>
+/// <param name="_numOfParts"></param>
 CParticleSystem::CParticleSystem(glm::vec3 _position, GLuint _texture, GLuint _program, CCamera* _cam, int _numOfParts)
 {
     m_position = _position;
@@ -63,6 +87,10 @@ CParticleSystem::~CParticleSystem()
 {
 }
 
+/// <summary>
+/// Updates all particles and rebinds
+/// </summary>
+/// <param name="_deltaTime"></param>
 void CParticleSystem::Update(float _deltaTime)
 {
     //update particles
@@ -74,6 +102,9 @@ void CParticleSystem::Update(float _deltaTime)
     Rebind();
 }
 
+/// <summary>
+/// Rebinds data to buffers
+/// </summary>
 void CParticleSystem::Rebind()
 {
     //create a temporary vector to store the vertices
@@ -82,7 +113,7 @@ void CParticleSystem::Rebind()
     std::vector<int> tempIndices;
 
     //loop through all the particles
-    for (int i = 0; i < m_particles.size(); i++)
+    for (unsigned int i = 0; i < m_particles.size(); i++)
     {
         //add the vertices to the temporary vector
         tempVerts.push_back(m_particles[i]->GetPosition().x);
@@ -107,6 +138,10 @@ void CParticleSystem::Rebind()
 
 }
 
+/// <summary>
+/// Render particle system
+/// </summary>
+/// <param name="_deltaTime"></param>
 void CParticleSystem::Render(float _deltaTime)
 {
 
@@ -121,8 +156,10 @@ void CParticleSystem::Render(float _deltaTime)
 
     m_PVMMat = projection * view;
 
+    //send uniform
     glUniformMatrix4fv(glGetUniformLocation(m_program, "vp"), 1, GL_FALSE, glm::value_ptr(m_PVMMat));
 
+    //billboarding
     glm::vec3 vQuad1, vQuad2;
     glm::vec3 camFront = m_camera->GetCameraForwardDir();
     camFront = glm::normalize(camFront);
@@ -136,6 +173,7 @@ void CParticleSystem::Render(float _deltaTime)
     glUniform3f(glGetUniformLocation(m_program, "vQuad2"), vQuad2.x, vQuad2.y,
     vQuad2.z);
 
+    //texture
     glActiveTexture(GL_TEXTURE0 + m_texture);
     glBindTexture(GL_TEXTURE_2D, m_texture);
     glUniform1i(glGetUniformLocation(m_program, "Texture"), m_texture);
@@ -154,6 +192,9 @@ void CParticleSystem::Render(float _deltaTime)
     glDepthMask(GL_TRUE);
 }
 
+/// <summary>
+/// Generates and binds verticies for the first time
+/// </summary>
 void CParticleSystem::GenBindVerts()
 {
     //create a temporary vector to store the vertices
@@ -162,7 +203,7 @@ void CParticleSystem::GenBindVerts()
     std::vector<int> tempIndices;
 
     //loop through all the particles
-    for (int i = 0; i < m_particles.size(); i++)
+    for (unsigned int i = 0; i < m_particles.size(); i++)
     {
         //add the vertices to the temporary vector
         tempVerts.push_back(m_particles[i]->GetPosition().x);

@@ -64,18 +64,18 @@ namespace utils {
     }
 
     static double InterpolatedNoise(double x, double y, int seed) {
-        int integer_X = x;
-        double fractional_X = x - integer_X;
-        int integer_Y = y;
-        double fractional_Y = y - integer_Y;
+        int integer_X = (int)x;
+        double fractional_X = x - (double)integer_X;
+        int integer_Y = (int)y;
+        double fractional_Y = y - (double)integer_Y;
 
         double v1 = SmoothedNoise(integer_X, integer_Y, seed);
         double v2 = SmoothedNoise(integer_X + 1, integer_Y, seed);
         double v3 = SmoothedNoise(integer_X, integer_Y + 1, seed);
         double v4 = SmoothedNoise(integer_X + 1, integer_Y + 1, seed);
 
-        double i1 = Lerp(v1, v2, fractional_X);
-        double i2 = Lerp(v3, v4, fractional_X);
+        double i1 = Lerp((float)v1, (float)v2, (float)fractional_X);
+        double i2 = Lerp((float)v3, (float)v4, (float)fractional_X);
         return CosInterp(i1, i2, fractional_Y);
     }
 

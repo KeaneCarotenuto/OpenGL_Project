@@ -59,6 +59,7 @@ class ShaderLoader
 	
 public:	
 	static GLuint CreateProgram(std::string _name, const char* vertexShaderFilename, const char* fragmentShaderFilename, const char* geometryShaderFilename = nullptr, const char* tessControlShaderFilename = nullptr, const char* tessEvalShaderFilename = nullptr);
+	static GLuint CreateProgramCompute(std::string _name, const char* computeShaderFilename);
 	static CProgram* GetProgram(std::string _name);
 
 private:

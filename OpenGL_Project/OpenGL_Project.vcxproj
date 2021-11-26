@@ -136,6 +136,7 @@
     <ClCompile Include="CAudioSystem.cpp" />
     <ClCompile Include="CCamera.cpp" />
     <ClCompile Include="CCLOTH.CPP" />
+    <ClCompile Include="CGPUParticleSystem.cpp" />
     <ClCompile Include="CLightManager.cpp" />
     <ClCompile Include="CMesh.cpp" />
     <ClCompile Include="CObjectManager.cpp" />
@@ -150,6 +151,7 @@
   <ItemGroup>
     <ClInclude Include="CAudioSystem.h" />
     <ClInclude Include="CCamera.h" />
+    <ClInclude Include="CGPUParticleSystem.h" />
     <ClInclude Include="CLightManager.h" />
     <ClInclude Include="CMesh.h" />
     <ClInclude Include="CObjectManager.h" />

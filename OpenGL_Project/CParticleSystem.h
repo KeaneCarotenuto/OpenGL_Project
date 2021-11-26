@@ -1,3 +1,16 @@
+// Bachelor of Software Engineering
+// Media Design School
+// Auckland
+// New Zealand
+// 
+// (c) 2021 Media Design School
+//
+// File Name   : CParticleSystem.h
+// Description : Contains data and logic to make CPU particles
+// Author      : Keane Carotenuto
+// Mail        : KeaneCarotenuto@gmail.com
+
+
 #pragma once
 #include "utility.h"
 #include "CCamera.h"

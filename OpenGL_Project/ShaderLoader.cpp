@@ -164,6 +164,86 @@ GLuint ShaderLoader::CreateProgram(std::string _name, const char* vertexShaderFi
 }
 
 /// <summary>
+/// Create a compute shader
+/// </summary>
+/// <param name="_name"></param>
+/// <param name="computeShaderFilename"></param>
+/// <returns></returns>
+GLuint ShaderLoader::CreateProgramCompute(std::string _name, const char* computeShaderFilename)
+{
+	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 10);
+	std::cout << "Begin Program Creation." << std::endl;
+
+	//init vars
+	GLuint compute_shader = NULL;
+	CShader* cShader = NULL;
+
+	//Check if program already exists
+	for (auto it = Globals::programs.begin(); it != Globals::programs.end(); ++it) {
+		if (it->second){
+			GLuint TEMP_compute_shader = NULL;
+
+			for (auto _shader : it->second->m_shaders) {
+				if (_shader) {
+					if (_shader->m_fileName == computeShaderFilename) {
+						SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 14);
+						std::cout << "--Compute shader already exists, using existing." << std::endl;
+						SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 15);
+						compute_shader = TEMP_compute_shader = _shader->m_id;
+						cShader = _shader;
+					}
+				}
+			}
+
+			//If all shaders exist AKA program exists
+			if (TEMP_compute_shader != NULL) {
+				SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 14);
+				std::cout << "-Program already exists, using existing." << std::endl;
+				SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 15);
+				std::cout << "End Program Creation." << std::endl << std::endl;
+				return it->second->m_id;
+			}
+		}
+	}
+
+	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 15);
+	std::cout << "-Creating new Program" << std::endl;
+
+	//Create shaders if needed
+	if (compute_shader == NULL) {
+		compute_shader = CreateShader(GL_COMPUTE_SHADER, computeShaderFilename, &cShader);
+	}
+
+	// Create the program handle, attach the shaders and link it
+	GLuint program = glCreateProgram();
+	glAttachShader(program, compute_shader);
+
+	glLinkProgram(program);
+
+	// Check for link errors
+	int link_result = 0;
+	glGetProgramiv(program, GL_LINK_STATUS, &link_result);
+	if (link_result == GL_FALSE)
+	{
+		std::string programName(computeShaderFilename);
+		PrintErrorDetails(false, program, programName.c_str());
+		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 12);
+		std::cout << "End Program Creation." << std::endl << std::endl;
+		
+		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 15);
+		return 0;
+	}
+
+	Globals::programs[_name] = (new CProgram(program, std::vector<CShader*>{cShader}));
+
+	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 10);
+	std::cout << "--Program Created" << std::endl;
+	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 15);
+	std::cout << "End Program Creation." << std::endl << std::endl;
+	return program;
+}
+
+/// <summary>
 /// Returns program of name
 /// </summary>
 /// <param name="_name"></param>
@@ -195,8 +275,7 @@ GLuint ShaderLoader::CreateShader(GLenum shaderType, const char* shaderName, CSh
 	(shaderType == GL_GEOMETRY_SHADER ? "Geometry" : 
 	(shaderType == GL_TESS_CONTROL_SHADER ? "TessControl" :
 	(shaderType == GL_TESS_EVALUATION_SHADER ? "TessEval" : 
-	"Unknown"
-	)))));
+	(shaderType == GL_COMPUTE_SHADER ? "Compute" : "Unknown"))))));
 
 	//This is redundant, but better to be safe than sorry I suppose
 	for (CShader* _shader : Globals::shaders)

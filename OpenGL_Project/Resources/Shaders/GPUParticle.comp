@@ -1,0 +1,37 @@
+#version 440 core
+
+#define WORK_GROUP_SIZE 128
+
+layout (local_size_x = WORK_GROUP_SIZE, local_size_y = 1, local_size_z = 1) in;
+
+layout (std430, binding = 0) buffer positionBufer { vec4 position[]; };
+layout (std430, binding = 1) buffer velocityBufer { vec4 velocity[]; };
+layout (std430, binding = 2) buffer initiVelocityBufer { vec4 initiVelocity[]; };
+
+float dt = 0.001;
+
+float Random(vec2 co){
+	return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
+}
+
+void main()
+{
+    uint id = gl_GlobalInvocationID.x;
+
+    vec3 gravity = vec3(0.0, -9.8 * dt, 0.0);
+    velocity[id].xyz += gravity;
+
+    position[id].xyz += velocity[id].xyz;
+    position[id].w -= 2.5f * dt;
+
+    if (position[id].w < 0.0f)
+    {
+        position[id].xyzw = vec4(
+            Random(position[id].xy) * 200.0f - 100.0f, 
+            0.0f, 
+            Random(position[id].yz) * 200.0f - 100.0f, 
+            initiVelocity[id].w);
+
+        velocity[id] = initiVelocity[id];
+    }
+}

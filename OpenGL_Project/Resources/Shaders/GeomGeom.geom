@@ -12,10 +12,14 @@ out GS_FS_VERTEX{
 	vec2 texcoord;
 }gs_out;
 
+float Random(vec2 co){
+	return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
+}
+
 void buildQuad(float size, mat4 vp){
 	int spriteSheetFrames = 7;
 	float frameOffset = 1.0f / float(spriteSheetFrames);
-	int time = int(CurrentTime * 10);
+	int time = int(CurrentTime * 10.0f + Random(gl_in[0].gl_Position.xy) * 10.0f);
 	int frameNum = time % spriteSheetFrames;
 	float leftXTexCoord = frameNum * frameOffset;
 	float rightXTexCoord = leftXTexCoord + frameOffset;

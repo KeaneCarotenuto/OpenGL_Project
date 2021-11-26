@@ -297,7 +297,7 @@ void CMesh::NewPlane(std::string _name, float _width, float _length, int _divW, 
 			//Calculate the position of the current vertex
 			float x = j * widthDiv;
 			float z = i * lengthDiv;
-			float y = utils::FinalNoise2D(x,z, seed, 8, 0.5, 100);
+			float y = (float)utils::FinalNoise2D(x,z, seed, 8, 0.5, 100);
 
 			//Set the position of the current vertex
 			verts[(i * (_divW + 1) + j) * 8 + 0] = x;
@@ -311,15 +311,15 @@ void CMesh::NewPlane(std::string _name, float _width, float _length, int _divW, 
 
 
 			//Getting all connected particles to the current vertex
-			glm::vec3 middle = glm::vec3(x, utils::FinalNoise2D(x, z, seed, 8, 0.5, 100), z);
-			glm::vec3 topLeft = glm::vec3(x - widthDiv, utils::FinalNoise2D(x - widthDiv, z - lengthDiv, seed, 8, 0.5, 100), z - lengthDiv);
-			glm::vec3 top = glm::vec3(x, utils::FinalNoise2D(x, z - lengthDiv, seed, 8, 0.5, 100), z - lengthDiv);
-			glm::vec3 topRight = glm::vec3(x + widthDiv, utils::FinalNoise2D(x + widthDiv, z - lengthDiv, seed, 8, 0.5, 100), z - lengthDiv);
-			glm::vec3 left = glm::vec3(x - widthDiv, utils::FinalNoise2D(x - widthDiv, z, seed, 8, 0.5, 100), z);
-			glm::vec3 right = glm::vec3(x + widthDiv, utils::FinalNoise2D(x + widthDiv, z, seed, 8, 0.5, 100), z);
-			glm::vec3 bottomLeft = glm::vec3(x - widthDiv, utils::FinalNoise2D(x - widthDiv, z + lengthDiv, seed, 8, 0.5, 100), z + lengthDiv);
-			glm::vec3 bottom = glm::vec3(x, utils::FinalNoise2D(x, z + lengthDiv, seed, 8, 0.5, 100), z + lengthDiv);
-			glm::vec3 bottomRight = glm::vec3(x + widthDiv, utils::FinalNoise2D(x + widthDiv, z + lengthDiv, seed, 8, 0.5, 100), z + lengthDiv);
+			glm::vec3 middle = glm::vec3(x, utils::FinalNoise2D((double)x, (double)z, seed, 8, 0.5, 100), z);
+			glm::vec3 topLeft = glm::vec3(x - widthDiv, utils::FinalNoise2D((double)x - (double)widthDiv, (double)z - (double)lengthDiv, seed, 8, 0.5, 100), z - lengthDiv);
+			glm::vec3 top = glm::vec3(x, utils::FinalNoise2D((double)x, (double)z - (double)lengthDiv, seed, 8, 0.5, 100), z - lengthDiv);
+			glm::vec3 topRight = glm::vec3(x + widthDiv, utils::FinalNoise2D((double)x + (double)widthDiv, (double)z - (double)lengthDiv, seed, 8, 0.5, 100), z - lengthDiv);
+			glm::vec3 left = glm::vec3(x - widthDiv, utils::FinalNoise2D((double)x - (double)widthDiv, (double)z, seed, 8, 0.5, 100), z);
+			glm::vec3 right = glm::vec3(x + widthDiv, utils::FinalNoise2D((double)x + (double)widthDiv, (double)z, seed, 8, 0.5, 100), z);
+			glm::vec3 bottomLeft = glm::vec3(x - widthDiv, utils::FinalNoise2D((double)x - (double)widthDiv, (double)z + (double)lengthDiv, seed, 8, 0.5, 100), z + lengthDiv);
+			glm::vec3 bottom = glm::vec3(x, utils::FinalNoise2D((double)x, (double)z + (double)lengthDiv, seed, 8, 0.5, 100), z + lengthDiv);
+			glm::vec3 bottomRight = glm::vec3(x + widthDiv, utils::FinalNoise2D((double)x + (double)widthDiv, (double)z + (double)lengthDiv, seed, 8, 0.5, 100), z + lengthDiv);
 
 			//calculate the normal of each triangle connected to the current vertex
 			glm::vec3 normal1 = glm::normalize(glm::cross(middle - topLeft, middle - top));
@@ -367,19 +367,19 @@ void CMesh::NewPlane(std::string _name, float _width, float _length, int _divW, 
 	}
 
 	std::vector<float> verts2;
-	for (int i = 0; i < verts.size(); i++) {
+	for (unsigned int i = 0; i < verts.size(); i++) {
 		verts2.push_back(verts[i]);
 	}
 
 	std::vector<int> inds2;
-	for (int i = 0; i < inds.size(); i++) {
+	for (unsigned int i = 0; i < inds.size(); i++) {
 		inds2.push_back(inds[i]);
 	}
 
 	CMesh* tempPointer = new CMesh(VertType::Pos_Tex_Norm, verts2, inds2);
 	std::string tempName = (_name == "" ? "plane-" + std::to_string(_width) + "-" + std::to_string(_length) + "-" + std::to_string(_divW) + "-" + std::to_string(_divL) : _name);
-	tempPointer->m_width = _width;
-	tempPointer->m_length = _length;
+	tempPointer->m_width = (int)_width;
+	tempPointer->m_length = (int)_length;
 
 	tempPointer->m_widthDivs = _divW;
 	tempPointer->m_lengthDivs = _divL;

@@ -24,6 +24,7 @@
 #include "CLightManager.h"
 
 #include "CParticleSystem.h"
+#include "CGPUParticleSystem.h"
 
 #pragma region Function Headers
 void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
@@ -76,6 +77,7 @@ GLFWwindow* g_window = nullptr;
 CCamera* g_camera = new CCamera();
 
 CParticleSystem* g_particleSystem = nullptr;
+CGPUParticleSystem* g_gpuParticleSystem = nullptr;
 
 //Enable and disable input
 bool doInput = false;
@@ -88,6 +90,7 @@ bool holdSphere = false;
 //Textures
 GLuint Texture_Rayman;
 GLuint Texture_Fire;
+GLuint Texture_Snow;
 GLuint Texture_Terrain;
 
 GLuint Texture_Cubemap;
@@ -166,7 +169,7 @@ bool Startup()
 
 void InitialSetup()
 {
-	srand(time(0));
+	srand((unsigned int)time((time_t*)0));
 
 	//Set the clear colour as blue (used by glClear)
 	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -227,6 +230,7 @@ void TextureCreation()
 	//Create all textures and bind them
 	GenTexture(Texture_Rayman, "Resources/Textures/Rayman.jpg");
 	GenTexture(Texture_Fire, "Resources/Textures/fire_sheet.png");
+	GenTexture(Texture_Snow, "Resources/Textures/snow_sheet.png");
 	GenTexture(Texture_Terrain, "Resources/Textures/Terrain_Texture.png");
 
 	std::string cubemapPaths[6] = {
@@ -581,6 +585,7 @@ void ProgramSetup()
 	ShaderLoader::CreateProgram("solidColour", "Resources/Shaders/PositionOnly.vert", "Resources/Shaders/ColourOnly.frag");
 	ShaderLoader::CreateProgram("tesShader", "Resources/Shaders/PositionOnlyNoPVM.vert", "Resources/Shaders/ColourOnly.frag", nullptr, "Resources/Shaders/QuadTes.tesc", "Resources/Shaders/QuadTes.tese");
 	ShaderLoader::CreateProgram("geom", "Resources/Shaders/GeomVert.vert", "Resources/Shaders/GeomFrag.frag", "Resources/Shaders/GeomGeom.geom");
+	ShaderLoader::CreateProgramCompute("compute", "Resources/Shaders/GPUParticle.comp");
 }
 
 void InitShapes()
@@ -631,6 +636,9 @@ void InitShapes()
 
 	//Create particle system
 	g_particleSystem = new CParticleSystem(glm::vec3(1.0f, 1.0f, 0.0f), Texture_Fire, ShaderLoader::GetProgram("geom")->m_id, g_camera, 20000);
+
+	//GPU particle system
+	g_gpuParticleSystem = new CGPUParticleSystem(Texture_Snow, ShaderLoader::GetProgram("geom")->m_id, ShaderLoader::GetProgram("compute")->m_id, g_camera, 200000);
 }
 #pragma endregion
 
@@ -879,6 +887,7 @@ void Update()
 	//Update all shapes
 	CObjectManager::UpdateAll(utils::deltaTime, utils::currentTime);
 	g_particleSystem->Update(utils::deltaTime);
+	g_gpuParticleSystem->Update(utils::deltaTime);
 
 	glUseProgram(ShaderLoader::GetProgram("3DLight")->m_id);
 	glUniform3fv(glGetUniformLocation(ShaderLoader::GetProgram("3DLight")->m_id, "CameraPos"), 1, glm::value_ptr(g_camera->GetCameraPos()));
@@ -922,9 +931,9 @@ void Update()
 				float relativeX = ((sphere->GetPosition().x - floor->GetPosition().x) / floor->GetScale().x) * wdivs / CObjectManager::GetShape("floor")->GetMesh()->GetWidth();
 				float relativeZ = ((sphere->GetPosition().z - floor->GetPosition().z) / floor->GetScale().z)* ldivs / CObjectManager::GetShape("floor")->GetMesh()->GetLength();
 				if (relativeX < 1) relativeX = 1;
-				if (relativeX > wdivs - 1) relativeX = wdivs - 1;
+				if (relativeX > wdivs - 1) relativeX = (float)wdivs - 1.0f;
 				if (relativeZ < 1) relativeZ = 1;
-				if (relativeZ > ldivs - 1) relativeZ = ldivs - 1;
+				if (relativeZ > ldivs - 1) relativeZ = (float)ldivs - 1.0f;
 
 				//get normal data from verticies
 				float xNorm = CObjectManager::GetShape("floor")->GetMesh()->GetVertices()[(int(relativeZ) * (CObjectManager::GetShape("floor")->GetMesh()->GetWidthDivs() + 1) + int(relativeX)) * 8 + 5];
@@ -1079,12 +1088,12 @@ float GetTerrainHeight(CShape* floor,float _worldX, float _worldZ) {
 		float relativeX = ((_worldX - floor->GetPosition().x) / floor->GetScale().x) * widthDivs / mesh->GetWidth();
 		//check that the camera is not outside the mesh bounds (if it is, clamp it) 
 		if (relativeX < 1) relativeX = 1;
-		if (relativeX > widthDivs - 1) relativeX = widthDivs - 1;
+		if (relativeX > widthDivs - 1) relativeX = (float)widthDivs - 1.0f;
 
 		float relativeZ = ((_worldZ - floor->GetPosition().z) / floor->GetScale().z) * lengthDivs / mesh->GetLength();
 		//check that the camera is not outside the mesh bounds (if it is, clamp it)
 		if (relativeZ < 1) relativeZ = 1;
-		if (relativeZ > lengthDivs - 1) relativeZ = lengthDivs - 1;
+		if (relativeZ > lengthDivs - 1) relativeZ = (float)lengthDivs - 1.0f;
 
 		float nearestVertHeight = vertices[(int(relativeZ) * (widthDivs + 1) + int(relativeX)) * 8 + 1];
 
@@ -1102,6 +1111,8 @@ float GetTerrainHeight(CShape* floor,float _worldX, float _worldZ) {
 
 		return terrainHeight;
 	}
+
+	return 0;
 }
 
 /// <summary>
@@ -1123,6 +1134,7 @@ void Render()
 	CObjectManager::GetShape("skybox")->Render();
 	CObjectManager::GetShape("floor")->Render();
 	g_particleSystem->Render(utils::deltaTime);
+	g_gpuParticleSystem->Render();
 	
 	//Enable stencil, and set function
 	glEnable(GL_STENCIL_TEST);
